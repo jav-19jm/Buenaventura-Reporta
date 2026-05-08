@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - develop
 
 jobs:
   build-and-deploy:
@@ -17,12 +16,15 @@ jobs:
       - name: Instalar Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 20
 
       - name: Instalar dependencias
         run: npm install
 
-      - name: Build del proyecto
+      - name: Build del frontend
+        env:
+          CI: false
+          GENERATE_SOURCEMAP: false
         run: npm run build
 
       - name: Limpiar carpeta del servidor
@@ -35,7 +37,7 @@ jobs:
           script: |
             find /var/www/ds1/buenaventura-reporta -mindepth 1 ! -name '.htaccess' -exec rm -rf {} +
 
-      - name: Desplegar al VPS vía SCP
+      - name: Subir frontend al VPS
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.HOST }}

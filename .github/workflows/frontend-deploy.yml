@@ -17,6 +17,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
 
       - name: Instalar dependencias
         run: npm install
@@ -27,7 +28,7 @@ jobs:
           GENERATE_SOURCEMAP: false
         run: npm run build
 
-      - name: Limpiar carpeta del servidor
+      - name: Preparar y Limpiar carpeta en Servidor
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.HOST }}
@@ -35,9 +36,10 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           port: 22
           script: |
-            find /var/www/ds1/buenaventura-reporta -mindepth 1 ! -name '.htaccess' -exec rm -rf {} +
+            mkdir -p /var/www/ds1/buenaventura-reporta/html
+            find /var/www/ds1/buenaventura-reporta/html -mindepth 1 ! -name '.htaccess' -delete
 
-      - name: Subir frontend al VPS
+      - name: Desplegar Build al VPS vía SCP
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.HOST }}
@@ -45,6 +47,16 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           port: 22
           source: "build/*"
-          target: "/var/www/ds1/buenaventura-reporta"
+          target: "/var/www/ds1/buenaventura-reporta/html"
           strip_components: 1
           rm: false
+
+      - name: Finalizar Despliegue
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          port: 22
+          script: |
+            echo "Deployment finished"

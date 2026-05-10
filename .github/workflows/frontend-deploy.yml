@@ -37,6 +37,7 @@ jobs:
           port: 22
           script: |
             mkdir -p /var/www/ds1/buenaventura-reporta/html
+            # Limpia todo menos el .htaccess para no romper el ruteo de React/Vite
             find /var/www/ds1/buenaventura-reporta/html -mindepth 1 ! -name '.htaccess' -delete
 
       - name: Desplegar Build al VPS vía SCP
@@ -46,7 +47,7 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           port: 22
-          source: "build/*"
+          source: "dist/*"  
           target: "/var/www/ds1/buenaventura-reporta/html"
           strip_components: 1
           rm: false
@@ -59,4 +60,4 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           port: 22
           script: |
-            echo "Deployment finished"
+            echo "Despliegue finalizado con éxito en el servidor"

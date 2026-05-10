@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { Badge } from "../components/ui/Badge";
-import { ReportCard, Report } from "../components/ReportCard";
+import { ReportCard } from "../components/ReportCard";
 import { ArrowLeft, User, Award, TrendingUp, MapPin, LogOut, Bell, FileText, ThumbsUp, ThumbsDown, Trash2 } from "lucide-react";
 import { LogoutAnimation } from "../components/animations/LogoutAnimation";
 import { useAuth } from "../../hooks/useAuth";

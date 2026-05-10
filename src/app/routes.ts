@@ -7,6 +7,11 @@ import { CreateReportPage } from "./pages/CreateReportPage";
 import { ReportDetailPage } from "./pages/ReportDetailPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { AdminDashboard } from "./pages/AdminDashboard";
+import { EntityDashboard } from "./pages/entity/EntityDashboard";
+import { EntityReportDetail } from "./pages/entity/EntityReportDetail";
+import { EntitySelection } from "./pages/entity/EntitySelection";
+import { EntityLogin } from "./pages/entity/EntityLogin";
+import { EntityDashboardCustom } from "./pages/entity/EntityDashboardCustom";
 
 export const router = createBrowserRouter([
   {
@@ -42,5 +47,25 @@ export const router = createBrowserRouter([
   {
     path: "/admin",
     Component: AdminDashboard,
+  },
+   {
+    path: "/entity/select",
+    Component: EntitySelection,
+  },
+  {
+    path: "/entity/login/:entityId",
+    Component: EntityLogin,
+  },
+  {
+    path: "/entity/dashboard",
+    Component: EntityDashboard,
+  },
+  {
+    path: "/entity/dashboard/:entityId",
+    Component: EntityDashboardCustom,
+  },
+  {
+    path: "/entity/report/:id",
+    Component: EntityReportDetail,
   },
 ]);

@@ -3,7 +3,7 @@ name: Deploy Buenaventura Reporta
 on:
   push:
     branches:
-      - main
+      - develop
 
 jobs:
   build-and-deploy:

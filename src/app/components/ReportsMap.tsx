@@ -1,7 +1,7 @@
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { } from "../supabase/supabase";
+import type { Report } from "../supabase/supabase";
 import { useNavigate } from "react-router";
 import { Badge } from "./ui/Badge";
 

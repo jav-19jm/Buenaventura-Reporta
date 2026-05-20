@@ -8,6 +8,7 @@ import { MapPin, Camera, ArrowLeft, Upload } from "lucide-react";
 import { createReport, uploadReportImage } from "../../../lib/reports";
 import { useAuth } from "../../../hooks/useAuth";
 import { toast } from "sonner";
+import { LocationPickerMap } from "../../components/LocationPickerMap";
 
 export function CreateReportPage() {
   const navigate = useNavigate();
@@ -18,10 +19,18 @@ export function CreateReportPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [location, setLocation] = useState({
-    address: "Calle 5 con Carrera 3, Buenaventura",
+    address: "Buenaventura, Colombia",
     lat: 3.8801,
-    lng: -77.0831
+    lng: -77.0311
   });
+
+  const handleLocationSelect = (lat: number, lng: number) => {
+    setLocation({
+      address: `${lat.toFixed(4)}, ${lng.toFixed(4)}`, // En un caso real usarías Reverse Geocoding
+      lat,
+      lng
+    });
+  };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -218,13 +227,16 @@ export function CreateReportPage() {
             <h2 className="font-semibold text-gray-900 mb-4">
               4. Ubicación <span className="text-red-500">*</span>
             </h2>
-            <div className="bg-gradient-to-br from-blue-50 to-green-50 rounded-lg p-8 text-center">
-              <MapPin className="w-12 h-12 text-blue-600 mx-auto mb-3" />
-              <p className="text-gray-700 mb-2">Ubicación detectada automáticamente</p>
-              <p className="text-sm text-gray-600">Calle 5 con Carrera 3, Buenaventura</p>
-              <Button variant="outline" size="sm" className="mt-4">
-                Cambiar ubicación manualmente
-              </Button>
+            <p className="text-sm text-gray-600 mb-4">
+              Haz clic en el mapa para marcar la ubicación exacta de la incidencia.
+            </p>
+            <LocationPickerMap 
+              position={{ lat: location.lat, lng: location.lng }}
+              onLocationSelect={handleLocationSelect}
+            />
+            <div className="mt-4 flex items-center gap-2 text-sm text-gray-700 bg-gray-50 p-3 rounded-md">
+              <MapPin className="w-4 h-4 text-blue-600" />
+              <span>Coordenadas seleccionadas: {location.lat.toFixed(4)}, {location.lng.toFixed(4)}</span>
             </div>
           </motion.div>
 

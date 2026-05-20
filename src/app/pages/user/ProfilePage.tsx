@@ -11,6 +11,7 @@ import { useAuth } from "../../../hooks/useAuth";
 import { getUserReports, deleteReport } from "../../../lib/reports";
 import { signOut } from "../../../lib/auth";
 import { toast } from "sonner";
+import { ReportsMap } from "../../components/ReportsMap";
 
 export function ProfilePage() {
   const navigate = useNavigate();
@@ -352,6 +353,13 @@ export function ProfilePage() {
                           <Button size="sm">Nuevo reporte</Button>
                         </Link>
                       </div>
+                      
+                      {myReports.length > 0 && (
+                        <div className="mb-6 h-[400px] w-full rounded-xl overflow-hidden border border-gray-200 shadow-sm relative z-0">
+                          <ReportsMap reports={myReports} />
+                        </div>
+                      )}
+
                       <div className="grid md:grid-cols-2 gap-4">
                         {myReports.map((report, index) => (
                           <motion.div

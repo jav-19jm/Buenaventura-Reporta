@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { Link, useParams } from "react-router";
+import { motion } from "motion/react";
 import { Button } from "../../components/ui/Button";
 import { Badge } from "../../components/ui/Badge";
 import { Card } from "../../components/ui/Card";
-import { MapPin, ArrowLeft, Calendar, CheckCircle2, Clock, Star } from "lucide-react";
+import { MapPin, ArrowLeft, Calendar, CheckCircle2, Clock, Star, MessageCircle, Send, History, Building2 } from "lucide-react";
 import { ImageWithFallback } from "../../components/figma/ImageWithFallback";
 import { getReportById } from "../../../lib/reports";
 import { ReportsMap } from "../../components/ReportsMap";
@@ -15,6 +16,18 @@ export function ReportDetailPage() {
   const [rating, setRating] = useState(0);
   const [report, setReport] = useState<Report | null>(null);
   const [loading, setLoading] = useState(true);
+  const [newMessage, setNewMessage] = useState("");
+  
+  // Mensajes simulados (Mock) para el componente de comunicación
+  const [messages, setMessages] = useState([
+    {
+      id: "1",
+      sender: "entity" as const,
+      userName: "Sistema Automático",
+      message: "Tu reporte ha sido recibido y será revisado pronto por la entidad correspondiente.",
+      timestamp: new Date(Date.now() - 86400000).toLocaleString(),
+    }
+  ]);
 
   useEffect(() => {
     if (id) {
@@ -29,8 +42,36 @@ export function ReportDetailPage() {
       toast.error("Error al cargar el reporte");
     } else if (data) {
       setReport(data as unknown as Report);
+      
+      // Ajustar mensajes mock si el estado es en revisión
+      if (data.status === 'en-revision' || data.status === 'en-proceso') {
+        setMessages(prev => [
+          ...prev,
+          {
+            id: "2",
+            sender: "entity" as const,
+            userName: "Entidad Responsable",
+            message: "Hemos comenzado a revisar tu caso. Te mantendremos informado sobre cualquier avance.",
+            timestamp: new Date(data.updated_at || data.created_at).toLocaleString(),
+          }
+        ]);
+      }
     }
     setLoading(false);
+  };
+
+  const handleSendMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMessage.trim()) return;
+    setMessages([...messages, {
+      id: Date.now().toString(),
+      sender: "user" as const,
+      userName: "Tú",
+      message: newMessage,
+      timestamp: new Date().toLocaleString()
+    }]);
+    setNewMessage("");
+    toast.success("Mensaje enviado a la entidad");
   };
 
   const statusVariant = {
@@ -52,7 +93,7 @@ export function ReportDetailPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-600">Cargando reporte...</p>
+        <p className="text-gray-600">Cargando panel de seguimiento...</p>
       </div>
     );
   }
@@ -68,143 +109,239 @@ export function ReportDetailPage() {
     );
   }
 
-  // Generate a basic timeline
+  // Generar historial (Timeline) básico
   const timeline = [
-    { date: new Date(report.created_at).toLocaleDateString(), status: "Reporte recibido", description: "Tu reporte ha sido registrado en el sistema" },
+    { date: new Date(report.created_at).toLocaleDateString(), time: new Date(report.created_at).toLocaleTimeString(), action: "Reporte creado", user: "Tú" },
   ];
   if (report.status !== 'pendiente') {
     timeline.push({
       date: report.updated_at ? new Date(report.updated_at).toLocaleDateString() : new Date(report.created_at).toLocaleDateString(),
-      status: statusLabel[report.status as keyof typeof statusLabel] || "Actualizado",
-      description: "El estado de tu reporte ha cambiado."
+      time: report.updated_at ? new Date(report.updated_at).toLocaleTimeString() : new Date(report.created_at).toLocaleTimeString(),
+      action: `Estado actualizado a: ${statusLabel[report.status as keyof typeof statusLabel] || report.status}`,
+      user: "Entidad Responsable"
     });
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-10">
-        <div className="px-4 py-3 flex items-center gap-4">
-          <Link to="/user">
-            <button className="p-2 hover:bg-gray-100 rounded-lg">
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-          </Link>
-          <div>
-            <h1 className="font-bold text-gray-900">Detalle del Reporte</h1>
-            <p className="text-sm text-gray-500">ID: #{report.id.substring(0, 8)}</p>
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
+        <div className="px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Link to="/user">
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5 text-gray-700" />
+              </motion.button>
+            </Link>
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">Seguimiento de Caso</h1>
+              <p className="text-sm text-gray-500">ID: #{report.id.substring(0, 8)}</p>
+            </div>
           </div>
         </div>
       </header>
 
       {/* Content */}
-      <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
-        {/* Status Card */}
-        <Card>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">{report.title || report.category}</h2>
-            <Badge variant={statusVariant[report.status as keyof typeof statusVariant] || "info"} className="text-base px-4 py-1">
-              {statusLabel[report.status as keyof typeof statusLabel] || report.status}
-            </Badge>
-          </div>
-          <div className="flex items-center gap-4 text-sm text-gray-600">
-            <div className="flex items-center gap-1">
-              <Calendar className="w-4 h-4" />
-              <span>{new Date(report.created_at).toLocaleDateString()}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <MapPin className="w-4 h-4" />
-              <span>{report.location_address || report.category}</span>
-            </div>
-          </div>
-        </Card>
-
-        {/* Image */}
-        {report.image_url && (
-          <Card className="p-0 overflow-hidden">
-            <ImageWithFallback
-              src={report.image_url}
-              alt={report.title}
-              className="w-full h-80 object-cover"
-            />
-          </Card>
-        )}
-
-        {/* Description */}
-        <Card>
-          <h3 className="font-semibold text-gray-900 mb-3">Descripción</h3>
-          <p className="text-gray-700 leading-relaxed">{report.description}</p>
-        </Card>
-
-        {/* Map Location */}
-        <Card>
-          <h3 className="font-semibold text-gray-900 mb-3">Ubicación en el mapa</h3>
-          <div className="bg-gradient-to-br from-blue-50 to-green-50 rounded-lg h-64 overflow-hidden relative border border-gray-200">
-            <ReportsMap reports={[report]} />
-          </div>
-        </Card>
-
-        {/* Timeline */}
-        <Card>
-          <h3 className="font-semibold text-gray-900 mb-4">Seguimiento</h3>
-          <div className="space-y-4">
-            {timeline.map((item, index) => (
-              <div key={index} className="flex gap-4">
-                <div className="flex flex-col items-center">
-                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                    {index === timeline.length - 1 ? (
-                      <Clock className="w-5 h-5 text-blue-600" />
-                    ) : (
-                      <CheckCircle2 className="w-5 h-5 text-blue-600" />
-                    )}
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="grid lg:grid-cols-3 gap-6">
+          
+          {/* Left Column - Communication and Info */}
+          <div className="lg:col-span-2 space-y-6">
+            
+            {/* Header Info */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+              <Card>
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">{report.title || report.category}</h2>
+                    <div className="flex flex-wrap gap-2">
+                      <Badge variant="outline" className="capitalize">{report.category}</Badge>
+                      <Badge variant={statusVariant[report.status as keyof typeof statusVariant] || "info"}>
+                        {statusLabel[report.status as keyof typeof statusLabel] || report.status}
+                      </Badge>
+                    </div>
                   </div>
-                  {index < timeline.length - 1 && (
-                    <div className="w-0.5 h-full bg-blue-200 mt-2" />
+                </div>
+
+                <div className="space-y-4 mb-6">
+                  <div className="flex items-center gap-3 text-gray-600">
+                    <MapPin className="w-5 h-5" />
+                    <span>{report.location_address || report.category}</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-gray-600">
+                    <Calendar className="w-5 h-5" />
+                    <span>{new Date(report.created_at).toLocaleDateString()}</span>
+                  </div>
+                </div>
+
+                <div className="border-t border-gray-200 pt-4">
+                  <h3 className="font-semibold text-gray-900 mb-2">Descripción</h3>
+                  <p className="text-gray-700 leading-relaxed">{report.description}</p>
+                </div>
+              </Card>
+            </motion.div>
+
+            {/* Chat/Communication Component */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+              <Card>
+                <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <MessageCircle className="w-6 h-6 text-green-600" />
+                  Comunicación con la Entidad
+                </h3>
+
+                <div className="space-y-4 mb-6 max-h-96 overflow-y-auto pr-2">
+                  {messages.map((msg) => (
+                    <motion.div
+                      key={msg.id}
+                      initial={{ opacity: 0, x: msg.sender === "user" ? 20 : -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
+                    >
+                      <div className={`max-w-[80%] rounded-xl p-4 shadow-sm ${msg.sender === "user" ? "bg-green-600 text-white" : "bg-gray-100 text-gray-800"}`}>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className={`text-sm font-semibold ${msg.sender === "user" ? "text-green-50" : "text-gray-900"}`}>{msg.userName}</span>
+                          <span className={`text-xs ${msg.sender === "user" ? "text-green-100" : "text-gray-500"}`}>{msg.timestamp}</span>
+                        </div>
+                        <p className="leading-relaxed">{msg.message}</p>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+
+                <form onSubmit={handleSendMessage} className="border-t border-gray-200 pt-4">
+                  <div className="flex gap-3">
+                    <textarea
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      placeholder="Escribe un mensaje a la entidad..."
+                      rows={2}
+                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+                    />
+                    <Button type="submit" className="self-end h-[50px]">
+                      <Send className="w-4 h-4 mr-2" />
+                      Enviar
+                    </Button>
+                  </div>
+                </form>
+              </Card>
+            </motion.div>
+          </div>
+
+          {/* Right Column - History and Map */}
+          <div className="space-y-6">
+            
+            {/* Entity Info (Mocked as if assigned) */}
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
+              <Card>
+                <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <Building2 className="w-5 h-5 text-blue-600" />
+                  Entidad Asignada
+                </h3>
+                <div className="text-sm">
+                  {report.status === 'pendiente' ? (
+                    <p className="text-gray-500 italic">Buscando entidad correspondiente...</p>
+                  ) : (
+                    <>
+                      <p className="font-medium text-gray-900">Autoridad Competente</p>
+                      <p className="text-gray-500 mt-1">Se ha asignado una entidad para la resolución de este caso.</p>
+                    </>
                   )}
                 </div>
-                <div className="flex-1 pb-4">
-                  <div className="flex items-center gap-2 mb-1">
-                    <p className="font-medium text-gray-900">{item.status}</p>
-                    <span className="text-sm text-gray-500">{item.date}</span>
-                  </div>
-                  <p className="text-sm text-gray-600">{item.description}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
+              </Card>
+            </motion.div>
 
-        {/* Rating (only for solved reports) */}
-        {report.status === "resuelto" && (
-          <Card>
-            <h3 className="font-semibold text-gray-900 mb-4">Califica el servicio</h3>
-            <p className="text-sm text-gray-600 mb-4">
-              ¿Qué tan satisfecho estás con la solución del problema?
-            </p>
-            <div className="flex gap-2 mb-4">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <button
-                  key={star}
-                  onClick={() => setRating(star)}
-                  className="transition-transform hover:scale-110"
-                >
-                  <Star
-                    className={`w-8 h-8 ${
-                      star <= rating
-                        ? "fill-yellow-400 text-yellow-400"
-                        : "text-gray-300"
-                    }`}
+            {/* History / Timeline */}
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}>
+              <Card>
+                <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <History className="w-5 h-5 text-blue-600" />
+                  Historial de Estado
+                </h3>
+                <div className="space-y-4">
+                  {timeline.map((item, index) => (
+                    <div key={index} className="flex gap-3">
+                      <div className="flex flex-col items-center">
+                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                          <div className="w-3 h-3 bg-blue-600 rounded-full" />
+                        </div>
+                        {index < timeline.length - 1 && (
+                          <div className="w-0.5 h-full bg-blue-200 mt-2" />
+                        )}
+                      </div>
+                      <div className="flex-1 pb-4">
+                        <p className="font-medium text-gray-900 text-sm">{item.action}</p>
+                        <p className="text-xs text-gray-500 mt-1">{item.user}</p>
+                        <p className="text-xs text-gray-400 mt-1">{item.date} {item.time}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            </motion.div>
+
+            {/* Map Mini-view */}
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }}>
+              <Card className="p-0 overflow-hidden h-64 border border-gray-200">
+                <ReportsMap reports={[report]} />
+              </Card>
+            </motion.div>
+
+            {/* Evidence Image */}
+            {report.image_url && (
+              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }}>
+                <Card className="p-0 overflow-hidden border border-gray-200">
+                  <div className="p-4 border-b border-gray-200">
+                    <h3 className="font-semibold text-gray-900">Evidencia</h3>
+                  </div>
+                  <ImageWithFallback
+                    src={report.image_url}
+                    alt={report.title}
+                    className="w-full h-48 object-cover"
                   />
-                </button>
-              ))}
-            </div>
-            {rating > 0 && (
-              <Button variant="secondary" size="sm">
-                Enviar calificación
-              </Button>
+                </Card>
+              </motion.div>
             )}
-          </Card>
-        )}
+
+            {/* Rating (only for solved reports) */}
+            {report.status === "resuelto" && (
+              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.6 }}>
+                <Card>
+                  <h3 className="font-semibold text-gray-900 mb-4">Califica la atención</h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    ¿Qué tan satisfecho estás con la solución proporcionada?
+                  </p>
+                  <div className="flex gap-2 mb-4">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        onClick={() => setRating(star)}
+                        className="transition-transform hover:scale-110"
+                      >
+                        <Star
+                          className={`w-8 h-8 ${
+                            star <= rating
+                              ? "fill-yellow-400 text-yellow-400"
+                              : "text-gray-300"
+                          }`}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                  {rating > 0 && (
+                    <Button variant="secondary" size="sm" onClick={() => toast.success("¡Gracias por tu feedback!")}>
+                      Enviar calificación
+                    </Button>
+                  )}
+                </Card>
+              </motion.div>
+            )}
+
+          </div>
+        </div>
       </div>
     </div>
   );

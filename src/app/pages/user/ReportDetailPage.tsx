@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router";
-import { Button } from "../components/ui/Button";
-import { Badge } from "../components/ui/Badge";
-import { Card } from "../components/ui/Card";
+import { Button } from "../../components/ui/Button";
+import { Badge } from "../../components/ui/Badge";
+import { Card } from "../../components/ui/Card";
 import { MapPin, ArrowLeft, Calendar, CheckCircle2, Clock, Star } from "lucide-react";
-import { ImageWithFallback } from "../components/figma/ImageWithFallback";
+import { ImageWithFallback } from "../../components/figma/ImageWithFallback";
 
 export function ReportDetailPage() {
   const { id } = useParams();
@@ -42,7 +42,7 @@ export function ReportDetailPage() {
       {/* Header */}
       <header className="bg-white shadow-sm sticky top-0 z-10">
         <div className="px-4 py-3 flex items-center gap-4">
-          <Link to="/map">
+          <Link to="/user">
             <button className="p-2 hover:bg-gray-100 rounded-lg">
               <ArrowLeft className="w-5 h-5" />
             </button>

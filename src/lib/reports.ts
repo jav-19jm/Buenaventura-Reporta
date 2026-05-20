@@ -1,5 +1,5 @@
-import { supabase } from './supabase';
-import type { Report, ReportStatus, ReportPriority } from './supabase';
+import { supabase } from '../app/supabase/supabase';
+import type { Report, ReportStatus, ReportPriority } from '../app/supabase/supabase';
 
 // ==========================================
 // CRUD DE REPORTES CON SUPABASE

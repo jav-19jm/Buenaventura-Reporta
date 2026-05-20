@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { motion } from "motion/react";
-import { Button } from "../components/ui/Button";
-import { Textarea } from "../components/ui/Textarea";
-import { IncidentTypeSelector } from "../components/IncidentTypeSelector";
+import { Button } from "../../components/ui/Button";
+import { Textarea } from "../../components/ui/Textarea";
+import { IncidentTypeSelector } from "../../components/IncidentTypeSelector";
 import { MapPin, Camera, ArrowLeft, Upload } from "lucide-react";
-import { createReport, uploadReportImage } from "../../lib/reports";
-import { useAuth } from "../../hooks/useAuth";
+import { createReport, uploadReportImage } from "../../../lib/reports";
+import { useAuth } from "../../../hooks/useAuth";
 import { toast } from "sonner";
 
 export function CreateReportPage() {
@@ -83,7 +83,7 @@ export function CreateReportPage() {
       }
 
       toast.success("¡Reporte creado exitosamente!");
-      navigate("/map");
+      navigate("/user");
     } catch (error: any) {
       console.error('Error:', error);
       toast.error("Error al crear el reporte");
@@ -100,7 +100,7 @@ export function CreateReportPage() {
       {/* Header */}
       <header className="bg-white shadow-sm sticky top-0 z-10">
         <div className="px-4 py-3 flex items-center gap-4">
-          <Link to="/map">
+          <Link to="/user">
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
@@ -235,7 +235,7 @@ export function CreateReportPage() {
             transition={{ duration: 0.4, delay: 0.4 }}
             className="flex gap-3"
           >
-            <Link to="/map" className="flex-1">
+            <Link to="/user" className="flex-1">
               <Button variant="outline" className="w-full" size="lg">
                 Cancelar
               </Button>

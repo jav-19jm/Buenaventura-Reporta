@@ -1,15 +1,15 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
-import { Button } from "../components/ui/Button";
-import { Card } from "../components/ui/Card";
-import { Badge } from "../components/ui/Badge";
-import { ReportCard } from "../components/ReportCard";
+import { Button } from "../../components/ui/Button";
+import { Card } from "../../components/ui/Card";
+import { Badge } from "../../components/ui/Badge";
+import { ReportCard } from "../../components/ReportCard";
 import { ArrowLeft, User, Award, TrendingUp, MapPin, LogOut, Bell, FileText, ThumbsUp, ThumbsDown, Trash2 } from "lucide-react";
-import { LogoutAnimation } from "../components/animations/LogoutAnimation";
-import { useAuth } from "../../hooks/useAuth";
-import { getUserReports, deleteReport } from "../../lib/reports";
-import { signOut } from "../../lib/auth";
+import { LogoutAnimation } from "../../components/animations/LogoutAnimation";
+import { useAuth } from "../../../hooks/useAuth";
+import { getUserReports, deleteReport } from "../../../lib/reports";
+import { signOut } from "../../../lib/auth";
 import { toast } from "sonner";
 
 export function ProfilePage() {
@@ -136,7 +136,7 @@ export function ProfilePage() {
         {/* Header */}
         <header className="bg-white shadow-sm sticky top-0 z-10">
           <div className="px-4 py-3 flex items-center gap-4">
-            <Link to="/map">
+            <Link to="/user">
               <button className="p-2 hover:bg-gray-100 rounded-lg">
                 <ArrowLeft className="w-5 h-5" />
               </button>

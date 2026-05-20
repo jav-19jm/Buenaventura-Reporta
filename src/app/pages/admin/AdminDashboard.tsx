@@ -1,7 +1,7 @@
 import { Link } from "react-router";
-import { Button } from "../components/ui/Button";
-import { Card } from "../components/ui/Card";
-import { Badge } from "../components/ui/Badge";
+import { Button } from "../../components/ui/Button";
+import { Card } from "../../components/ui/Card";
+import { Badge } from "../../components/ui/Badge";
 import { ArrowLeft, TrendingUp, AlertCircle, CheckCircle2, Clock } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 
@@ -50,14 +50,14 @@ export function AdminDashboard() {
       <header className="bg-white shadow-sm sticky top-0 z-10">
         <div className="px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link to="/map">
+            <Link to="/user">
               <button className="p-2 hover:bg-gray-100 rounded-lg">
                 <ArrowLeft className="w-5 h-5" />
               </button>
             </Link>
             <h1 className="font-bold text-gray-900">Panel Administrativo</h1>
           </div>
-          <Link to="/map">
+          <Link to="/user">
             <Button variant="outline" size="sm">Ver mapa</Button>
           </Link>
         </div>

@@ -43,7 +43,7 @@ export function LoginPage() {
   const handleWelcomeComplete = () => {
     // Pequeño delay antes de navegar
     setTimeout(() => {
-      navigate("/map");
+      navigate("/user");
     }, 500);
   };
 

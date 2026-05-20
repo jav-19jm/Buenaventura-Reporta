@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../app/supabase/supabase';
 import { getCurrentUser, getSession, onAuthStateChange } from '../lib/auth';
-import type { Profile } from '../lib/supabase';
+import type { Profile } from '../app/supabase/supabase';
 
 // ==========================================
 // HOOK PERSONALIZADO PARA AUTENTICACIÓN

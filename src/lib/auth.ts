@@ -1,5 +1,5 @@
-import { supabase } from './supabase';
-import type { Profile } from './supabase';
+import { supabase } from '../app/supabase/supabase';
+import type { Profile } from '../app/supabase/supabase';
 
 // ==========================================
 // AUTENTICACIÓN CON SUPABASE

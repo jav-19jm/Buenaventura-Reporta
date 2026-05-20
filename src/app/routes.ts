@@ -2,11 +2,11 @@ import { createBrowserRouter } from "react-router";
 import { LandingPage } from "./pages/LandingPage";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
-import { MapPage } from "./pages/MapPage";
-import { CreateReportPage } from "./pages/CreateReportPage";
-import { ReportDetailPage } from "./pages/ReportDetailPage";
-import { ProfilePage } from "./pages/ProfilePage";
-import { AdminDashboard } from "./pages/AdminDashboard";
+import { UserDashboard } from "./pages/user/UserDashboard";
+import { CreateReportPage } from "./pages/user/CreateReportPage";
+import { ReportDetailPage } from "./pages/user/ReportDetailPage";
+import { ProfilePage } from "./pages/user/ProfilePage";
+import { AdminDashboard } from "./pages/admin/AdminDashboard";
 import { EntityDashboard } from "./pages/entity/EntityDashboard";
 import { EntityReportDetail } from "./pages/entity/EntityReportDetail";
 import { EntitySelection } from "./pages/entity/EntitySelection";
@@ -29,8 +29,8 @@ export const router = createBrowserRouter([
   },
 
   {
-    path: "/map",
-    Component: MapPage,
+    path: "/user",
+    Component: UserDashboard,
   },
   {
     path: "/report/new",

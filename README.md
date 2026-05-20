@@ -4,7 +4,6 @@
 
 ```
 Buenaventura-Reporta/
-├── docs/                        # ← Documentación (estás aquí)
 ├── public/                      # Archivos estáticos (favicon, sonidos)
 ├── src/
 │   ├── app/

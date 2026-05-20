@@ -32,7 +32,7 @@ export async function createReport(reportData: {
           user_id: user.id,
           ...reportData,
           status: 'pendiente',
-          priority: reportData.priority || 'media',
+          priority: reportData.priority || 'media'
         }
       ])
       .select()
@@ -67,7 +67,6 @@ export async function getPublicReports() {
           color
         )
       `)
-      .eq('is_public', true)
       .order('created_at', { ascending: false });
 
     if (error) throw error;

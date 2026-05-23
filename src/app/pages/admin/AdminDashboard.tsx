@@ -72,7 +72,7 @@ export function AdminDashboard() {
       <header className="bg-gradient-to-r from-yellow-500 to-green-600 shadow-lg sticky top-0 z-10">
         <div className="px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link to="/map">
+            <Link to="/">
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
@@ -83,9 +83,6 @@ export function AdminDashboard() {
             </Link>
             <h1 className="text-xl font-bold text-white">Panel Administrativo</h1>
           </div>
-          <Link to="/map">
-            <Button variant="outline" size="sm" className="bg-white">Ver mapa</Button>
-          </Link>
         </div>
 
         {/* Tabs Navigation */}

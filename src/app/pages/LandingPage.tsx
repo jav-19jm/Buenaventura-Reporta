@@ -163,7 +163,7 @@ export function LandingPage() {
                 </h2>
                 <p className="text-xl md:text-2xl text-white/90 mb-8 drop-shadow-lg">Plataforma ciudadana para reportar incidencias urbanas y mejorar nuestra ciudad. Tu voz importa, tu reporte genera cambio.</p>
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <Link to="/user">
+                  <Link to="/login">
                     <Button
                       size="lg"
                       className="w-full sm:w-auto text-lg px-8 py-4 bg-gradient-to-r from-yellow-500 to-green-600 hover:from-yellow-600 hover:to-green-700 shadow-xl"
@@ -172,7 +172,7 @@ export function LandingPage() {
                       Reportar incidencia
                     </Button>
                   </Link>
-                  <Link to="/user">
+                  <Link to="/map">
                     <Button variant="secondary" size="lg" className="w-full sm:w-auto text-lg px-8 py-4 shadow-lg">
                       Ver mapa de reportes
                     </Button>
@@ -185,11 +185,10 @@ export function LandingPage() {
                     <button
                       key={index}
                       onClick={() => setCurrentImageIndex(index)}
-                      className={`h-1.5 rounded-full transition-all ${
-                        index === currentImageIndex 
-                          ? 'w-12 bg-yellow-400' 
-                          : 'w-8 bg-white/50 hover:bg-white/75'
-                      }`}
+                      className={`h-1.5 rounded-full transition-all ${index === currentImageIndex
+                        ? 'w-12 bg-yellow-400'
+                        : 'w-8 bg-white/50 hover:bg-white/75'
+                        }`}
                       aria-label={`Ver imagen ${index + 1}`}
                     />
                   ))}

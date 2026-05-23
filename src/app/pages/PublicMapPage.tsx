@@ -3,13 +3,13 @@ import { Link } from "react-router";
 import { motion } from "motion/react";
 import { ReportsMap } from "../components/ReportsMap";
 import { getPublicReports } from "../../lib/reports";
-import type { Report } from "../supabase/supabase";
+import type { Reporte } from "../supabase/supabase";
 import { Button } from "../components/ui/Button";
 import { MapPin, AlertTriangle, ShieldCheck, ArrowRight, Home } from "lucide-react";
 import { toast } from "sonner";
 
 export function PublicMapPage() {
-  const [reports, setReports] = useState<Report[]>([]);
+  const [reports, setReports] = useState<Reporte[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

@@ -5,32 +5,75 @@ import { Card } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import { ArrowLeft, TrendingUp, AlertCircle, CheckCircle2, Clock, FileText, Users, Building2, Newspaper } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ReportsManagement } from "./ReportsManagement";
 import { UsersManagement } from "./UsersManagement";
 import { NewsManagement } from "./NewsManagement";
 import { EntitiesManagement } from "./EntitiesManagement";
+import { getPublicReports, getReportStats } from "../../../lib/reports";
 
 type Tab = "dashboard" | "reports" | "users" | "entities" | "news";
 
 export function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<Tab>("dashboard");
+  const [reportsByType, setReportsByType] = useState<any[]>([]);
+  const [reportsByStatus, setReportsByStatus] = useState<any[]>([]);
+  const [recentReports, setRecentReports] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Mock data for charts
-  const reportsByType = [
-    { name: "Luminaria", value: 45 },
-    { name: "Basura", value: 32 },
-    { name: "Semáforo", value: 28 },
-    { name: "Fuga agua", value: 15 },
-    { name: "Incendio", value: 8 },
-    { name: "Orden público", value: 12 },
-  ];
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
 
-  const reportsByStatus = [
-    { name: "Pendiente", value: 35, color: "#f59e0b" },
-    { name: "En revisión", value: 52, color: "#3b82f6" },
-    { name: "Solucionado", value: 53, color: "#10b981" },
-  ];
+  const loadDashboardData = async () => {
+    setLoading(true);
+    try {
+      // Cargar estadísticas de reportes
+      const { data: statsData } = await getReportStats();
+      
+      // Cargar reportes públicos
+      const { data: reportsData } = await getPublicReports();
+      
+      if (statsData) {
+        // Preparar datos para gráfico de tipo de reportes
+        const byType = Object.entries(statsData.by_category || {})
+          .map(([name, count]) => ({ name: name.charAt(0).toUpperCase() + name.slice(1), value: count as number }))
+          .sort((a, b) => b.value - a.value);
+        setReportsByType(byType);
+
+        // Preparar datos para gráfico de estado
+        const statusColors: Record<string, string> = {
+          pendiente: "#f59e0b",
+          en_revision: "#3b82f6",
+          en_proceso: "#8b5cf6",
+          resuelto: "#10b981",
+          cancelado: "#ef4444",
+        };
+        const byStatus = Object.entries(statsData.by_status || {}).map(([name, count]) => ({
+          name: name === 'pendiente' ? 'Pendiente' : name === 'en_revision' ? 'En revisión' : name === 'en_proceso' ? 'En proceso' : name === 'resuelto' ? 'Solucionado' : 'Cancelado',
+          value: count as number,
+          color: statusColors[name as keyof typeof statusColors] || "#6b7280",
+        }));
+        setReportsByStatus(byStatus);
+      }
+
+      if (reportsData) {
+        // Tomar los últimos 4 reportes
+        const recent = reportsData.slice(0, 4).map((r: any) => ({
+          id: r.id,
+          type: r.titulo,
+          location: r.direccion_ubicacion,
+          status: r.estado,
+          time: `Hace ${Math.floor((Date.now() - new Date(r.fecha_creacion).getTime()) / 60000)} min`,
+        }));
+        setRecentReports(recent);
+      }
+    } catch (error) {
+      console.error('Error cargando datos del dashboard:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const reportsByZone = [
     { zone: "Centro", reportes: 42 },
@@ -40,18 +83,11 @@ export function AdminDashboard() {
     { zone: "Oeste", reportes: 15 },
   ];
 
-  const recentReports = [
-    { id: "1", type: "Luminaria dañada", location: "Calle 5 con Carrera 3", status: "pendiente", time: "Hace 5 min" },
-    { id: "2", type: "Basura", location: "Av. Simón Bolívar", status: "en-revision", time: "Hace 15 min" },
-    { id: "3", type: "Semáforo dañado", location: "Carrera 2 con Calle 10", status: "solucionado", time: "Hace 1 hora" },
-    { id: "4", type: "Fuga de agua", location: "Calle 8", status: "en-revision", time: "Hace 2 horas" },
-  ];
-
   const stats = [
-    { label: "Total reportes", value: "140", icon: TrendingUp, color: "bg-blue-100 text-blue-600" },
-    { label: "Pendientes", value: "35", icon: Clock, color: "bg-yellow-100 text-yellow-600" },
-    { label: "En revisión", value: "52", icon: AlertCircle, color: "bg-blue-100 text-blue-600" },
-    { label: "Solucionados", value: "53", icon: CheckCircle2, color: "bg-green-100 text-green-600" },
+    { label: "Total reportes", value: recentReports.length.toString(), icon: TrendingUp, color: "bg-blue-100 text-blue-600" },
+    { label: "Pendientes", value: reportsByStatus.find(s => s.name === 'Pendiente')?.value.toString() || "0", icon: Clock, color: "bg-yellow-100 text-yellow-600" },
+    { label: "En revisión", value: reportsByStatus.find(s => s.name === 'En revisión')?.value.toString() || "0", icon: AlertCircle, color: "bg-blue-100 text-blue-600" },
+    { label: "Solucionados", value: reportsByStatus.find(s => s.name === 'Solucionado')?.value.toString() || "0", icon: CheckCircle2, color: "bg-green-100 text-green-600" },
   ];
 
   const tabs = [

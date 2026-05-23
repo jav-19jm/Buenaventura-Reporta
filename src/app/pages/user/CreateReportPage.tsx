@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { motion } from "motion/react";
 import { Button } from "../../components/ui/Button";
+import { Input } from "../../components/ui/Input";
 import { Textarea } from "../../components/ui/Textarea";
 import { IncidentTypeSelector } from "../../components/IncidentTypeSelector";
 import { MapPin, Camera, ArrowLeft, Upload } from "lucide-react";
@@ -14,6 +15,7 @@ export function CreateReportPage() {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const [selectedType, setSelectedType] = useState<string>();
+  const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [imagePreview, setImagePreview] = useState<string>();
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -53,7 +55,7 @@ export function CreateReportPage() {
       return;
     }
 
-    if (!selectedType || !description) {
+    if (!selectedType || !title || !description) {
       toast.error("Por favor completa todos los campos requeridos");
       return;
     }
@@ -63,13 +65,13 @@ export function CreateReportPage() {
     try {
       // Crear reporte en Supabase
       const reportData = {
-        title: selectedType.charAt(0).toUpperCase() + selectedType.slice(1).replace('-', ' '),
-        description,
-        category: selectedType,
-        location_address: location.address,
-        latitude: location.lat,
-        longitude: location.lng,
-        priority: 'media' as const
+        titulo: title,
+        descripcion: description,
+        categoria: selectedType,
+        direccion_ubicacion: location.address,
+        latitud: location.lat.toString(),
+        longitud: location.lng.toString(),
+        prioridad: 'media' as const
       };
 
       const { data: report, error } = await createReport(reportData);
@@ -146,6 +148,27 @@ export function CreateReportPage() {
             />
           </motion.div>
 
+          {/* Title */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.05 }}
+            className="bg-white rounded-lg shadow-sm p-6"
+          >
+            <h2 className="font-semibold text-gray-900 mb-4">
+              2. Título del reporte <span className="text-red-500">*</span>
+            </h2>
+            <Input
+              label="Ingresa un título descriptivo y conciso"
+              placeholder="ej: Luminaria dañada en Calle 5"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              maxLength={100}
+              required
+            />
+            <p className="text-xs text-gray-500 mt-2">{title.length}/100 caracteres</p>
+          </motion.div>
+
           {/* Photo Upload */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -154,7 +177,7 @@ export function CreateReportPage() {
             className="bg-white rounded-lg shadow-sm p-6"
           >
             <h2 className="font-semibold text-gray-900 mb-4">
-              2. Fotografía del problema <span className="text-gray-400">(opcional)</span>
+              3. Fotografía del problema <span className="text-gray-400">(opcional)</span>
             </h2>
             <div className="space-y-4">
               {imagePreview ? (
@@ -206,7 +229,7 @@ export function CreateReportPage() {
             className="bg-white rounded-lg shadow-sm p-6"
           >
             <h2 className="font-semibold text-gray-900 mb-4">
-              3. Descripción <span className="text-red-500">*</span>
+              4. Descripción <span className="text-red-500">*</span>
             </h2>
             <Textarea
               placeholder="Describe el problema con el mayor detalle posible..."
@@ -225,7 +248,7 @@ export function CreateReportPage() {
             className="bg-white rounded-lg shadow-sm p-6"
           >
             <h2 className="font-semibold text-gray-900 mb-4">
-              4. Ubicación <span className="text-red-500">*</span>
+              5. Ubicación <span className="text-red-500">*</span>
             </h2>
             <p className="text-sm text-gray-600 mb-4">
               Haz clic en el mapa para marcar la ubicación exacta de la incidencia.
@@ -256,7 +279,7 @@ export function CreateReportPage() {
               type="submit"
               className="flex-1"
               size="lg"
-              disabled={!selectedType || !description || loading}
+              disabled={!selectedType || !title || !description || loading}
             >
               <Upload className="w-5 h-5 mr-2" />
               {loading ? "Enviando..." : "Enviar reporte"}

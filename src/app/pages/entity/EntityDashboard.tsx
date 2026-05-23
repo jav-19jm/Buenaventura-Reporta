@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
 import { motion } from "motion/react";
 import { Card } from "../../components/ui/Card";
@@ -18,82 +18,60 @@ import {
   LogOut
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { useAuth } from "../../../hooks/useAuth";
+import { getEntityReports, getEntityStats, getEntityById, updateReportStatus } from "../../../lib/entities";
+import { toast } from "sonner";
+import { signOut } from "../../../lib/auth";
 
-// Mock data - en producción vendría de Supabase
-const mockEntityData = {
-  id: "1",
-  name: "Empresa de Aseo Municipal",
-  type: "servicios-publicos",
-  totalAssigned: 24,
-  pending: 8,
-  inProgress: 10,
-  resolved: 6,
-};
+export function EntityDashboard() {
+  const navigate = useNavigate();
+  const { user, profile, isAuthenticated, loading: authLoading } = useAuth();
+  const [activeTab, setActiveTab] = useState<"dashboard" | "reports" | "activity">("dashboard");
+  const [entityData, setEntityData] = useState<any>(null);
+  const [reports, setReports] = useState<any[]>([]);
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-const mockReports = [
-  {
-    id: "1",
-    title: "Basura acumulada en esquina",
-    category: "basura",
-    location: "Calle 5 con Carrera 3",
-    date: "2026-04-15",
-    status: "pendiente" as const,
-    priority: "alta" as const,
-    userName: "Carlos Pérez",
-    description: "Hay basura acumulada desde hace 3 días",
-    hasUnreadMessages: true,
-  },
-  {
-    id: "2",
-    title: "Contenedor de basura dañado",
-    category: "basura",
-    location: "Av. Simón Bolívar #45",
-    date: "2026-04-14",
-    status: "en-proceso" as const,
-    priority: "media" as const,
-    userName: "Ana Rodríguez",
-    description: "El contenedor está roto y la basura se riega",
-    hasUnreadMessages: false,
-  },
-  {
-    id: "3",
-    title: "Recolección no realizada",
-    category: "basura",
-    location: "Barrio El Carmen",
-    date: "2026-04-13",
-    status: "resuelto" as const,
-    priority: "media" as const,
-    userName: "Luis García",
-    description: "No pasó el camión recolector hoy",
-    hasUnreadMessages: false,
-  },
-  {
-    id: "4",
-    title: "Basura en parque público",
-    category: "basura",
-    location: "Parque Central",
-    date: "2026-04-16",
-    status: "pendiente" as const,
-    priority: "alta" as const,
-    userName: "María López",
-    description: "Mucha basura acumulada en el parque",
-    hasUnreadMessages: true,
-  },
-  {
-    id: "5",
-    title: "Contenedor lleno",
-    category: "basura",
-    location: "Calle 8 #23-45",
-    date: "2026-04-14",
-    status: "en-proceso" as const,
-    priority: "baja" as const,
-    userName: "Pedro Martínez",
-    description: "El contenedor está completamente lleno",
-    hasUnreadMessages: false,
-  },
-];
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      navigate("/entity-login");
+    }
+  }, [isAuthenticated, authLoading, navigate]);
 
-const activityData = [
+  // Cargar datos de la entidad
+  useEffect(() => {
+    if (profile?.id_entidad) {
+      loadEntityData();
+    }
+  }, [profile?.id_entidad]);
+
+  const loadEntityData = async () => {
+    setLoading(true);
+    try {
+      // Obtener información de la entidad
+      const { data: entity } = await getEntityById(profile?.id_entidad);
+      setEntityData(entity);
+
+      // Obtener reportes asignados
+      const { data: reportsData } = await getEntityReports(profile?.id_entidad);
+      if (reportsData) {
+        setReports(reportsData);
+      }
+
+      // Obtener estadísticas
+      const { data: statsData } = await getEntityStats(profile?.id_entidad);
+      if (statsData) {
+        setStats(statsData);
+      }
+    } catch (error) {
+      console.error('Error cargando datos de entidad:', error);
+      toast.error('Error al cargar datos de la entidad');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const activityData = [
   { day: "Lun", reportes: 4 },
   { day: "Mar", reportes: 6 },
   { day: "Mié", reportes: 3 },
@@ -103,34 +81,32 @@ const activityData = [
   { day: "Dom", reportes: 1 },
 ];
 
-const statusDistribution = [
-  { name: "Pendiente", value: mockEntityData.pending, color: "#ef4444" },
-  { name: "En proceso", value: mockEntityData.inProgress, color: "#eab308" },
-  { name: "Resuelto", value: mockEntityData.resolved, color: "#10b981" },
-];
+  const statusDistribution = stats ? [
+    { name: "Pendiente", value: stats.pendiente || 0, color: "#ef4444" },
+    { name: "En proceso", value: stats.en_proceso || 0, color: "#eab308" },
+    { name: "Resuelto", value: stats.resuelto || 0, color: "#10b981" },
+  ] : [];
 
-export function EntityDashboard() {
-  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
-  const filteredReports = mockReports.filter((report) => {
+  const filteredReports = reports.filter((report) => {
     const matchesSearch =
-      report.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      report.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      report.userName.toLowerCase().includes(searchTerm.toLowerCase());
+      report.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      report.direccion_ubicacion.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (report.perfil?.nombre_completo || "").toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesStatus = statusFilter === "all" || report.status === statusFilter;
-    const matchesCategory = categoryFilter === "all" || report.category === categoryFilter;
+    const matchesStatus = statusFilter === "all" || report.estado === statusFilter;
+    const matchesCategory = categoryFilter === "all" || report.categoria === categoryFilter;
 
     return matchesSearch && matchesStatus && matchesCategory;
   });
 
-  const stats = [
+  const statsCards = [
     {
       label: "Total Asignados",
-      value: mockEntityData.totalAssigned,
+      value: stats?.total || 0,
       icon: TrendingUp,
       color: "bg-blue-100 text-blue-600",
       bgGradient: "from-blue-50 to-blue-100",
@@ -138,7 +114,7 @@ export function EntityDashboard() {
     },
     {
       label: "Pendientes",
-      value: mockEntityData.pending,
+      value: stats?.pendiente || 0,
       icon: Clock,
       color: "bg-red-100 text-red-600",
       bgGradient: "from-red-50 to-red-100",
@@ -146,7 +122,7 @@ export function EntityDashboard() {
     },
     {
       label: "En Proceso",
-      value: mockEntityData.inProgress,
+      value: stats?.en_proceso || 0,
       icon: AlertCircle,
       color: "bg-yellow-100 text-yellow-600",
       bgGradient: "from-yellow-50 to-yellow-100",
@@ -154,7 +130,7 @@ export function EntityDashboard() {
     },
     {
       label: "Resueltos",
-      value: mockEntityData.resolved,
+      value: stats?.resuelto || 0,
       icon: CheckCircle2,
       color: "bg-green-100 text-green-600",
       bgGradient: "from-green-50 to-green-100",
@@ -165,7 +141,7 @@ export function EntityDashboard() {
   const getStatusBadge = (status: string) => {
     const variants = {
       pendiente: { variant: "destructive" as const, label: "Pendiente" },
-      "en-proceso": { variant: "warning" as const, label: "En Proceso" },
+      en_proceso: { variant: "warning" as const, label: "En Proceso" },
       resuelto: { variant: "success" as const, label: "Resuelto" },
     };
     return variants[status as keyof typeof variants] || variants.pendiente;

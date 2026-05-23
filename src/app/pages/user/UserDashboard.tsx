@@ -13,14 +13,14 @@ import { CityServicesFilter } from "../../components/CityServicesFilter";
 import { getPublicReports } from "../../../lib/reports";
 import { useAuth } from "../../../hooks/useAuth";
 import { ReportsMap } from "../../components/ReportsMap";
-import type { Report } from "../../supabase/supabase";
+import type { Reporte } from "../../supabase/supabase";
 import { toast } from "sonner";
 
 export function UserDashboard() {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
-  const [reports, setReports] = useState<Report[]>([]);
+  const [reports, setReports] = useState<Reporte[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Cargar reportes de Supabase
@@ -53,7 +53,7 @@ export function UserDashboard() {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const filteredReports = selectedFilter
-    ? reports.filter((r) => r.category === selectedFilter)
+    ? reports.filter((r) => r.categoria === selectedFilter)
     : reports;
 
   const handleRefresh = () => {
@@ -281,16 +281,16 @@ export function UserDashboard() {
                     onClick={() => navigate(`/report/${report.id}`)}
                   >
                     <div className="flex items-start justify-between mb-2">
-                      <h4 className="font-medium text-gray-900">{report.title || report.category}</h4>
-                      <Badge variant={statusVariant[report.status as keyof typeof statusVariant] || "warning"}>
-                        {statusLabel[report.status as keyof typeof statusLabel] || "Desconocido"}
+                      <h4 className="font-medium text-gray-900">{report.titulo || report.categoria}</h4>
+                      <Badge variant={statusVariant[report.estado as keyof typeof statusVariant] || "warning"}>
+                        {statusLabel[report.estado as keyof typeof statusLabel] || "Desconocido"}
                       </Badge>
                     </div>
                     <p className="text-sm text-gray-600 flex items-center gap-1 mb-1">
                       <MapPin className="w-3 h-3" />
-                      {report.location_address || "Sin ubicación"}
+                      {report.direccion_ubicacion || "Sin ubicación"}
                     </p>
-                    <p className="text-xs text-gray-500">{new Date(report.created_at).toLocaleDateString()}</p>
+                    <p className="text-xs text-gray-500">{new Date(report.fecha_creacion).toLocaleDateString()}</p>
                   </Card>
                 );
               })}

@@ -9,12 +9,12 @@ import { ImageWithFallback } from "../../components/figma/ImageWithFallback";
 import { getReportById } from "../../../lib/reports";
 import { ReportsMap } from "../../components/ReportsMap";
 import { toast } from "sonner";
-import type { Report } from "../../supabase/supabase";
+import type { Reporte } from "../../supabase/supabase";
 
 export function ReportDetailPage() {
   const { id } = useParams();
   const [rating, setRating] = useState(0);
-  const [report, setReport] = useState<Report | null>(null);
+  const [report, setReport] = useState<Reporte | null>(null);
   const [loading, setLoading] = useState(true);
   const [newMessage, setNewMessage] = useState("");
   
@@ -41,10 +41,10 @@ export function ReportDetailPage() {
     if (error) {
       toast.error("Error al cargar el reporte");
     } else if (data) {
-      setReport(data as unknown as Report);
+      setReport(data as unknown as Reporte);
       
       // Ajustar mensajes mock si el estado es en revisión
-      if (data.status === 'en-revision' || data.status === 'en-proceso') {
+      if (data.estado === 'en_revision' || data.estado === 'en_proceso') {
         setMessages(prev => [
           ...prev,
           {
@@ -52,7 +52,7 @@ export function ReportDetailPage() {
             sender: "entity" as const,
             userName: "Entidad Responsable",
             message: "Hemos comenzado a revisar tu caso. Te mantendremos informado sobre cualquier avance.",
-            timestamp: new Date(data.updated_at || data.created_at).toLocaleString(),
+            timestamp: new Date(data.fecha_actualizacion || data.fecha_creacion).toLocaleString(),
           }
         ]);
       }
@@ -76,18 +76,18 @@ export function ReportDetailPage() {
 
   const statusVariant = {
     pendiente: "warning" as const,
-    "en-revision": "info" as const,
-    "en-proceso": "info" as const,
+    en_revision: "info" as const,
+    en_proceso: "info" as const,
     resuelto: "success" as const,
-    rechazado: "error" as const,
+    cancelado: "error" as const,
   };
 
   const statusLabel = {
     pendiente: "Pendiente",
-    "en-revision": "En Revisión",
-    "en-proceso": "En Proceso",
+    en_revision: "En Revisión",
+    en_proceso: "En Proceso",
     resuelto: "Solucionado",
-    rechazado: "Rechazado",
+    cancelado: "Cancelado",
   };
 
   if (loading) {
@@ -111,13 +111,13 @@ export function ReportDetailPage() {
 
   // Generar historial (Timeline) básico
   const timeline = [
-    { date: new Date(report.created_at).toLocaleDateString(), time: new Date(report.created_at).toLocaleTimeString(), action: "Reporte creado", user: "Tú" },
+    { date: new Date(report.fecha_creacion).toLocaleDateString(), time: new Date(report.fecha_creacion).toLocaleTimeString(), action: "Reporte creado", user: "Tú" },
   ];
-  if (report.status !== 'pendiente') {
+  if (report.estado !== 'pendiente') {
     timeline.push({
-      date: report.updated_at ? new Date(report.updated_at).toLocaleDateString() : new Date(report.created_at).toLocaleDateString(),
-      time: report.updated_at ? new Date(report.updated_at).toLocaleTimeString() : new Date(report.created_at).toLocaleTimeString(),
-      action: `Estado actualizado a: ${statusLabel[report.status as keyof typeof statusLabel] || report.status}`,
+      date: report.fecha_actualizacion ? new Date(report.fecha_actualizacion).toLocaleDateString() : new Date(report.fecha_creacion).toLocaleDateString(),
+      time: report.fecha_actualizacion ? new Date(report.fecha_actualizacion).toLocaleTimeString() : new Date(report.fecha_creacion).toLocaleTimeString(),
+      action: `Estado actualizado a: ${statusLabel[report.estado as keyof typeof statusLabel] || report.estado}`,
       user: "Entidad Responsable"
     });
   }
@@ -157,11 +157,11 @@ export function ReportDetailPage() {
               <Card>
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-2">{report.title || report.category}</h2>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">{report.titulo || report.categoria}</h2>
                     <div className="flex flex-wrap gap-2">
-                      <Badge variant="outline" className="capitalize">{report.category}</Badge>
-                      <Badge variant={statusVariant[report.status as keyof typeof statusVariant] || "info"}>
-                        {statusLabel[report.status as keyof typeof statusLabel] || report.status}
+                      <Badge variant="outline" className="capitalize">{report.categoria}</Badge>
+                      <Badge variant={statusVariant[report.estado as keyof typeof statusVariant] || "info"}>
+                        {statusLabel[report.estado as keyof typeof statusLabel] || report.estado}
                       </Badge>
                     </div>
                   </div>
@@ -170,17 +170,17 @@ export function ReportDetailPage() {
                 <div className="space-y-4 mb-6">
                   <div className="flex items-center gap-3 text-gray-600">
                     <MapPin className="w-5 h-5" />
-                    <span>{report.location_address || report.category}</span>
+                    <span>{report.direccion_ubicacion || report.categoria}</span>
                   </div>
                   <div className="flex items-center gap-3 text-gray-600">
                     <Calendar className="w-5 h-5" />
-                    <span>{new Date(report.created_at).toLocaleDateString()}</span>
+                    <span>{new Date(report.fecha_creacion).toLocaleDateString()}</span>
                   </div>
                 </div>
 
                 <div className="border-t border-gray-200 pt-4">
                   <h3 className="font-semibold text-gray-900 mb-2">Descripción</h3>
-                  <p className="text-gray-700 leading-relaxed">{report.description}</p>
+                  <p className="text-gray-700 leading-relaxed">{report.descripcion}</p>
                 </div>
               </Card>
             </motion.div>
@@ -242,7 +242,7 @@ export function ReportDetailPage() {
                   Entidad Asignada
                 </h3>
                 <div className="text-sm">
-                  {report.status === 'pendiente' ? (
+                  {report.estado === 'pendiente' ? (
                     <p className="text-gray-500 italic">Buscando entidad correspondiente...</p>
                   ) : (
                     <>
@@ -291,15 +291,15 @@ export function ReportDetailPage() {
             </motion.div>
 
             {/* Evidence Image */}
-            {report.image_url && (
+            {report.url_imagen && (
               <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }}>
                 <Card className="p-0 overflow-hidden border border-gray-200">
                   <div className="p-4 border-b border-gray-200">
                     <h3 className="font-semibold text-gray-900">Evidencia</h3>
                   </div>
                   <ImageWithFallback
-                    src={report.image_url}
-                    alt={report.title}
+                    src={report.url_imagen}
+                    alt={report.titulo}
                     className="w-full h-48 object-cover"
                   />
                 </Card>
@@ -307,7 +307,7 @@ export function ReportDetailPage() {
             )}
 
             {/* Rating (only for solved reports) */}
-            {report.status === "resuelto" && (
+            {report.estado === "resuelto" && (
               <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.6 }}>
                 <Card>
                   <h3 className="font-semibold text-gray-900 mb-4">Califica la atención</h3>

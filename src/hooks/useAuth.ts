@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../app/supabase/supabase';
 import { getCurrentUser, getSession, onAuthStateChange } from '../lib/auth';
-import type { Profile } from '../app/supabase/supabase';
+import type { Perfil } from '../app/supabase/supabase';
 
 // ==========================================
 // HOOK PERSONALIZADO PARA AUTENTICACIÓN
@@ -9,7 +9,7 @@ import type { Profile } from '../app/supabase/supabase';
 
 export function useAuth() {
   const [user, setUser] = useState<any>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profile, setProfile] = useState<Perfil | null>(null);
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState<any>(null);
 
@@ -48,7 +48,7 @@ export function useAuth() {
   const fetchProfile = async (userId: string) => {
     try {
       const { data, error } = await supabase
-        .from('profiles')
+        .from('perfiles')
         .select('*')
         .eq('id', userId)
         .single();
@@ -69,8 +69,8 @@ export function useAuth() {
     session,
     loading,
     isAuthenticated: !!user,
-    isAdmin: profile?.role === 'admin',
-    isEntity: profile?.role === 'entity',
-    isCitizen: profile?.role === 'citizen',
+    isAdmin: profile?.rol === 'administrador',
+    isEntity: profile?.rol === 'entidad',
+    isCitizen: profile?.rol === 'ciudadano',
   };
 }

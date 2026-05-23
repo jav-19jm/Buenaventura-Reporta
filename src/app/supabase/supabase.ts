@@ -11,144 +11,150 @@ console.log('🔑 Key configurada:', supabaseAnonKey ? '✅' : '❌');
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Tipos de base de datos
-export type UserRole = 'citizen' | 'admin' | 'entity';
-export type UserStatus = 'active' | 'suspended' | 'blocked';
-export type ReportStatus = 'pendiente' | 'en-revision' | 'en-proceso' | 'resuelto' | 'rechazado';
-export type ReportPriority = 'baja' | 'media' | 'alta' | 'urgente';
-export type EntityCategory =
+// Tipos de base de datos (EN ESPAÑOL)
+export type RolUsuario = 'ciudadano' | 'entidad' | 'moderador' | 'administrador';
+export type EstadoUsuario = 'activo' | 'inactivo' | 'suspendido';
+export type EstadoReporte = 'pendiente' | 'en_revision' | 'en_proceso' | 'resuelto' | 'cancelado';
+export type PrioridadReporte = 'baja' | 'media' | 'alta' | 'critica';
+export type TipoEntidad = 
   | 'servicios-publicos'
-  | 'transporte'
-  | 'infraestructura'
   | 'seguridad'
-  | 'emergencias'
   | 'salud'
-  | 'medio-ambiente';
-export type NotificationType =
-  | 'report_created'
-  | 'report_updated'
-  | 'report_resolved'
-  | 'message_received'
-  | 'entity_assigned'
-  | 'system';
+  | 'infraestructura'
+  | 'ambiente'
+  | 'otro';
+export type TipoNotificacion =
+  | 'reporte_actualizado'
+  | 'nuevo_mensaje'
+  | 'reporte_resuelto'
+  | 'mencion'
+  | 'alerta_sistema';
 
-// Interfaces de base de datos
-export interface Profile {
+// Interfaces de base de datos (EN ESPAÑOL)
+export interface Perfil {
   id: string;
   email: string;
-  full_name: string | null;
-  phone: string | null;
-  avatar_url: string | null;
-  role: UserRole;
-  status: UserStatus;
-  reputation_score: number;
-  positive_votes: number;
-  negative_votes: number;
-  reports_created: number;
-  reports_resolved: number;
-  created_at: string;
-  updated_at: string;
+  nombre_completo: string | null;
+  telefono: string | null;
+  url_avatar: string | null;
+  rol: RolUsuario;
+  estado: EstadoUsuario;
+  puntuacion_reputacion: number;
+  votos_positivos: number;
+  votos_negativos: number;
+  reportes_creados: number;
+  reportes_resueltos: number;
+  fecha_creacion: string;
+  fecha_actualizacion: string;
 }
 
-export interface Entity {
+export interface Entidad {
   id: string;
-  name: string;
+  nombre: string;
   slug: string;
-  description: string | null;
-  category: EntityCategory;
-  contact_person: string | null;
-  phone: string | null;
+  descripcion: string | null;
+  tipo: TipoEntidad;
   email: string | null;
-  address: string | null;
-  logo_url: string | null;
+  telefono: string | null;
   color: string | null;
-  is_active: boolean;
-  assigned_reports: number;
-  resolved_reports: number;
-  average_resolution_time: string | null;
-  created_at: string;
-  updated_at: string;
+  logo_url: string | null;
+  sitio_web: string | null;
+  esta_activa: boolean;
+  fecha_creacion: string;
+  fecha_actualizacion: string;
 }
 
-export interface Report {
+export interface Reporte {
   id: string;
-  user_id: string | null;
-  entity_id: string | null;
-  title: string;
-  description: string;
-  category: string;
-  location_address: string;
-  latitude: number | null;
-  longitude: number | null;
-  image_url: string | null;
-  status: ReportStatus;
-  priority: ReportPriority;
-  is_public: boolean;
-  views_count: number;
-  upvotes: number;
-  downvotes: number;
-  assigned_at: string | null;
-  resolved_at: string | null;
-  created_at: string;
-  updated_at: string;
+  id_usuario: string | null;
+  id_entidad: string | null;
+  titulo: string;
+  descripcion: string;
+  categoria: string;
+  direccion_ubicacion: string | null;
+  latitud: string | null;
+  longitud: string | null;
+  url_imagen: string | null;
+  estado: EstadoReporte;
+  prioridad: PrioridadReporte;
+  votos_positivos: number;
+  votos_negativos: number;
+  visto: boolean;
+  fecha_creacion: string;
+  fecha_actualizacion: string;
 }
 
-export interface Message {
+export interface Mensaje {
   id: string;
-  report_id: string;
-  sender_id: string | null;
-  sender_type: 'user' | 'entity';
-  message: string;
-  is_official: boolean;
-  is_read: boolean;
-  read_at: string | null;
-  created_at: string;
+  id_reporte: string;
+  id_remitente: string | null;
+  tipo_remitente: 'usuario' | 'entidad';
+  mensaje: string;
+  fecha_creacion: string;
 }
 
-export interface Notification {
+export interface Notificacion {
   id: string;
-  user_id: string;
-  report_id: string | null;
-  type: NotificationType;
-  title: string;
-  message: string;
-  is_read: boolean;
-  read_at: string | null;
-  action_url: string | null;
-  created_at: string;
+  id_usuario: string;
+  id_reporte: string | null;
+  tipo: TipoNotificacion;
+  titulo: string;
+  mensaje: string;
+  esta_leida: boolean;
+  fecha_creacion: string;
 }
 
-export interface News {
+export interface Noticia {
   id: string;
-  title: string;
-  content: string;
-  excerpt: string | null;
-  image_url: string | null;
-  author_id: string | null;
-  category: string | null;
-  tags: string[] | null;
-  is_published: boolean;
-  published_at: string | null;
-  views_count: number;
-  created_at: string;
-  updated_at: string;
+  id_entidad: string | null;
+  titulo: string;
+  contenido: string;
+  url_imagen: string | null;
+  esta_publicada: boolean;
+  fecha_publicacion: string | null;
+  fecha_creacion: string;
+  fecha_actualizacion: string;
 }
 
-export interface ReportHistory {
+export interface HistorialReporte {
   id: string;
-  report_id: string;
-  user_id: string | null;
-  action: string;
-  old_value: string | null;
-  new_value: string | null;
-  description: string | null;
-  created_at: string;
+  id_reporte: string;
+  accion: string;
+  valor_anterior: string | null;
+  valor_nuevo: string | null;
+  id_usuario: string | null;
+  fecha_creacion: string;
 }
 
-export interface ReportVote {
+export interface VotoReporte {
   id: string;
-  report_id: string;
-  user_id: string;
-  vote_type: 'upvote' | 'downvote';
-  created_at: string;
+  id_reporte: string;
+  id_usuario: string;
+  tipo_voto: 'voto_positivo' | 'voto_negativo';
+  fecha_creacion: string;
+}
+
+export interface CategoriaReporte {
+  id: string;
+  nombre: string;
+  icono: string | null;
+  color: string | null;
+  descripcion: string | null;
+  esta_activa: boolean;
+  fecha_creacion: string;
+}
+
+export interface Insignia {
+  id: string;
+  nombre: string;
+  descripcion: string | null;
+  icono: string | null;
+  requisito_texto: string | null;
+}
+
+export interface InsigniaUsuario {
+  id: string;
+  id_usuario: string;
+  id_insignia: string;
+  fecha_obtencion: string;
 }

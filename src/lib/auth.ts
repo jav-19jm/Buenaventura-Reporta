@@ -1,5 +1,5 @@
 import { supabase } from '../app/supabase/supabase';
-import type { Profile } from '../app/supabase/supabase';
+import type { Perfil } from '../app/supabase/supabase';
 
 // ==========================================
 // AUTENTICACIÓN CON SUPABASE
@@ -15,12 +15,30 @@ export async function signUp(email: string, password: string, fullName: string) 
       password,
       options: {
         data: {
-          full_name: fullName,
+          nombre_completo: fullName,
         },
       },
     });
 
     if (error) throw error;
+
+    // Crear el perfil manualmente si no hay un trigger configurado (usamos upsert por seguridad)
+    if (data?.user) {
+      const { error: profileError } = await supabase
+        .from('perfiles')
+        .upsert([
+          {
+            id: data.user.id,
+            email: email,
+            nombre_completo: fullName,
+            rol: 'ciudadano',
+          }
+        ], { onConflict: 'id' });
+        
+      if (profileError) {
+        console.warn('Nota: El perfil ya existe o no se pudo crear:', profileError.message);
+      }
+    }
 
     return { data, error: null };
   } catch (error: any) {
@@ -95,10 +113,10 @@ export async function getSession() {
 /**
  * Obtener perfil del usuario
  */
-export async function getUserProfile(userId: string): Promise<{ profile: Profile | null; error: string | null }> {
+export async function getUserProfile(userId: string): Promise<{ profile: Perfil | null; error: string | null }> {
   try {
     const { data, error } = await supabase
-      .from('profiles')
+      .from('perfiles')
       .select('*')
       .eq('id', userId)
       .single();
@@ -115,10 +133,10 @@ export async function getUserProfile(userId: string): Promise<{ profile: Profile
 /**
  * Actualizar perfil del usuario
  */
-export async function updateUserProfile(userId: string, updates: Partial<Profile>) {
+export async function updateUserProfile(userId: string, updates: Partial<Perfil>) {
   try {
     const { data, error } = await supabase
-      .from('profiles')
+      .from('perfiles')
       .update(updates)
       .eq('id', userId)
       .select()

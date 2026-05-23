@@ -1,7 +1,7 @@
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import type { Report } from "../supabase/supabase";
+import type { Reporte } from "../supabase/supabase";
 import { useNavigate } from "react-router";
 import { Badge } from "./ui/Badge";
 
@@ -24,7 +24,7 @@ const reportIcon = L.divIcon({
 });
 
 interface ReportsMapProps {
-  reports: Report[];
+  reports: Reporte[];
 }
 
 export function ReportsMap({ reports }: ReportsMapProps) {
@@ -46,22 +46,23 @@ export function ReportsMap({ reports }: ReportsMapProps) {
 
         {reports.map((report) => {
           // Si el reporte tiene latitud y longitud, usamos esas coordenadas
-          // Si no, lo omitimos del mapa (o podríamos simular coordenadas cercanas para demo)
-          const lat = report.latitude;
-          const lng = report.longitude;
+          const lat = report.latitud ? parseFloat(report.latitud) : null;
+          const lng = report.longitud ? parseFloat(report.longitud) : null;
 
           if (!lat || !lng) return null;
 
           const statusVariant = {
             pendiente: "warning" as const,
-            "en-revision": "info" as const,
-            solucionado: "success" as const,
+            en_revision: "info" as const,
+            resuelto: "success" as const,
           };
 
           const statusLabel = {
             pendiente: "Pendiente",
-            "en-revision": "En Revisión",
-            solucionado: "Solucionado",
+            en_revision: "En Revisión",
+            en_proceso: "En Proceso",
+            resuelto: "Solucionado",
+            cancelado: "Cancelado"
           };
 
           return (
@@ -72,13 +73,13 @@ export function ReportsMap({ reports }: ReportsMapProps) {
             >
               <Popup className="rounded-xl">
                 <div className="p-1 min-w-[200px]">
-                  <h3 className="font-bold text-gray-900 mb-1">{report.title}</h3>
+                  <h3 className="font-bold text-gray-900 mb-1">{report.titulo}</h3>
                   <div className="mb-2">
-                    <Badge variant={statusVariant[report.status as keyof typeof statusVariant] || "warning"}>
-                      {statusLabel[report.status as keyof typeof statusLabel] || "Desconocido"}
+                    <Badge variant={statusVariant[report.estado as keyof typeof statusVariant] || "warning"}>
+                      {statusLabel[report.estado as keyof typeof statusLabel] || "Desconocido"}
                     </Badge>
                   </div>
-                  <p className="text-sm text-gray-600 mb-2 truncate">{report.location_address || report.category}</p>
+                  <p className="text-sm text-gray-600 mb-2 truncate">{report.direccion_ubicacion || report.categoria}</p>
                   <button
                     onClick={() => navigate(`/report/${report.id}`)}
                     className="w-full bg-green-600 hover:bg-green-700 text-white text-xs font-medium py-2 rounded-md transition-colors"

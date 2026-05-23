@@ -1,22 +1,22 @@
 import { supabase } from '../app/supabase/supabase';
-import type { Report, ReportStatus, ReportPriority } from '../app/supabase/supabase';
+import type { Reporte, EstadoReporte, PrioridadReporte } from '../app/supabase/supabase';
 
 // ==========================================
-// CRUD DE REPORTES CON SUPABASE
+// CRUD DE REPORTES CON SUPABASE (ESPAÑOL)
 // ==========================================
 
 /**
  * Crear nuevo reporte
  */
 export async function createReport(reportData: {
-  title: string;
-  description: string;
-  category: string;
-  location_address: string;
-  latitude?: number;
-  longitude?: number;
-  image_url?: string;
-  priority?: ReportPriority;
+  titulo: string;
+  descripcion: string;
+  categoria: string;
+  direccion_ubicacion: string;
+  latitud?: string;
+  longitud?: string;
+  url_imagen?: string;
+  prioridad?: PrioridadReporte;
 }) {
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -26,13 +26,19 @@ export async function createReport(reportData: {
     }
 
     const { data, error } = await supabase
-      .from('reports')
+      .from('reportes')
       .insert([
         {
-          user_id: user.id,
-          ...reportData,
-          status: 'pendiente',
-          priority: reportData.priority || 'media'
+          id_usuario: user.id,
+          titulo: reportData.titulo,
+          descripcion: reportData.descripcion,
+          categoria: reportData.categoria,
+          direccion_ubicacion: reportData.direccion_ubicacion,
+          latitud: reportData.latitud,
+          longitud: reportData.longitud,
+          url_imagen: reportData.url_imagen,
+          estado: 'pendiente',
+          prioridad: reportData.prioridad || 'media'
         }
       ])
       .select()
@@ -54,20 +60,22 @@ export async function createReport(reportData: {
 export async function getPublicReports() {
   try {
     const { data, error } = await supabase
-      .from('reports')
+      .from('reportes')
       .select(`
         *,
-        profiles:user_id (
-          full_name,
-          avatar_url
+        perfiles:id_usuario (
+          id,
+          nombre_completo,
+          url_avatar
         ),
-        entities:entity_id (
-          name,
+        entidades:id_entidad (
+          id,
+          nombre,
           slug,
           color
         )
       `)
-      .order('created_at', { ascending: false });
+      .order('fecha_creacion', { ascending: false });
 
     if (error) throw error;
 
@@ -91,17 +99,18 @@ export async function getUserReports() {
     }
 
     const { data, error } = await supabase
-      .from('reports')
+      .from('reportes')
       .select(`
         *,
-        entities:entity_id (
-          name,
+        entidades:id_entidad (
+          id,
+          nombre,
           slug,
           color
         )
       `)
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+      .eq('id_usuario', user.id)
+      .order('fecha_creacion', { ascending: false });
 
     if (error) throw error;
 
@@ -119,22 +128,24 @@ export async function getUserReports() {
 export async function getReportById(reportId: string) {
   try {
     const { data, error } = await supabase
-      .from('reports')
+      .from('reportes')
       .select(`
         *,
-        profiles:user_id (
+        perfiles:id_usuario (
           id,
-          full_name,
+          nombre_completo,
           email,
-          phone,
-          avatar_url
+          telefono,
+          url_avatar,
+          puntuacion_reputacion
         ),
-        entities:entity_id (
-          name,
+        entidades:id_entidad (
+          id,
+          nombre,
           slug,
           color,
           email,
-          phone
+          telefono
         )
       `)
       .eq('id', reportId)
@@ -152,13 +163,13 @@ export async function getReportById(reportId: string) {
 /**
  * Actualizar estado de un reporte
  */
-export async function updateReportStatus(reportId: string, status: ReportStatus) {
+export async function updateReportStatus(reportId: string, estado: EstadoReporte) {
   try {
     const { data, error } = await supabase
-      .from('reports')
+      .from('reportes')
       .update({
-        status,
-        ...(status === 'resuelto' ? { resolved_at: new Date().toISOString() } : {})
+        estado,
+        fecha_actualizacion: new Date().toISOString()
       })
       .eq('id', reportId)
       .select()
@@ -166,7 +177,7 @@ export async function updateReportStatus(reportId: string, status: ReportStatus)
 
     if (error) throw error;
 
-    console.log('✅ Estado actualizado:', status);
+    console.log('✅ Estado actualizado:', estado);
     return { data, error: null };
   } catch (error: any) {
     console.error('Error al actualizar estado:', error);
@@ -186,10 +197,10 @@ export async function deleteReport(reportId: string) {
     }
 
     const { error } = await supabase
-      .from('reports')
+      .from('reportes')
       .delete()
       .eq('id', reportId)
-      .eq('user_id', user.id);
+      .eq('id_usuario', user.id);
 
     if (error) throw error;
 
@@ -204,7 +215,7 @@ export async function deleteReport(reportId: string) {
 /**
  * Votar en un reporte
  */
-export async function voteReport(reportId: string, voteType: 'upvote' | 'downvote') {
+export async function voteReport(reportId: string, tipoVoto: 'voto_positivo' | 'voto_negativo') {
   try {
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -214,37 +225,37 @@ export async function voteReport(reportId: string, voteType: 'upvote' | 'downvot
 
     // Verificar si ya votó
     const { data: existingVote } = await supabase
-      .from('report_votes')
+      .from('votos_reportes')
       .select('*')
-      .eq('report_id', reportId)
-      .eq('user_id', user.id)
+      .eq('id_reporte', reportId)
+      .eq('id_usuario', user.id)
       .single();
 
     if (existingVote) {
       // Actualizar voto existente
       const { error } = await supabase
-        .from('report_votes')
-        .update({ vote_type: voteType })
-        .eq('report_id', reportId)
-        .eq('user_id', user.id);
+        .from('votos_reportes')
+        .update({ tipo_voto: tipoVoto })
+        .eq('id_reporte', reportId)
+        .eq('id_usuario', user.id);
 
       if (error) throw error;
     } else {
       // Crear nuevo voto
       const { error } = await supabase
-        .from('report_votes')
+        .from('votos_reportes')
         .insert([
           {
-            report_id: reportId,
-            user_id: user.id,
-            vote_type: voteType
+            id_reporte: reportId,
+            id_usuario: user.id,
+            tipo_voto: tipoVoto
           }
         ]);
 
       if (error) throw error;
     }
 
-    console.log('✅ Voto registrado:', voteType);
+    console.log('✅ Voto registrado:', tipoVoto);
     return { error: null };
   } catch (error: any) {
     console.error('Error al votar:', error);
@@ -299,4 +310,158 @@ export async function uploadReportImage(file: File, reportId: string) {
     console.error('Error al subir imagen:', error);
     return { url: null, error: error.message };
   }
+}
+
+/**
+ * Obtener reportes por categoría
+ */
+export async function getReportsByCategory(categoria: string) {
+  try {
+    const { data, error } = await supabase
+      .from('reportes')
+      .select(`
+        *,
+        perfiles:id_usuario (
+          nombre_completo,
+          url_avatar
+        )
+      `)
+      .eq('categoria', categoria)
+      .order('fecha_creacion', { ascending: false });
+
+    if (error) throw error;
+
+    return { data, error: null };
+  } catch (error: any) {
+    console.error('Error al obtener reportes por categoría:', error);
+    return { data: null, error: error.message };
+  }
+}
+
+/**
+ * Obtener reportes por estado
+ */
+export async function getReportsByStatus(estado: EstadoReporte) {
+  try {
+    const { data, error } = await supabase
+      .from('reportes')
+      .select(`
+        *,
+        perfiles:id_usuario (
+          nombre_completo,
+          url_avatar
+        ),
+        entidades:id_entidad (
+          nombre,
+          color
+        )
+      `)
+      .eq('estado', estado)
+      .order('fecha_creacion', { ascending: false });
+
+    if (error) throw error;
+
+    return { data, error: null };
+  } catch (error: any) {
+    console.error('Error al obtener reportes por estado:', error);
+    return { data: null, error: error.message };
+  }
+}
+
+/**
+ * Obtener estadísticas de reportes para admin dashboard
+ */
+export async function getReportStats() {
+  try {
+    const { data, error: error1 } = await supabase
+      .from('reportes')
+      .select('id, estado, categoria');
+
+    if (error1) throw error1;
+
+    const stats = {
+      total: data?.length || 0,
+      byStatus: countByProperty(data || [], 'estado'),
+      byCategory: countByProperty(data || [], 'categoria')
+    };
+
+    return { data: stats, error: null };
+  } catch (error: any) {
+    console.error('Error al obtener estadísticas:', error);
+    return { data: null, error: error.message };
+  }
+}
+
+/**
+ * Obtener mensajes de un reporte
+ */
+export async function getReportMessages(reporteId: string) {
+  try {
+    const { data, error } = await supabase
+      .from('mensajes')
+      .select(`
+        *,
+        perfiles:id_remitente (
+          nombre_completo,
+          url_avatar
+        )
+      `)
+      .eq('id_reporte', reporteId)
+      .order('fecha_creacion', { ascending: true });
+
+    if (error) throw error;
+
+    return { data, error: null };
+  } catch (error: any) {
+    console.error('Error al obtener mensajes:', error);
+    return { data: null, error: error.message };
+  }
+}
+
+/**
+ * Crear mensaje en reporte
+ */
+export async function createReportMessage(reporteId: string, mensaje: string) {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { data: null, error: 'Usuario no autenticado' };
+    }
+
+    const { data, error } = await supabase
+      .from('mensajes')
+      .insert([
+        {
+          id_reporte: reporteId,
+          id_remitente: user.id,
+          tipo_remitente: 'usuario',
+          mensaje
+        }
+      ])
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return { data, error: null };
+  } catch (error: any) {
+    console.error('Error al crear mensaje:', error);
+    return { data: null, error: error.message };
+  }
+}
+
+// ==========================================
+// FUNCIONES AUXILIARES
+// ==========================================
+
+/**
+ * Contar occurrencias de una propiedad en un array
+ */
+function countByProperty(arr: any[], property: string): Record<string, number> {
+  return arr.reduce((acc, item) => {
+    const key = item[property] || 'sin_datos';
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
 }

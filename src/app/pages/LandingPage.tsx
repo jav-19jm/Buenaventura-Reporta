@@ -1,10 +1,11 @@
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { Button } from "../components/ui/Button";
 import { MapPin, Camera, Bell, CheckCircle2, Shield, Users, Facebook, Twitter, Instagram, Youtube, Building2, Menu, X, ShieldCheck } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { ReviewsCarousel } from "../components/ReviewsCarousel";
 import { useState, useEffect } from "react";
+import { useAuth } from "../../hooks/useAuth";
 
 const buenaventuraImages = [
   {
@@ -28,6 +29,15 @@ const buenaventuraImages = [
 export function LandingPage() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showMenu, setShowMenu] = useState(false);
+
+  const { isAuthenticated, loading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && isAuthenticated) {
+      navigate("/user");
+    }
+  }, [isAuthenticated, loading, navigate]);
 
   useEffect(() => {
     const interval = setInterval(() => {

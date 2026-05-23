@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { Button } from "../components/ui/Button";
@@ -6,6 +6,7 @@ import { Input } from "../components/ui/Input";
 import { MapPin, Building2 } from "lucide-react";
 import { WelcomeAnimation } from "../components/animations/WelcomeAnimation";
 import { signIn } from "../../lib/auth";
+import { useAuth } from "../../hooks/useAuth";
 import { toast } from "sonner";
 
 export function LoginPage() {
@@ -16,6 +17,13 @@ export function LoginPage() {
     email: "",
     password: "",
   });
+  const { isAuthenticated, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      navigate("/user");
+    }
+  }, [isAuthenticated, authLoading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

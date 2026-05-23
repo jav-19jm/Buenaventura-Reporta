@@ -223,7 +223,16 @@ export async function voteReport(reportId: string, tipoVoto: 'voto_positivo' | '
       return { error: 'Usuario no autenticado' };
     }
 
-    // Verificar si ya votó
+    // 1. Obtener el reporte para saber quién es el autor
+    const { data: reportData, error: reportError } = await supabase
+      .from('reportes')
+      .select('id_usuario, votos_positivos, votos_negativos')
+      .eq('id', reportId)
+      .single();
+
+    if (reportError) throw reportError;
+
+    // 2. Verificar si ya votó
     const { data: existingVote } = await supabase
       .from('votos_reportes')
       .select('*')
@@ -231,31 +240,78 @@ export async function voteReport(reportId: string, tipoVoto: 'voto_positivo' | '
       .eq('id_usuario', user.id)
       .single();
 
+    let reputationChange = 0;
+    
     if (existingVote) {
-      // Actualizar voto existente
+      if (existingVote.tipo_voto === tipoVoto) {
+        return { error: 'Ya has votado lo mismo en este reporte' };
+      }
+      
+      // Cambió de opinión (ej: de positivo a negativo)
+      reputationChange = tipoVoto === 'voto_positivo' ? 2 : -2;
+
       const { error } = await supabase
         .from('votos_reportes')
         .update({ tipo_voto: tipoVoto })
-        .eq('id_reporte', reportId)
-        .eq('id_usuario', user.id);
+        .eq('id', existingVote.id);
 
       if (error) throw error;
     } else {
-      // Crear nuevo voto
+      // Voto nuevo
+      reputationChange = tipoVoto === 'voto_positivo' ? 1 : -1;
+
       const { error } = await supabase
         .from('votos_reportes')
-        .insert([
-          {
-            id_reporte: reportId,
-            id_usuario: user.id,
-            tipo_voto: tipoVoto
-          }
-        ]);
+        .insert([{
+          id_reporte: reportId,
+          id_usuario: user.id,
+          tipo_voto: tipoVoto
+        }]);
 
       if (error) throw error;
     }
 
-    console.log('✅ Voto registrado:', tipoVoto);
+    // 3. Actualizar contadores en la tabla 'reportes'
+    const { count: posCount } = await supabase
+      .from('votos_reportes')
+      .select('*', { count: 'exact', head: true })
+      .eq('id_reporte', reportId)
+      .eq('tipo_voto', 'voto_positivo');
+
+    const { count: negCount } = await supabase
+      .from('votos_reportes')
+      .select('*', { count: 'exact', head: true })
+      .eq('id_reporte', reportId)
+      .eq('tipo_voto', 'voto_negativo');
+
+    await supabase
+      .from('reportes')
+      .update({
+        votos_positivos: posCount || 0,
+        votos_negativos: negCount || 0,
+        fecha_actualizacion: new Date().toISOString()
+      })
+      .eq('id', reportId);
+
+    // 4. Actualizar reputación del autor del reporte (en la tabla 'perfiles')
+    if (reportData.id_usuario) {
+      const { data: profileData } = await supabase
+        .from('perfiles')
+        .select('puntuacion_reputacion')
+        .eq('id', reportData.id_usuario)
+        .single();
+
+      if (profileData) {
+        await supabase
+          .from('perfiles')
+          .update({
+            puntuacion_reputacion: (profileData.puntuacion_reputacion || 0) + reputationChange
+          })
+          .eq('id', reportData.id_usuario);
+      }
+    }
+
+    console.log('✅ Voto y reputación actualizados:', tipoVoto);
     return { error: null };
   } catch (error: any) {
     console.error('Error al votar:', error);

@@ -4,6 +4,9 @@ import L from "leaflet";
 import type { Reporte } from "../supabase/supabase";
 import { useNavigate } from "react-router";
 import { Badge } from "./ui/Badge";
+import { ThumbsUp, ThumbsDown, ExternalLink, Image as ImageIcon } from "lucide-react";
+import { voteReport } from "../../lib/reports";
+import { toast } from "sonner";
 
 // Fix for leaflet default icons just in case, but we use custom divIcon
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -25,9 +28,10 @@ const reportIcon = L.divIcon({
 
 interface ReportsMapProps {
   reports: Reporte[];
+  onVote?: () => void;
 }
 
-export function ReportsMap({ reports }: ReportsMapProps) {
+export function ReportsMap({ reports, onVote }: ReportsMapProps) {
   const navigate = useNavigate();
   // Coordenadas aproximadas de Buenaventura, Valle del Cauca, Colombia
   const buenaventuraPosition: [number, number] = [3.8801, -77.0311];
@@ -71,21 +75,84 @@ export function ReportsMap({ reports }: ReportsMapProps) {
               position={[lat, lng]}
               icon={reportIcon}
             >
-              <Popup className="rounded-xl">
-                <div className="p-1 min-w-[200px]">
-                  <h3 className="font-bold text-gray-900 mb-1">{report.titulo}</h3>
-                  <div className="mb-2">
-                    <Badge variant={statusVariant[report.estado as keyof typeof statusVariant] || "warning"}>
-                      {statusLabel[report.estado as keyof typeof statusLabel] || "Desconocido"}
-                    </Badge>
+              <Popup className="report-popup">
+                <div className="p-0 min-w-[280px] max-w-[320px] overflow-hidden rounded-xl bg-white shadow-2xl border-0">
+                  {/* Imagen de evidencia */}
+                  <div className="relative h-40 w-full bg-gray-100 flex items-center justify-center overflow-hidden">
+                    {report.url_imagen ? (
+                      <img
+                        src={report.url_imagen}
+                        alt={report.titulo}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center text-gray-400">
+                        <ImageIcon className="w-10 h-10 mb-2 opacity-20" />
+                        <span className="text-xs">Sin imagen de evidencia</span>
+                      </div>
+                    )}
+                    <div className="absolute top-2 right-2">
+                      <Badge variant={statusVariant[report.estado as keyof typeof statusVariant] || "warning"}>
+                        {statusLabel[report.estado as keyof typeof statusLabel] || "Desconocido"}
+                      </Badge>
+                    </div>
                   </div>
-                  <p className="text-sm text-gray-600 mb-2 truncate">{report.direccion_ubicacion || report.categoria}</p>
-                  <button
-                    onClick={() => navigate(`/report/${report.id}`)}
-                    className="w-full bg-green-600 hover:bg-green-700 text-white text-xs font-medium py-2 rounded-md transition-colors"
-                  >
-                    Ver detalles
-                  </button>
+
+                  <div className="p-4">
+                    <div className="mb-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-green-600 mb-1 block">
+                        {report.categoria}
+                      </span>
+                      <h3 className="font-bold text-gray-900 text-lg leading-tight mb-1">{report.titulo}</h3>
+                    </div>
+
+                    <p className="text-sm text-gray-600 mb-4 line-clamp-3 leading-relaxed">
+                      {report.descripcion}
+                    </p>
+
+                    <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
+                      <div className="flex items-center gap-4">
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            const { error } = await voteReport(report.id, 'voto_positivo');
+                            if (error) toast.error(error);
+                            else {
+                              toast.success('Voto positivo registrado');
+                              if (onVote) onVote();
+                            }
+                          }}
+                          className="group flex items-center gap-1.5 text-gray-500 hover:text-green-600 transition-all active:scale-90"
+                        >
+                          <div className="p-2 rounded-full group-hover:bg-green-50 transition-colors">
+                            <ThumbsUp className="w-4 h-4" />
+                          </div>
+                          <span className="text-xs font-bold">{report.votos_positivos || 0}</span>
+                        </button>
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            const { error } = await voteReport(report.id, 'voto_negativo');
+                            if (error) toast.error(error);
+                            else {
+                              toast.success('Voto negativo registrado');
+                              if (onVote) onVote();
+                            }
+                          }}
+                          className="group flex items-center gap-1.5 text-gray-500 hover:text-red-600 transition-all active:scale-90"
+                        >
+                          <div className="p-2 rounded-full group-hover:bg-red-50 transition-colors">
+                            <ThumbsDown className="w-4 h-4" />
+                          </div>
+                          <span className="text-xs font-bold">{report.votos_negativos || 0}</span>
+                        </button>
+                      </div>
+
+                      <p className="text-[10px] text-gray-400 font-medium">
+                        {new Date(report.fecha_creacion).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </Popup>
             </Marker>

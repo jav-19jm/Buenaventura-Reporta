@@ -7,10 +7,13 @@ import type { Reporte } from "../supabase/supabase";
 import { Button } from "../components/ui/Button";
 import { MapPin, AlertTriangle, ShieldCheck, ArrowRight, Home } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "../../hooks/useAuth";
 
 export function PublicMapPage() {
   const [reports, setReports] = useState<Reporte[]>([]);
   const [loading, setLoading] = useState(true);
+  const { user, isAuthenticated } = useAuth();
+  const [mapFilter, setMapFilter] = useState<'todos' | 'mios'>('todos');
 
   useEffect(() => {
     loadReports();
@@ -41,22 +44,48 @@ export function PublicMapPage() {
             </span>
           </Link>
           <div className="flex items-center gap-4">
+            {isAuthenticated && (
+              <div className="hidden sm:flex bg-gray-100/80 backdrop-blur-sm rounded-lg p-1 border border-gray-200">
+                <button
+                  onClick={() => setMapFilter('todos')}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${mapFilter === 'todos' ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:text-gray-900'}`}
+                >
+                  Todos
+                </button>
+                <button
+                  onClick={() => setMapFilter('mios')}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${mapFilter === 'mios' ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:text-gray-900'}`}
+                >
+                  Mis Reportes
+                </button>
+              </div>
+            )}
             <Link to="/">
               <Button variant="ghost" className="hidden sm:flex" size="sm">
                 <Home className="w-4 h-4 mr-2" />
                 Inicio
               </Button>
             </Link>
-            <Link to="/login">
-              <Button variant="outline" size="sm" className="hidden sm:inline-flex">
-                Iniciar Sesión
-              </Button>
-            </Link>
-            <Link to="/register">
-              <Button size="sm" className="bg-green-600 hover:bg-green-700 shadow-lg shadow-green-600/20">
-                Regístrate ahora
-              </Button>
-            </Link>
+            {!isAuthenticated ? (
+              <>
+                <Link to="/login">
+                  <Button variant="outline" size="sm" className="hidden sm:inline-flex">
+                    Iniciar Sesión
+                  </Button>
+                </Link>
+                <Link to="/register">
+                  <Button size="sm" className="bg-green-600 hover:bg-green-700 shadow-lg shadow-green-600/20">
+                    Regístrate ahora
+                  </Button>
+                </Link>
+              </>
+            ) : (
+              <Link to="/user">
+                <Button size="sm" className="bg-green-600 hover:bg-green-700 shadow-lg shadow-green-600/20">
+                  Mi Panel
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       </header>
@@ -72,52 +101,57 @@ export function PublicMapPage() {
           </div>
         ) : null}
         
-        <ReportsMap reports={reports} />
+        <ReportsMap 
+          reports={reports.filter(r => mapFilter === 'todos' || r.id_usuario === user?.id)} 
+          onVote={() => loadReports()} 
+        />
       </div>
 
       {/* Call to Action Panel Overlaid on Map */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 w-full max-w-4xl px-4 pointer-events-none">
-        <motion.div 
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5, type: "spring" }}
-          className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200/50 p-6 pointer-events-auto"
-        >
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex-1">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                ¿Ves un problema en tu comunidad?
-              </h2>
-              <p className="text-gray-600">
-                Únete a más de <span className="font-semibold text-green-600">1,200 ciudadanos</span> que ya están mejorando Buenaventura. Reporta daños, basuras o fallas en servicios públicos al instante.
-              </p>
-              
-              <div className="flex flex-wrap gap-4 mt-4">
-                <div className="flex items-center text-sm text-gray-700">
-                  <ShieldCheck className="w-4 h-4 text-green-500 mr-1.5" />
-                  Reportes directos a entidades
-                </div>
-                <div className="flex items-center text-sm text-gray-700">
-                  <AlertTriangle className="w-4 h-4 text-yellow-500 mr-1.5" />
-                  Atención priorizada
+      {!isAuthenticated && (
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 w-full max-w-4xl px-4 pointer-events-none">
+          <motion.div 
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5, type: "spring" }}
+            className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200/50 p-6 pointer-events-auto"
+          >
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex-1">
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                  ¿Ves un problema en tu comunidad?
+                </h2>
+                <p className="text-gray-600">
+                  Únete a más de <span className="font-semibold text-green-600">1,200 ciudadanos</span> que ya están mejorando Buenaventura. Reporta daños, basuras o fallas en servicios públicos al instante.
+                </p>
+                
+                <div className="flex flex-wrap gap-4 mt-4">
+                  <div className="flex items-center text-sm text-gray-700">
+                    <ShieldCheck className="w-4 h-4 text-green-500 mr-1.5" />
+                    Reportes directos a entidades
+                  </div>
+                  <div className="flex items-center text-sm text-gray-700">
+                    <AlertTriangle className="w-4 h-4 text-yellow-500 mr-1.5" />
+                    Atención priorizada
+                  </div>
                 </div>
               </div>
+              
+              <div className="flex flex-col gap-3 w-full md:w-auto">
+                <Link to="/register" className="w-full">
+                  <Button className="w-full bg-green-600 hover:bg-green-700 h-12 text-base px-8 shadow-lg shadow-green-600/20">
+                    Crear mi primer reporte
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </Button>
+                </Link>
+                <p className="text-xs text-center text-gray-500">
+                  Toma menos de 1 minuto registrarse
+                </p>
+              </div>
             </div>
-            
-            <div className="flex flex-col gap-3 w-full md:w-auto">
-              <Link to="/register" className="w-full">
-                <Button className="w-full bg-green-600 hover:bg-green-700 h-12 text-base px-8 shadow-lg shadow-green-600/20">
-                  Crear mi primer reporte
-                  <ArrowRight className="w-5 h-5 ml-2" />
-                </Button>
-              </Link>
-              <p className="text-xs text-center text-gray-500">
-                Toma menos de 1 minuto registrarse
-              </p>
-            </div>
-          </div>
-        </motion.div>
-      </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

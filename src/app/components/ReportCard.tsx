@@ -1,4 +1,4 @@
-import { MapPin, Clock, Trash2 } from "lucide-react";
+import { MapPin, Clock, Trash2, ThumbsUp, ThumbsDown } from "lucide-react";
 import { Card } from "./ui/Card";
 import { Badge } from "./ui/Badge";
 import type { Reporte } from "../supabase/supabase";
@@ -61,6 +61,16 @@ export function ReportCard({ report, onClick, onDelete }: ReportCardProps) {
         <div className="flex items-center gap-1">
           <Clock className="w-3 h-3" />
           <span>{new Date(report.fecha_creacion).toLocaleDateString()}</span>
+        </div>
+        <div className="flex items-center gap-3 ml-auto">
+          <div className="flex items-center gap-1 text-green-600 font-medium">
+            <ThumbsUp className="w-3 h-3" />
+            <span>{report.votos_positivos || 0}</span>
+          </div>
+          <div className="flex items-center gap-1 text-red-600 font-medium">
+            <ThumbsDown className="w-3 h-3" />
+            <span>{report.votos_negativos || 0}</span>
+          </div>
         </div>
       </div>
     </Card>

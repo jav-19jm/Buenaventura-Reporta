@@ -23,6 +23,7 @@ export function ProfilePage() {
   const [myReports, setMyReports] = useState<any[]>([]);
   const [userBadges, setUserBadges] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [freshProfile, setFreshProfile] = useState<any>(null);
 
   // Redirigir si no está autenticado
   useEffect(() => {
@@ -59,12 +60,23 @@ export function ProfilePage() {
         setUserBadges(badgesData);
       }
 
-      // Cargar notificaciones
+    // Cargar notificaciones
       const { data: notifData, error: notifError } = await getUserNotifications(user.id);
       if (notifError) {
         console.error('Error al cargar notificaciones:', notifError);
       } else if (notifData) {
         setNotifications(notifData);
+      }
+
+      // Re-cargar perfil para tener reputación y votos actualizados
+      const { data: profileData } = await supabase
+        .from('perfiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      
+      if (profileData) {
+        setFreshProfile(profileData);
       }
     }
 
@@ -129,7 +141,9 @@ export function ProfilePage() {
     }
   };
 
-  if (authLoading || !profile) {
+  const displayProfile = freshProfile || profile;
+
+  if (authLoading || !displayProfile) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <p className="text-gray-600">Cargando perfil...</p>
@@ -185,10 +199,10 @@ export function ProfilePage() {
                       {profile.nombre_completo ? profile.nombre_completo.split(' ').map((n: string) => n[0]).join('') : 'U'}
                     </span>
                   </motion.div>
-                  <h2 className="text-xl font-semibold text-gray-900 mb-1">{profile.nombre_completo || 'Usuario'}</h2>
-                  <p className="text-sm text-gray-600 mb-3">{user?.email || profile.email}</p>
-                  <Badge variant="info" className="mb-4">{profile.rol === 'administrador' ? 'Administrador' : profile.rol === 'entidad' ? 'Entidad' : 'Ciudadano Activo'}</Badge>
-                  <p className="text-xs text-gray-500">Miembro desde {new Date(profile.fecha_creacion).toLocaleDateString('es-CO', { month: 'long', year: 'numeric' })}</p>
+                  <h2 className="text-xl font-semibold text-gray-900 mb-1">{displayProfile.nombre_completo || 'Usuario'}</h2>
+                  <p className="text-sm text-gray-600 mb-3">{user?.email || displayProfile.email}</p>
+                  <Badge variant="info" className="mb-4">{displayProfile.rol === 'administrador' ? 'Administrador' : displayProfile.rol === 'entidad' ? 'Entidad' : 'Ciudadano Activo'}</Badge>
+                  <p className="text-xs text-gray-500">Miembro desde {new Date(displayProfile.fecha_creacion).toLocaleDateString('es-CO', { month: 'long', year: 'numeric' })}</p>
                 </Card>
               </motion.div>
 
@@ -246,7 +260,7 @@ export function ProfilePage() {
                         </div>
                         <span className="text-sm text-gray-700 font-medium">Votos Positivos</span>
                       </div>
-                      <span className="font-bold text-green-600 text-lg">{profile.votos_positivos || 0}</span>
+                      <span className="font-bold text-green-600 text-lg">{displayProfile.votos_positivos || 0}</span>
                     </motion.div>
 
                     <motion.div
@@ -259,19 +273,19 @@ export function ProfilePage() {
                         </div>
                         <span className="text-sm text-gray-700 font-medium">Votos Negativos</span>
                       </div>
-                      <span className="font-bold text-red-600 text-lg">{profile.votos_negativos || 0}</span>
+                      <span className="font-bold text-red-600 text-lg">{displayProfile.votos_negativos || 0}</span>
                     </motion.div>
 
                     {/* Reputation Bar */}
                     <div className="mt-3">
                       <div className="flex items-center justify-between text-xs text-gray-600 mb-2">
                         <span>Reputación Total</span>
-                        <span className="font-semibold">{(profile.votos_positivos || 0) - (profile.votos_negativos || 0)} puntos</span>
+                        <span className="font-semibold">{(displayProfile.votos_positivos || 0) - (displayProfile.votos_negativos || 0)} puntos</span>
                       </div>
                       <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
                         <motion.div
                           initial={{ width: 0 }}
-                          animate={{ width: `${Math.min(((profile.votos_positivos || 0) - (profile.votos_negativos || 0)) / 50 * 100, 100)}%` }}
+                          animate={{ width: `${Math.min(((displayProfile.votos_positivos || 0) - (displayProfile.votos_negativos || 0)) / 50 * 100, 100)}%` }}
                           transition={{ duration: 1, delay: 0.3 }}
                           className="h-full bg-gradient-to-r from-yellow-500 to-green-600"
                         />

@@ -1,3 +1,35 @@
 @import './fonts.css';
 @import './tailwind.css';
 @import './theme.css';
+
+/* Custom styles for Leaflet popups */
+.report-popup .leaflet-popup-content-wrapper {
+  padding: 0;
+  overflow: hidden;
+  border-radius: 1rem;
+  box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+}
+
+.report-popup .leaflet-popup-content {
+  margin: 0;
+  width: auto !important;
+}
+
+.report-popup .leaflet-popup-tip-container {
+  display: none;
+}
+
+.report-popup .leaflet-popup-close-button {
+  top: 10px !important;
+  right: 10px !important;
+  color: white !important;
+  z-index: 20;
+  background: rgba(0,0,0,0.2) !important;
+  border-radius: 50% !important;
+  width: 24px !important;
+  height: 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 16px !important;
+}

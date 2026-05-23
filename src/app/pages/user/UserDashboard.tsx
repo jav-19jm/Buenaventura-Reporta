@@ -18,31 +18,39 @@ import { toast } from "sonner";
 
 export function UserDashboard() {
   const navigate = useNavigate();
-  const { user, profile } = useAuth();
+  const { user, profile, isAuthenticated, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      navigate("/login");
+    }
+  }, [isAuthenticated, authLoading, navigate]);
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
+  const [mapFilter, setMapFilter] = useState<'todos' | 'mios'>('todos');
   const [reports, setReports] = useState<Reporte[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const fetchData = async (showLoading = true) => {
+    if (showLoading) setLoading(true);
+    try {
+      const [reportsRes, catsRes] = await Promise.all([
+        getPublicReports(),
+        getReportCategories()
+      ]);
+
+      if (reportsRes.data) setReports(reportsRes.data);
+      if (catsRes.data) setCategories(catsRes.data);
+    } catch (error) {
+      console.error('Error al cargar datos:', error);
+      toast.error('Error al cargar datos');
+    } finally {
+      if (showLoading) setLoading(false);
+    }
+  };
+
   // Cargar reportes y categorías de Supabase
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const [reportsRes, catsRes] = await Promise.all([
-          getPublicReports(),
-          getReportCategories()
-        ]);
-        
-        if (reportsRes.data) setReports(reportsRes.data);
-        if (catsRes.data) setCategories(catsRes.data);
-      } catch (error) {
-        console.error('Error al cargar datos:', error);
-        toast.error('Error al cargar datos');
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchData();
   }, []);
   const [showFilters, setShowFilters] = useState(false);
@@ -54,6 +62,17 @@ export function UserDashboard() {
   const filteredReports = selectedFilter
     ? reports.filter((r) => r.categoria === selectedFilter)
     : reports;
+
+  const isMyReport = (r: Reporte) => {
+    if (!user && !profile) return false;
+    return r.id_usuario === user?.id || r.id_usuario === profile?.id || (r.perfiles && (r.perfiles as any).id === user?.id);
+  };
+
+  const mapReports = mapFilter === 'mios'
+    ? filteredReports.filter(isMyReport)
+    : filteredReports;
+
+  const myRecentReports = filteredReports.filter(isMyReport);
 
   const handleRefresh = () => {
     setIsRefreshing(true);
@@ -230,7 +249,40 @@ export function UserDashboard() {
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         {/* Map Area */}
         <div className="flex-1 relative bg-gradient-to-br from-yellow-50 via-green-50 to-yellow-100">
-          <ReportsMap reports={filteredReports} />
+          <ReportsMap 
+            reports={mapReports} 
+            onVote={() => fetchData(false)} 
+          />
+
+          {/* Floating Map Filter */}
+          <div className="absolute top-4 right-4 z-[5] flex items-end">
+            <motion.div
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              className="bg-white/90 backdrop-blur-md p-1.5 rounded-2xl shadow-xl border border-gray-200 flex items-center gap-1.5"
+            >
+              <button
+                onClick={() => setMapFilter('todos')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${mapFilter === 'todos'
+                  ? 'bg-gradient-to-r from-yellow-500 to-green-600 text-white shadow-lg shadow-green-600/20 scale-105'
+                  : 'text-gray-600 hover:bg-gray-100/80'
+                  }`}
+              >
+                <Layers className="w-4 h-4" />
+                Todos
+              </button>
+              <button
+                onClick={() => setMapFilter('mios')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${mapFilter === 'mios'
+                  ? 'bg-gradient-to-r from-yellow-500 to-green-600 text-white shadow-lg shadow-green-600/20 scale-105'
+                  : 'text-gray-600 hover:bg-gray-100/80'
+                  }`}
+              >
+                <Shield className="w-4 h-4" />
+                Mis Reportes
+              </button>
+            </motion.div>
+          </div>
 
           {/* Emergency Button */}
           <motion.button
@@ -259,10 +311,10 @@ export function UserDashboard() {
         <div className="w-full md:w-96 bg-white border-t md:border-t-0 md:border-l border-gray-200 overflow-y-auto">
           <div className="p-4">
             <h3 className="font-semibold text-gray-900 mb-4">
-              Reportes recientes ({filteredReports.length})
+              Mis reportes recientes ({myRecentReports.length})
             </h3>
             <div className="space-y-3">
-              {filteredReports.map((report) => {
+              {myRecentReports.map((report) => {
                 const statusVariant = {
                   pendiente: "warning" as const,
                   "en-revision": "info" as const,

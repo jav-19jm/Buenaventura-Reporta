@@ -8,7 +8,7 @@ import { Textarea } from "../../components/ui/Textarea";
 import { Search, User, Shield, ShieldOff, Eye, X, Mail, Calendar, MessageSquare, AlertTriangle, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 
-import { getAllUsers, updateUserStatus } from "../../../lib/admin";
+import { getAllUsers, updateUserStatus, updateUserRole } from "../../../lib/admin";
 import { useEffect } from "react";
 
 type UserStatus = "activo" | "inactivo" | "suspendido";
@@ -37,12 +37,12 @@ export function UsersManagement() {
   };
 
   const filteredUsers = users.filter((user) => {
-    const matchesSearch = 
+    const matchesSearch =
       (user.nombre_completo || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     const matchesStatus = statusFilter === "all" || user.estado === statusFilter;
-    
+
     return matchesSearch && matchesStatus;
   });
 
@@ -69,7 +69,7 @@ export function UsersManagement() {
     setShowDetailModal(false);
     setBlockReason("");
     setSelectedUser(null);
-    
+
     toast.success("Usuario bloqueado correctamente");
   };
 
@@ -90,7 +90,7 @@ export function UsersManagement() {
     setShowDetailModal(false);
     setBlockReason("");
     setSelectedUser(null);
-    
+
     toast.success("Usuario suspendido temporalmente");
   };
 
@@ -104,8 +104,38 @@ export function UsersManagement() {
     fetchUsers();
     setShowDetailModal(false);
     setSelectedUser(null);
-    
+
     toast.success("Usuario desbloqueado correctamente");
+  };
+
+  const handlePromoteToAdmin = async (userId: string) => {
+    if (!confirm("¿Estás seguro de que deseas promover a este usuario a ADMINISTRADOR? Esta acción le dará acceso total al panel de control.")) {
+      return;
+    }
+
+    const { error } = await updateUserRole(userId, 'administrador');
+    if (error) {
+      toast.error("Error al promover usuario");
+      return;
+    }
+
+    fetchUsers();
+    toast.success("Usuario promovido a administrador correctamente");
+  };
+
+  const handleDemoteToUser = async (userId: string) => {
+    if (!confirm("¿Estás seguro de que deseas quitar los permisos de administrador a este usuario?")) {
+      return;
+    }
+
+    const { error } = await updateUserRole(userId, 'ciudadano');
+    if (error) {
+      toast.error("Error al quitar permisos");
+      return;
+    }
+
+    fetchUsers();
+    toast.success("Permisos de administrador revocados");
   };
 
   const openDetailModal = (user: typeof mockUsers[0]) => {
@@ -247,11 +277,10 @@ export function UsersManagement() {
                     <div className="flex items-center gap-2">
                       <div className="flex-1 bg-gray-200 rounded-full h-2 max-w-[80px]">
                         <div
-                          className={`h-2 rounded-full ${
-                            (user.puntuacion_reputacion || 0) >= 80 ? 'bg-green-500' :
+                          className={`h-2 rounded-full ${(user.puntuacion_reputacion || 0) >= 80 ? 'bg-green-500' :
                             (user.puntuacion_reputacion || 0) >= 50 ? 'bg-yellow-500' :
-                            'bg-red-500'
-                          }`}
+                              'bg-red-500'
+                            }`}
                           style={{ width: `${Math.min(user.puntuacion_reputacion || 0, 100)}%` }}
                         ></div>
                       </div>
@@ -259,16 +288,16 @@ export function UsersManagement() {
                     </div>
                   </td>
                   <td className="py-3 px-4">
-                    <Badge 
+                    <Badge
                       variant={
                         user.estado === "activo" ? "success" :
-                        user.estado === "suspendido" ? "warning" :
-                        "danger"
+                          user.estado === "suspendido" ? "warning" :
+                            "danger"
                       }
                     >
                       {user.estado === "activo" ? "Activo" :
-                       user.estado === "suspendido" ? "Suspendido" :
-                       "Bloqueado"}
+                        user.estado === "suspendido" ? "Suspendido" :
+                          "Bloqueado"}
                     </Badge>
                   </td>
                   <td className="py-3 px-4 text-sm text-gray-600">{new Date(user.fecha_creacion).toLocaleDateString()}</td>
@@ -287,7 +316,7 @@ export function UsersManagement() {
                           size="sm"
                           onClick={() => openBlockModal(user)}
                         >
-                          <ShieldOff className="w-4 h-4 text-red-600" />
+                          <Shield className="w-4 h-4 text-red-600" />
                         </Button>
                       )}
                       {(user.estado === "inactivo" || user.estado === "suspendido") && (
@@ -297,6 +326,25 @@ export function UsersManagement() {
                           onClick={() => handleUnblockUser(user.id)}
                         >
                           <Shield className="w-4 h-4 text-green-600" />
+                        </Button>
+                      )}
+                      {user.rol !== 'administrador' ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handlePromoteToAdmin(user.id)}
+                          title="Promover a Admin"
+                        >
+                          <ShieldOff className="w-4 h-4 text-blue-600" />
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDemoteToUser(user.id)}
+                          title="Quitar permisos Admin"
+                        >
+                          <ShieldOff className="w-4 h-4 text-orange-600" />
                         </Button>
                       )}
                     </div>
@@ -369,11 +417,10 @@ export function UsersManagement() {
                     <div className="flex items-center gap-2">
                       <div className="flex-1 bg-gray-200 rounded-full h-3">
                         <div
-                          className={`h-3 rounded-full ${
-                            selectedUser.reputation >= 80 ? 'bg-green-500' :
+                          className={`h-3 rounded-full ${selectedUser.reputation >= 80 ? 'bg-green-500' :
                             selectedUser.reputation >= 50 ? 'bg-yellow-500' :
-                            'bg-red-500'
-                          }`}
+                              'bg-red-500'
+                            }`}
                           style={{ width: `${selectedUser.reputation}%` }}
                         ></div>
                       </div>
@@ -399,16 +446,16 @@ export function UsersManagement() {
                   <div className="flex items-center gap-3 text-sm">
                     <Shield className="w-4 h-4 text-gray-400" />
                     <span className="text-gray-600">Estado:</span>
-                    <Badge 
+                    <Badge
                       variant={
                         selectedUser.status === "activo" ? "success" :
-                        selectedUser.status === "suspendido" ? "warning" :
-                        "danger"
+                          selectedUser.status === "suspendido" ? "warning" :
+                            "danger"
                       }
                     >
                       {selectedUser.status === "activo" ? "Activo" :
-                       selectedUser.status === "suspendido" ? "Suspendido" :
-                       "Bloqueado"}
+                        selectedUser.status === "suspendido" ? "Suspendido" :
+                          "Bloqueado"}
                     </Badge>
                   </div>
                 </div>

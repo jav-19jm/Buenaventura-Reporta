@@ -21,19 +21,27 @@ export async function getEntityById(entityId: string) {
 /**
  * Obtiene todos los reportes asignados a una entidad
  */
-export async function getEntityReports(entityId: string) {
+export async function getEntityReports(entityId: string, category?: string) {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from("reportes")
       .select(`
         *,
         perfil:id_usuario(nombre_completo, email)
-      `)
-      .eq("id_entidad", entityId)
-      .order("fecha_creacion", { ascending: false });
+      `);
+
+    if (category) {
+      // Si hay categoría, buscar reportes de esa categoría O asignados específicamente a esta entidad
+      query = query.or(`categoria.eq.${category},id_entidad.eq.${entityId}`);
+    } else {
+      query = query.eq("id_entidad", entityId);
+    }
+
+    const { data, error } = await query.order("fecha_creacion", { ascending: false });
 
     return { data: data as (Reporte & { perfil: any })[] | null, error };
   } catch (error) {
+
     return { data: null, error };
   }
 }

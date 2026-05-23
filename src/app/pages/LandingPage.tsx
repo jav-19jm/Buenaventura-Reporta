@@ -61,18 +61,6 @@ export function LandingPage() {
 
             {/* Desktop Menu */}
             <div className="hidden md:flex items-center gap-3">
-              <Link to="/admin">
-                <Button variant="outline" size="sm" className="border-green-600 text-green-600 hover:bg-green-50">
-                  <ShieldCheck className="w-4 h-4 mr-2" />
-                  Panel Admin
-                </Button>
-              </Link>
-              <Link to="/entity/select">
-                <Button variant="outline" size="sm" className="border-blue-600 text-blue-600 hover:bg-blue-50">
-                  <Building2 className="w-4 h-4 mr-2" />
-                  Acceso Entidades
-                </Button>
-              </Link>
               <Link to="/login">
                 <Button variant="ghost" size="sm">Iniciar sesión</Button>
               </Link>
@@ -108,18 +96,6 @@ export function LandingPage() {
                 className="md:hidden overflow-hidden"
               >
                 <div className="pt-4 pb-2 space-y-2">
-                  <Link to="/admin" onClick={() => setShowMenu(false)}>
-                    <Button variant="outline" size="sm" className="w-full justify-start border-green-600 text-green-600 hover:bg-green-50">
-                      <ShieldCheck className="w-4 h-4 mr-2" />
-                      Panel Admin
-                    </Button>
-                  </Link>
-                  <Link to="/entity/select" onClick={() => setShowMenu(false)}>
-                    <Button variant="outline" size="sm" className="w-full justify-start border-blue-600 text-blue-600 hover:bg-blue-50">
-                      <Building2 className="w-4 h-4 mr-2" />
-                      Acceso Entidades
-                    </Button>
-                  </Link>
                   <Link to="/login" onClick={() => setShowMenu(false)}>
                     <Button variant="ghost" size="sm" className="w-full justify-start">
                       Iniciar sesión

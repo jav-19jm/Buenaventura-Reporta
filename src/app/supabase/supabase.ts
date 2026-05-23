@@ -44,9 +44,11 @@ export interface Perfil {
   votos_negativos: number;
   reportes_creados: number;
   reportes_resueltos: number;
+  id_entidad: string | null;
   fecha_creacion: string;
   fecha_actualizacion: string;
 }
+
 
 export interface Entidad {
   id: string;
@@ -161,3 +163,19 @@ export interface InsigniaUsuario {
   id_insignia: string;
   fecha_obtencion: string;
 }
+
+export interface Servicio {
+  id: string;
+  nombre: string;
+  descripcion: string | null;
+  tipo: string;
+  latitud: string;
+  longitud: string;
+  direccion: string | null;
+  horario: string | null;
+  telefono: string | null;
+  esta_activo: boolean;
+  fecha_creacion: string;
+  fecha_actualizacion: string;
+}
+

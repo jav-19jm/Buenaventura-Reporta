@@ -6,7 +6,12 @@ import { useNavigate } from "react-router";
 import { Badge } from "./ui/Badge";
 import { ThumbsUp, ThumbsDown, ExternalLink, Image as ImageIcon } from "lucide-react";
 import { voteReport } from "../../lib/reports";
+import { getAllServices } from "../../lib/admin";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { Phone, Clock, MapPin as MapPinIcon } from "lucide-react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { getServiceTypeConfig } from "../../lib/service-types";
 
 // Fix for leaflet default icons just in case, but we use custom divIcon
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -26,13 +31,51 @@ const reportIcon = L.divIcon({
   popupAnchor: [0, -40],
 });
 
+
+const getServiceIcon = (type: string) => {
+  const config = getServiceTypeConfig(type);
+  const IconComponent = config.icon;
+  
+  // Convertir el componente de Lucide a una cadena SVG
+  const iconMarkup = renderToStaticMarkup(
+    <IconComponent size={18} color="white" strokeWidth={2.5} />
+  );
+
+  return L.divIcon({
+    html: `<div class="w-10 h-10 bg-gradient-to-br from-${config.color}-500 to-${config.color}-700 rounded-xl shadow-lg flex items-center justify-center border-4 border-white hover:scale-110 transition-transform">
+             ${iconMarkup}
+           </div>`,
+    className: "bg-transparent border-0",
+    iconSize: [40, 40],
+    iconAnchor: [20, 40],
+    popupAnchor: [0, -40],
+  });
+};
+
+
+
 interface ReportsMapProps {
   reports: Reporte[];
   onVote?: () => void;
+  showServices?: boolean;
 }
 
-export function ReportsMap({ reports, onVote }: ReportsMapProps) {
+export function ReportsMap({ reports, onVote, showServices = true }: ReportsMapProps) {
   const navigate = useNavigate();
+  const [services, setServices] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (showServices) {
+      fetchServices();
+    }
+  }, [showServices]);
+
+  const fetchServices = async () => {
+    const { data } = await getAllServices();
+    if (data) {
+      setServices(data.filter((s: any) => s.esta_activo));
+    }
+  };
   // Coordenadas aproximadas de Buenaventura, Valle del Cauca, Colombia
   const buenaventuraPosition: [number, number] = [3.8801, -77.0311];
 
@@ -152,6 +195,54 @@ export function ReportsMap({ reports, onVote }: ReportsMapProps) {
                         {new Date(report.fecha_creacion).toLocaleDateString()}
                       </p>
                     </div>
+                  </div>
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
+
+        {showServices && services.map((service) => {
+          const lat = parseFloat(service.latitud);
+          const lng = parseFloat(service.longitud);
+
+          if (isNaN(lat) || isNaN(lng)) return null;
+
+          return (
+            <Marker
+              key={`service-${service.id}`}
+              position={[lat, lng]}
+              icon={getServiceIcon(service.tipo)}
+            >
+              <Popup className="service-popup">
+                <div className="p-4 min-w-[250px] max-w-[300px]">
+                  <Badge variant="info" className="mb-2">Servicio Municipal</Badge>
+                  <h3 className="font-bold text-gray-900 text-lg mb-1">{service.nombre}</h3>
+                  <p className="text-xs text-blue-600 font-bold uppercase mb-2">{service.tipo}</p>
+                  
+                  <p className="text-sm text-gray-600 mb-4">
+                    {service.descripcion}
+                  </p>
+
+                  <div className="space-y-2 pt-2 border-t border-gray-100">
+                    {service.direccion && (
+                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                        <MapPinIcon className="w-3 h-3" />
+                        {service.direccion}
+                      </div>
+                    )}
+                    {service.horario && (
+                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                        <Clock className="w-3 h-3" />
+                        {service.horario}
+                      </div>
+                    )}
+                    {service.telefono && (
+                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                        <Phone className="w-3 h-3" />
+                        {service.telefono}
+                      </div>
+                    )}
                   </div>
                 </div>
               </Popup>

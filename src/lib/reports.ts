@@ -17,6 +17,7 @@ export async function createReport(reportData: {
   longitud?: string;
   url_imagen?: string;
   prioridad?: PrioridadReporte;
+  id_entidad?: string | null;
 }) {
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -37,10 +38,12 @@ export async function createReport(reportData: {
           latitud: reportData.latitud,
           longitud: reportData.longitud,
           url_imagen: reportData.url_imagen,
+          id_entidad: reportData.id_entidad || null,
           estado: 'pendiente',
           prioridad: reportData.prioridad || 'media'
         }
       ])
+
       .select()
       .single();
 

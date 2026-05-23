@@ -8,6 +8,7 @@ import { WelcomeAnimation } from "../components/animations/WelcomeAnimation";
 import { signIn } from "../../lib/auth";
 import { useAuth } from "../../hooks/useAuth";
 import { toast } from "sonner";
+import { supabase } from "../supabase/supabase";
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -17,13 +18,20 @@ export function LoginPage() {
     email: "",
     password: "",
   });
-  const { isAuthenticated, loading: authLoading } = useAuth();
+  const { isAuthenticated, profile, loading: authLoading } = useAuth();
 
   useEffect(() => {
-    if (!authLoading && isAuthenticated) {
-      navigate("/user");
+    if (!authLoading && isAuthenticated && profile) {
+      if (profile.rol === 'administrador') {
+        navigate("/admin");
+      } else if (profile.rol === 'entidad') {
+        navigate("/entity/dashboard");
+      } else {
+        navigate("/user");
+      }
     }
-  }, [isAuthenticated, authLoading, navigate]);
+
+  }, [isAuthenticated, profile, authLoading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,11 +62,31 @@ export function LoginPage() {
     }
   };
 
-  const handleWelcomeComplete = () => {
-    // Pequeño delay antes de navegar
-    setTimeout(() => {
-      navigate("/user");
-    }, 500);
+  const handleWelcomeComplete = async () => {
+    // Verificar rol antes de navegar
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: profile } = await supabase
+        .from('perfiles')
+        .select('rol')
+        .eq('id', user.id)
+        .single();
+
+      setTimeout(() => {
+        if (profile?.rol === 'administrador') {
+          navigate("/admin");
+        } else if (profile?.rol === 'entidad') {
+          navigate("/entity/dashboard");
+        } else {
+          navigate("/user");
+        }
+      }, 500);
+
+    } else {
+      setTimeout(() => {
+        navigate("/user");
+      }, 500);
+    }
   };
 
   return (

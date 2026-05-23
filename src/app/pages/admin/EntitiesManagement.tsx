@@ -8,6 +8,9 @@ import { Search, Plus, Edit, Trash2, X, Building2, Phone, Mail, MapPin } from "l
 import { toast } from "sonner";
 
 import { getAllEntities, createEntity, updateEntity, deleteEntity } from "../../../lib/admin";
+import { supabase } from "../../../app/supabase/supabase";
+import { createClient } from "@supabase/supabase-js";
+import { SUPABASE_CONFIG } from "../../../environment/supabase.config";
 
 
 const categories = [
@@ -35,6 +38,7 @@ export function EntitiesManagement() {
     email: "",
     telefono: "",
     color: "#6366f1",
+    password: "",
   });
 
   useEffect(() => {
@@ -78,6 +82,7 @@ export function EntitiesManagement() {
       email: "",
       telefono: "",
       color: "#6366f1",
+      password: "",
     });
     setShowFormModal(true);
   };
@@ -92,6 +97,7 @@ export function EntitiesManagement() {
       email: entity.email || "",
       telefono: entity.telefono || "",
       color: entity.color || "#6366f1",
+      password: "",
     });
     setShowFormModal(true);
   };
@@ -112,12 +118,61 @@ export function EntitiesManagement() {
       }
       toast.success("Entidad actualizada correctamente");
     } else {
-      const { error } = await createEntity(formData);
-      if (error) {
-        toast.error("Error al crear entidad: " + error);
+      // Validar contraseña para nueva entidad
+      if (!formData.password || formData.password.length < 6) {
+        toast.error("La contraseña debe tener al menos 6 caracteres");
         return;
       }
-      toast.success("Entidad creada correctamente");
+
+      // 1. Crear usuario en Auth
+      try {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || SUPABASE_CONFIG.url;
+        const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || SUPABASE_CONFIG.anonKey;
+        
+        // Creamos un cliente temporal sin persistencia para no cerrar la sesión del admin
+        const tempClient = createClient(supabaseUrl, supabaseAnonKey, {
+          auth: { persistSession: false }
+        });
+
+        const { data: authData, error: authError } = await tempClient.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: {
+            data: {
+              nombre_completo: formData.nombre,
+              rol: 'entidad'
+            }
+          }
+        });
+
+        if (authError) throw authError;
+
+        // 2. Crear entidad
+        const { password, ...entityDataInput } = formData;
+        const { data: entityDataCreated, error: entityError } = await createEntity(entityDataInput);
+        
+        if (entityError) throw new Error(entityError);
+
+        // 3. Crear perfil vinculado a la entidad
+        const { error: profileError } = await supabase
+          .from('perfiles')
+          .upsert({
+            id: authData.user?.id,
+            email: formData.email,
+            nombre_completo: formData.nombre,
+            rol: 'entidad',
+            id_entidad: entityDataCreated.id,
+            estado: 'activo'
+          });
+
+        if (profileError) console.error("Error creating profile:", profileError);
+
+        toast.success("Entidad y cuenta de usuario creadas correctamente");
+
+      } catch (error: any) {
+        toast.error("Error al crear cuenta: " + error.message);
+        return;
+      }
     }
 
     fetchEntities();
@@ -421,6 +476,23 @@ export function EntitiesManagement() {
                     onChange={(e) => setFormData({ ...formData, color: e.target.value })}
                   />
                 </div>
+
+                {!editingEntity && (
+                  <Card className="bg-blue-50 border-blue-100 mt-4">
+                    <h4 className="text-sm font-semibold text-blue-900 mb-2">Credenciales de Acceso</h4>
+                    <p className="text-xs text-blue-700 mb-4">
+                      Se creará automáticamente una cuenta de usuario para esta entidad con el correo proporcionado arriba.
+                    </p>
+                    <Input
+                      label="Contraseña Temporal *"
+                      type="password"
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      placeholder="Mínimo 6 caracteres"
+                      required
+                    />
+                  </Card>
+                )}
 
                 <div className="flex gap-3 pt-4 border-t border-gray-200">
                   <Button

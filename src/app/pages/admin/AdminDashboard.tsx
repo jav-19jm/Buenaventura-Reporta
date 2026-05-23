@@ -1,19 +1,23 @@
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { motion } from "motion/react";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
-import { ArrowLeft, TrendingUp, AlertCircle, CheckCircle2, Clock, FileText, Users, Building2, Newspaper } from "lucide-react";
+import { ArrowLeft, TrendingUp, AlertCircle, CheckCircle2, Clock, FileText, Users, Building2, Newspaper, MapPin, LogOut } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { useState, useEffect } from "react";
 import { ReportsManagement } from "./ReportsManagement";
 import { UsersManagement } from "./UsersManagement";
 import { NewsManagement } from "./NewsManagement";
 import { EntitiesManagement } from "./EntitiesManagement";
+import { ServicesManagement } from "./ServicesManagement";
 import { getAdminStats } from "../../../lib/admin";
 import { getPublicReports } from "../../../lib/reports";
+import { signOut } from "../../../lib/auth";
+import { useAuth } from "../../../hooks/useAuth";
+import { toast } from "sonner";
 
-type Tab = "dashboard" | "reports" | "users" | "entities" | "news";
+type Tab = "dashboard" | "reports" | "users" | "entities" | "news" | "services";
 
 export function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<Tab>("dashboard");
@@ -23,22 +27,35 @@ export function AdminDashboard() {
   const [totalStats, setTotalStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  const { isAdmin, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+
   useEffect(() => {
-    loadDashboardData();
-  }, []);
+    if (!authLoading && !isAdmin) {
+      toast.error("Acceso denegado. Se requieren permisos de administrador.");
+      navigate("/login");
+    }
+  }, [isAdmin, authLoading, navigate]);
+
+  useEffect(() => {
+    if (isAdmin) {
+      loadDashboardData();
+    }
+  }, [isAdmin]);
+
 
   const loadDashboardData = async () => {
     setLoading(true);
     try {
       // Cargar estadísticas globales de admin
       const { data: statsData } = await getAdminStats();
-      
+
       // Cargar reportes públicos (para los recientes)
       const { data: reportsData } = await getPublicReports();
-      
+
       if (statsData) {
         setTotalStats(statsData);
-        
+
         // Preparar datos para gráfico de tipo de reportes
         const byType = Object.entries(statsData.reports.byCategory || {})
           .map(([name, count]) => ({ name: name.charAt(0).toUpperCase() + name.slice(1), value: count as number }))
@@ -79,6 +96,18 @@ export function AdminDashboard() {
     }
   };
 
+  const handleLogout = async () => {
+
+    try {
+      const { error } = await signOut();
+      if (error) throw error;
+      navigate("/login");
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+    }
+  };
+
+
   const reportsByZone = [
     { zone: "Centro", reportes: 42 },
     { zone: "Norte", reportes: 38 },
@@ -100,6 +129,7 @@ export function AdminDashboard() {
     { id: "users" as Tab, label: "Moderación de Usuarios", icon: Users },
     { id: "entities" as Tab, label: "Entidades", icon: Building2 },
     { id: "news" as Tab, label: "Noticias", icon: Newspaper },
+    { id: "services" as Tab, label: "Servicios en Mapa", icon: MapPin },
   ];
 
   return (
@@ -112,21 +142,22 @@ export function AdminDashboard() {
       <header className="bg-gradient-to-r from-yellow-500 to-green-600 shadow-lg sticky top-0 z-10">
         <div className="px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link to="/">
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5 text-white" />
-              </motion.button>
-            </Link>
             <h1 className="text-xl font-bold text-white">Panel Administrativo</h1>
           </div>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handleLogout}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium bg-white/10 text-white hover:bg-white/20 transition-all border border-white/20 shadow-sm"
+          >
+            <LogOut className="w-4 h-4" />
+            <span className="hidden sm:inline">Cerrar sesión</span>
+          </motion.button>
         </div>
 
+
         {/* Tabs Navigation */}
-        <div className="px-4 pb-2 flex gap-2 overflow-x-auto">
+        <div className="px-4 pb-2 flex gap-2 overflow-x-auto mt-6">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
@@ -233,26 +264,6 @@ export function AdminDashboard() {
               </motion.div>
             </div>
 
-            {/* Zones Chart */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-            >
-              <Card>
-                <h3 className="font-semibold text-gray-900 mb-4">Zonas con más incidencias</h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={reportsByZone} layout="horizontal">
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" />
-                    <YAxis dataKey="zone" type="category" />
-                    <Tooltip />
-                    <Bar dataKey="reportes" fill="#eab308" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </Card>
-            </motion.div>
-
             {/* Recent Reports Table */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -322,6 +333,7 @@ export function AdminDashboard() {
         {activeTab === "users" && <UsersManagement />}
         {activeTab === "entities" && <EntitiesManagement />}
         {activeTab === "news" && <NewsManagement />}
+        {activeTab === "services" && <ServicesManagement />}
       </div>
     </motion.div>
   );

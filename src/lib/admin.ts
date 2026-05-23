@@ -43,6 +43,26 @@ export async function updateUserStatus(userId: string, estado: 'activo' | 'inact
 }
 
 /**
+ * Actualizar el rol de un usuario
+ */
+export async function updateUserRole(userId: string, rol: string) {
+  try {
+    const { data, error } = await supabase
+      .from('perfiles')
+      .update({ rol })
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return { data, error: null };
+  } catch (error: any) {
+    console.error('Error al actualizar rol de usuario:', error);
+    return { data: null, error: error.message };
+  }
+}
+
+/**
  * Obtener todas las entidades
  */
 export async function getAllEntities() {
@@ -323,3 +343,83 @@ function countByProperty(arr: any[], prop: string) {
     return acc;
   }, {});
 }
+
+// ==========================================
+// GESTIÓN DE SERVICIOS (Puntos de Interés)
+// ==========================================
+
+/**
+ * Obtener todos los servicios
+ */
+export async function getAllServices() {
+  try {
+    const { data, error } = await supabase
+      .from('servicios')
+      .select('*')
+      .order('nombre', { ascending: true });
+
+    if (error) throw error;
+    return { data, error: null };
+  } catch (error: any) {
+    console.error('Error al obtener servicios:', error);
+    return { data: null, error: error.message };
+  }
+}
+
+/**
+ * Crear nuevo servicio
+ */
+export async function createService(service: any) {
+  try {
+    const { data, error } = await supabase
+      .from('servicios')
+      .insert([service])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return { data, error: null };
+  } catch (error: any) {
+    console.error('Error al crear servicio:', error);
+    return { data: null, error: error.message };
+  }
+}
+
+/**
+ * Actualizar servicio
+ */
+export async function updateService(id: string, updates: any) {
+  try {
+    const { data, error } = await supabase
+      .from('servicios')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return { data, error: null };
+  } catch (error: any) {
+    console.error('Error al actualizar servicio:', error);
+    return { data: null, error: error.message };
+  }
+}
+
+/**
+ * Eliminar servicio
+ */
+export async function deleteService(id: string) {
+  try {
+    const { error } = await supabase
+      .from('servicios')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+    return { error: null };
+  } catch (error: any) {
+    console.error('Error al eliminar servicio:', error);
+    return { error: error.message };
+  }
+}
+

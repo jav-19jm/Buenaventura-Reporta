@@ -34,8 +34,9 @@ export function EntityDashboard() {
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
-      navigate("/entity-login");
+      navigate("/login");
     }
+
   }, [isAuthenticated, authLoading, navigate]);
 
   // Cargar datos de la entidad
@@ -48,21 +49,54 @@ export function EntityDashboard() {
   const loadEntityData = async () => {
     setLoading(true);
     try {
-      // Obtener información de la entidad
-      const { data: entity } = await getEntityById(profile?.id_entidad);
-      setEntityData(entity);
+      let currentEntityId = profile?.id_entidad;
+      let currentEntity = null;
 
-      // Obtener reportes asignados
-      const { data: reportsData } = await getEntityReports(profile?.id_entidad);
+      console.log('🔍 Buscando entidad para perfil:', profile?.email, 'ID vinculado:', currentEntityId);
+
+      // 1. Intentar obtener por ID de entidad en el perfil
+      if (currentEntityId) {
+        const { data: entity } = await getEntityById(currentEntityId);
+        currentEntity = entity;
+      } 
+      
+      // 2. Fallback: Intentar obtener por Email si no hay ID vinculado o falló la carga
+      if (!currentEntity && profile?.email) {
+        const { data: entities } = await getAllEntities();
+        // Búsqueda por email insensible a mayúsculas
+        currentEntity = entities?.find(e => 
+          e.email?.toLowerCase() === profile.email.toLowerCase()
+        ) || null;
+        
+        if (currentEntity) {
+          console.log('✅ Entidad encontrada por email fallback:', currentEntity.nombre);
+          currentEntityId = currentEntity.id;
+        }
+      }
+
+      setEntityData(currentEntity);
+
+      // 3. Obtener reportes vinculados (por ID o por Categoría de la entidad)
+      // Usamos el ID encontrado o un ID inexistente para que al menos filtre por categoría
+      const queryId = currentEntityId || '00000000-0000-0000-0000-000000000000';
+      const { data: reportsData } = await getEntityReports(queryId, currentEntity?.tipo);
+      
       if (reportsData) {
         setReports(reportsData);
       }
 
-      // Obtener estadísticas
-      const { data: statsData } = await getEntityStats(profile?.id_entidad);
-      if (statsData) {
-        setStats(statsData);
+      // 4. Obtener estadísticas
+      if (currentEntityId) {
+        const { data: statsData } = await getEntityStats(currentEntityId);
+        if (statsData) {
+          setStats(statsData);
+        }
       }
+
+      if (!currentEntity) {
+        console.warn('⚠️ No se pudo vincular el perfil con ninguna entidad del sistema.');
+      }
+
     } catch (error) {
       console.error('Error cargando datos de entidad:', error);
       toast.error('Error al cargar datos de la entidad');
@@ -70,6 +104,7 @@ export function EntityDashboard() {
       setLoading(false);
     }
   };
+
 
   const activityData = [
   { day: "Lun", reportes: 4 },
@@ -163,11 +198,16 @@ export function EntityDashboard() {
         <div className="px-6 py-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center">
-                <Building2 className="w-6 h-6 text-white" />
+              <div 
+                className="w-12 h-12 rounded-lg flex items-center justify-center text-white shadow-lg"
+                style={{ background: entityData?.color ? `linear-gradient(135deg, ${entityData.color}, ${entityData.color}dd)` : 'linear-gradient(135deg, #2563eb, #1d4ed8)' }}
+              >
+                <Building2 className="w-6 h-6" />
               </div>
+
               <div>
-                <h1 className="text-xl font-bold text-gray-900">{mockEntityData.name}</h1>
+                <h1 className="text-xl font-bold text-gray-900">{entityData?.nombre || profile?.nombre_completo || 'Cargando...'}</h1>
+
                 <p className="text-sm text-gray-500">Panel de Gestión Institucional</p>
               </div>
             </div>
@@ -177,16 +217,19 @@ export function EntityDashboard() {
                   Ver Mapa
                 </Button>
               </Link>
-              <Link to="/login">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
+                  onClick={async () => {
+                    await signOut();
+                    navigate("/login");
+                  }}
                   className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                 >
                   <LogOut className="w-4 h-4" />
                   Cerrar Sesión
                 </motion.button>
-              </Link>
+
             </div>
           </div>
 
@@ -207,7 +250,8 @@ export function EntityDashboard() {
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Métricas principales */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {stats.map((stat, index) => {
+          {statsCards.map((stat, index) => {
+
             const Icon = stat.icon;
             return (
               <motion.div
@@ -352,8 +396,8 @@ export function EntityDashboard() {
                 </thead>
                 <tbody>
                   {filteredReports.map((report) => {
-                    const statusBadge = getStatusBadge(report.status);
-                    const priorityBadge = getPriorityBadge(report.priority);
+                    const statusBadge = getStatusBadge(report.estado);
+                    const priorityBadge = getPriorityBadge(report.prioridad || "media");
 
                     return (
                       <motion.tr
@@ -366,18 +410,19 @@ export function EntityDashboard() {
                       >
                         <td className="py-4 px-4">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-gray-900">{report.title}</span>
-                            {report.hasUnreadMessages && (
-                              <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                            )}
+                            <span className="text-sm font-medium text-gray-900">{report.titulo}</span>
                           </div>
                         </td>
                         <td className="py-4 px-4">
-                          <span className="text-sm text-gray-600 capitalize">{report.category}</span>
+                          <span className="text-sm text-gray-600 capitalize">{report.categoria}</span>
                         </td>
-                        <td className="py-4 px-4 text-sm text-gray-600">{report.location}</td>
-                        <td className="py-4 px-4 text-sm text-gray-600">{report.date}</td>
-                        <td className="py-4 px-4 text-sm text-gray-600">{report.userName}</td>
+                        <td className="py-4 px-4 text-sm text-gray-600 line-clamp-1">{report.direccion_ubicacion}</td>
+                        <td className="py-4 px-4 text-sm text-gray-600">
+                          {new Date(report.fecha_creacion).toLocaleDateString()}
+                        </td>
+                        <td className="py-4 px-4 text-sm text-gray-600">
+                          {report.perfil?.nombre_completo || 'Ciudadano'}
+                        </td>
                         <td className="py-4 px-4">
                           <Badge variant={statusBadge.variant}>
                             {statusBadge.label}
@@ -404,6 +449,7 @@ export function EntityDashboard() {
                       </motion.tr>
                     );
                   })}
+
                 </tbody>
               </table>
             </div>

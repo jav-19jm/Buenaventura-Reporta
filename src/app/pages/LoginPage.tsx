@@ -25,7 +25,13 @@ export function LoginPage() {
       const { data, error } = await signIn(formData.email, formData.password);
 
       if (error) {
-        toast.error(error);
+        if (error.includes("Email not confirmed")) {
+          toast.error("Tu correo electrónico aún no ha sido verificado. Por favor, revisa tu bandeja de entrada.");
+        } else if (error.includes("Invalid login credentials")) {
+          toast.error("Credenciales incorrectas. Por favor, verifica tu correo y contraseña.");
+        } else {
+          toast.error(error);
+        }
         setLoading(false);
         return;
       }
@@ -35,7 +41,7 @@ export function LoginPage() {
         setShowWelcome(true);
       }
     } catch (error: any) {
-      toast.error("Error al iniciar sesión");
+      toast.error("Hubo un problema al conectar con el servidor.");
       setLoading(false);
     }
   };

@@ -115,7 +115,7 @@ export function ProfilePage() {
       toast.error('Error al eliminar el reporte');
     } else {
       toast.success('Reporte eliminado');
-      loadUserReports();
+      loadUserData();
     }
   };
 

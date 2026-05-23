@@ -45,8 +45,10 @@ export function RegisterPage() {
       }
 
       if (data?.user) {
-        toast.success("¡Cuenta creada exitosamente!");
-        setShowWelcome(true);
+        toast.success("¡Registro exitoso! Por favor, verifica tu correo electrónico para activar tu cuenta.", {
+          duration: 6000,
+        });
+        navigate("/login");
       }
     } catch (error: any) {
       toast.error("Error al crear cuenta");
@@ -54,22 +56,11 @@ export function RegisterPage() {
     }
   };
 
-  const handleWelcomeComplete = () => {
-    setTimeout(() => {
-      navigate("/user");
-    }, 500);
-  };
+
 
   return (
     <>
-      <AnimatePresence>
-        {showWelcome && (
-          <WelcomeAnimation 
-            userName={formData.fullName} 
-            onComplete={handleWelcomeComplete}
-          />
-        )}
-      </AnimatePresence>
+
 
       <motion.div
         initial={{ opacity: 0 }}

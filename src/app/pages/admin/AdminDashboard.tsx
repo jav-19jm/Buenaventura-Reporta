@@ -1,11 +1,21 @@
 import { Link } from "react-router";
+import { motion } from "motion/react";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
-import { ArrowLeft, TrendingUp, AlertCircle, CheckCircle2, Clock } from "lucide-react";
+import { ArrowLeft, TrendingUp, AlertCircle, CheckCircle2, Clock, FileText, Users, Building2, Newspaper } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { useState } from "react";
+import { ReportsManagement } from "./ReportsManagement";
+import { UsersManagement } from "./UsersManagement";
+import { NewsManagement } from "./NewsManagement";
+import { EntitiesManagement } from "./EntitiesManagement";
+
+type Tab = "dashboard" | "reports" | "users" | "entities" | "news";
 
 export function AdminDashboard() {
+  const [activeTab, setActiveTab] = useState<Tab>("dashboard");
+
   // Mock data for charts
   const reportsByType = [
     { name: "Luminaria", value: 45 },
@@ -44,155 +54,238 @@ export function AdminDashboard() {
     { label: "Solucionados", value: "53", icon: CheckCircle2, color: "bg-green-100 text-green-600" },
   ];
 
+  const tabs = [
+    { id: "dashboard" as Tab, label: "Dashboard", icon: TrendingUp },
+    { id: "reports" as Tab, label: "Gestión de Reportes", icon: FileText },
+    { id: "users" as Tab, label: "Moderación de Usuarios", icon: Users },
+    { id: "entities" as Tab, label: "Entidades", icon: Building2 },
+    { id: "news" as Tab, label: "Noticias", icon: Newspaper },
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="min-h-screen bg-gray-50"
+    >
       {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-10">
-        <div className="px-4 py-3 flex items-center justify-between">
+      <header className="bg-gradient-to-r from-yellow-500 to-green-600 shadow-lg sticky top-0 z-10">
+        <div className="px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link to="/user">
-              <button className="p-2 hover:bg-gray-100 rounded-lg">
-                <ArrowLeft className="w-5 h-5" />
-              </button>
+            <Link to="/map">
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5 text-white" />
+              </motion.button>
             </Link>
-            <h1 className="font-bold text-gray-900">Panel Administrativo</h1>
+            <h1 className="text-xl font-bold text-white">Panel Administrativo</h1>
           </div>
-          <Link to="/user">
-            <Button variant="outline" size="sm">Ver mapa</Button>
+          <Link to="/map">
+            <Button variant="outline" size="sm" className="bg-white">Ver mapa</Button>
           </Link>
+        </div>
+
+        {/* Tabs Navigation */}
+        <div className="px-4 pb-2 flex gap-2 overflow-x-auto">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <motion.button
+                key={tab.id}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all ${activeTab === tab.id
+                  ? "bg-white text-green-600 shadow-lg"
+                  : "bg-white/10 text-white hover:bg-white/20"
+                  }`}
+              >
+                <Icon className="w-4 h-4" />
+                {tab.label}
+              </motion.button>
+            );
+          })}
         </div>
       </header>
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {stats.map((stat, index) => {
-            const Icon = stat.icon;
-            return (
-              <Card key={index}>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600 mb-1">{stat.label}</p>
-                    <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
-                  </div>
-                  <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${stat.color}`}>
-                    <Icon className="w-6 h-6" />
-                  </div>
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {activeTab === "dashboard" && (
+          <div className="space-y-6">
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {stats.map((stat, index) => {
+                const Icon = stat.icon;
+                return (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    whileHover={{ scale: 1.05 }}
+                  >
+                    <Card>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-gray-600 mb-1">{stat.label}</p>
+                          <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
+                        </div>
+                        <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${stat.color}`}>
+                          <Icon className="w-6 h-6" />
+                        </div>
+                      </div>
+                    </Card>
+                  </motion.div>
+                );
+              })}
+            </div>
+
+            {/* Charts Row */}
+            <div className="grid lg:grid-cols-2 gap-6">
+              {/* Reports by Type */}
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <Card>
+                  <h3 className="font-semibold text-gray-900 mb-4">Reportes por tipo de incidencia</h3>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={reportsByType}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="value" fill="#10b981" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </Card>
+              </motion.div>
+
+              {/* Reports by Status */}
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3 }}
+              >
+                <Card>
+                  <h3 className="font-semibold text-gray-900 mb-4">Distribución por estado</h3>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={reportsByStatus}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {reportsByStatus.map((entry, index) => (
+                          <Cell key={`admin-status-cell-${entry.name}-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </Card>
+              </motion.div>
+            </div>
+
+            {/* Zones Chart */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+            >
+              <Card>
+                <h3 className="font-semibold text-gray-900 mb-4">Zonas con más incidencias</h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={reportsByZone} layout="horizontal">
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis type="number" />
+                    <YAxis dataKey="zone" type="category" />
+                    <Tooltip />
+                    <Bar dataKey="reportes" fill="#eab308" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </Card>
+            </motion.div>
+
+            {/* Recent Reports Table */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+            >
+              <Card>
+                <h3 className="font-semibold text-gray-900 mb-4">Reportes recientes</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">ID</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Tipo</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Ubicación</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Estado</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Tiempo</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Acción</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {recentReports.map((report) => {
+                        const statusVariant = {
+                          pendiente: "warning" as const,
+                          "en-revision": "info" as const,
+                          solucionado: "success" as const,
+                        };
+
+                        const statusLabel = {
+                          pendiente: "Pendiente",
+                          "en-revision": "En Revisión",
+                          solucionado: "Solucionado",
+                        };
+
+                        return (
+                          <tr key={report.id} className="border-b border-gray-100 hover:bg-gray-50">
+                            <td className="py-3 px-4 text-sm text-gray-600">#{report.id}</td>
+                            <td className="py-3 px-4 text-sm text-gray-900">{report.type}</td>
+                            <td className="py-3 px-4 text-sm text-gray-600">{report.location}</td>
+                            <td className="py-3 px-4">
+                              <Badge variant={statusVariant[report.status as keyof typeof statusVariant]}>
+                                {statusLabel[report.status as keyof typeof statusLabel]}
+                              </Badge>
+                            </td>
+                            <td className="py-3 px-4 text-sm text-gray-600">{report.time}</td>
+                            <td className="py-3 px-4">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setActiveTab("reports")}
+                              >
+                                Ver detalles
+                              </Button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
               </Card>
-            );
-          })}
-        </div>
-
-        {/* Charts Row */}
-        <div className="grid lg:grid-cols-2 gap-6">
-          {/* Reports by Type */}
-          <Card>
-            <h3 className="font-semibold text-gray-900 mb-4">Reportes por tipo de incidencia</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={reportsByType}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="value" fill="#3b82f6" />
-              </BarChart>
-            </ResponsiveContainer>
-          </Card>
-
-          {/* Reports by Status */}
-          <Card>
-            <h3 className="font-semibold text-gray-900 mb-4">Distribución por estado</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={reportsByStatus}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {reportsByStatus.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </Card>
-        </div>
-
-        {/* Zones Chart */}
-        <Card>
-          <h3 className="font-semibold text-gray-900 mb-4">Zonas con más incidencias</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={reportsByZone} layout="horizontal">
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis type="number" />
-              <YAxis dataKey="zone" type="category" />
-              <Tooltip />
-              <Bar dataKey="reportes" fill="#10b981" />
-            </BarChart>
-          </ResponsiveContainer>
-        </Card>
-
-        {/* Recent Reports Table */}
-        <Card>
-          <h3 className="font-semibold text-gray-900 mb-4">Reportes recientes</h3>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">ID</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Tipo</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Ubicación</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Estado</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Tiempo</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Acción</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentReports.map((report) => {
-                  const statusVariant = {
-                    pendiente: "warning" as const,
-                    "en-revision": "info" as const,
-                    solucionado: "success" as const,
-                  };
-
-                  const statusLabel = {
-                    pendiente: "Pendiente",
-                    "en-revision": "En Revisión",
-                    solucionado: "Solucionado",
-                  };
-
-                  return (
-                    <tr key={report.id} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="py-3 px-4 text-sm text-gray-600">#{report.id}</td>
-                      <td className="py-3 px-4 text-sm text-gray-900">{report.type}</td>
-                      <td className="py-3 px-4 text-sm text-gray-600">{report.location}</td>
-                      <td className="py-3 px-4">
-                        <Badge variant={statusVariant[report.status as keyof typeof statusVariant]}>
-                          {statusLabel[report.status as keyof typeof statusLabel]}
-                        </Badge>
-                      </td>
-                      <td className="py-3 px-4 text-sm text-gray-600">{report.time}</td>
-                      <td className="py-3 px-4">
-                        <Link to={`/report/${report.id}`}>
-                          <Button variant="ghost" size="sm">Ver detalles</Button>
-                        </Link>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            </motion.div>
           </div>
-        </Card>
+        )}
+
+        {activeTab === "reports" && <ReportsManagement />}
+        {activeTab === "users" && <UsersManagement />}
+        {activeTab === "entities" && <EntitiesManagement />}
+        {activeTab === "news" && <NewsManagement />}
       </div>
-    </div>
+    </motion.div>
   );
 }

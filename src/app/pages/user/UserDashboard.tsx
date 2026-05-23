@@ -5,12 +5,12 @@ import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import { MapPin, Plus, Filter, AlertCircle, User, Menu, X, RefreshCw, Layers, Shield } from "lucide-react";
-import { incidentTypes } from "../../components/IncidentTypeSelector";
+
 import { WeatherWidget } from "../../components/WeatherWidget";
 import { NotificationBell } from "../../components/NotificationBell";
 import { NewsSection } from "../../components/NewsSection";
 import { CityServicesFilter } from "../../components/CityServicesFilter";
-import { getPublicReports } from "../../../lib/reports";
+import { getPublicReports, getReportCategories } from "../../../lib/reports";
 import { useAuth } from "../../../hooks/useAuth";
 import { ReportsMap } from "../../components/ReportsMap";
 import type { Reporte } from "../../supabase/supabase";
@@ -21,31 +21,30 @@ export function UserDashboard() {
   const { user, profile } = useAuth();
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
   const [reports, setReports] = useState<Reporte[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Cargar reportes de Supabase
+  // Cargar reportes y categorías de Supabase
   useEffect(() => {
-    loadReports();
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const [reportsRes, catsRes] = await Promise.all([
+          getPublicReports(),
+          getReportCategories()
+        ]);
+        
+        if (reportsRes.data) setReports(reportsRes.data);
+        if (catsRes.data) setCategories(catsRes.data);
+      } catch (error) {
+        console.error('Error al cargar datos:', error);
+        toast.error('Error al cargar datos');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
   }, []);
-
-  const loadReports = async () => {
-    setLoading(true);
-    const { data, error } = await getPublicReports();
-
-    if (error) {
-      console.error('Error al cargar reportes:', error);
-      toast.error('Error al cargar reportes');
-      setLoading(false);
-      return;
-    }
-
-    if (data) {
-      setReports(data);
-      console.log('📊 Reportes cargados desde Supabase:', data.length);
-    }
-
-    setLoading(false);
-  };
   const [showFilters, setShowFilters] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [showNews, setShowNews] = useState(false);
@@ -176,16 +175,18 @@ export function UserDashboard() {
                   >
                     Todas
                   </Button>
-                  {incidentTypes.map((type) => (
+                  {categories.length > 0 ? categories.map((cat) => (
                     <Button
-                      key={type.id}
-                      variant={selectedFilter === type.id ? "primary" : "outline"}
+                      key={cat.id}
+                      variant={selectedFilter === cat.id ? "primary" : "outline"}
                       size="sm"
-                      onClick={() => setSelectedFilter(type.id)}
+                      onClick={() => setSelectedFilter(cat.id)}
                     >
-                      {type.label}
+                      {cat.nombre}
                     </Button>
-                  ))}
+                  )) : (
+                    <span className="text-xs text-gray-400">Cargando categorías...</span>
+                  )}
                 </div>
               </div>
             </motion.div>

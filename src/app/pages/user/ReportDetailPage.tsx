@@ -234,7 +234,7 @@ export function ReportDetailPage() {
           {/* Right Column - History and Map */}
           <div className="space-y-6">
             
-            {/* Entity Info (Mocked as if assigned) */}
+            {/* Entity Info */}
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
               <Card>
                 <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
@@ -242,13 +242,16 @@ export function ReportDetailPage() {
                   Entidad Asignada
                 </h3>
                 <div className="text-sm">
-                  {report.estado === 'pendiente' ? (
-                    <p className="text-gray-500 italic">Buscando entidad correspondiente...</p>
-                  ) : (
+                  {report.entidades ? (
                     <>
-                      <p className="font-medium text-gray-900">Autoridad Competente</p>
-                      <p className="text-gray-500 mt-1">Se ha asignado una entidad para la resolución de este caso.</p>
+                      <p className="font-medium text-gray-900">{report.entidades.nombre}</p>
+                      <p className="text-gray-500 mt-1">Esta entidad está a cargo de la resolución de tu caso.</p>
+                      {report.entidades.email && (
+                        <p className="text-xs text-blue-600 mt-2">{report.entidades.email}</p>
+                      )}
                     </>
+                  ) : (
+                    <p className="text-gray-500 italic">Buscando entidad correspondiente...</p>
                   )}
                 </div>
               </Card>

@@ -10,7 +10,8 @@ import { ReportsManagement } from "./ReportsManagement";
 import { UsersManagement } from "./UsersManagement";
 import { NewsManagement } from "./NewsManagement";
 import { EntitiesManagement } from "./EntitiesManagement";
-import { getPublicReports, getReportStats } from "../../../lib/reports";
+import { getAdminStats } from "../../../lib/admin";
+import { getPublicReports } from "../../../lib/reports";
 
 type Tab = "dashboard" | "reports" | "users" | "entities" | "news";
 
@@ -19,6 +20,7 @@ export function AdminDashboard() {
   const [reportsByType, setReportsByType] = useState<any[]>([]);
   const [reportsByStatus, setReportsByStatus] = useState<any[]>([]);
   const [recentReports, setRecentReports] = useState<any[]>([]);
+  const [totalStats, setTotalStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -28,15 +30,17 @@ export function AdminDashboard() {
   const loadDashboardData = async () => {
     setLoading(true);
     try {
-      // Cargar estadísticas de reportes
-      const { data: statsData } = await getReportStats();
+      // Cargar estadísticas globales de admin
+      const { data: statsData } = await getAdminStats();
       
-      // Cargar reportes públicos
+      // Cargar reportes públicos (para los recientes)
       const { data: reportsData } = await getPublicReports();
       
       if (statsData) {
+        setTotalStats(statsData);
+        
         // Preparar datos para gráfico de tipo de reportes
-        const byType = Object.entries(statsData.by_category || {})
+        const byType = Object.entries(statsData.reports.byCategory || {})
           .map(([name, count]) => ({ name: name.charAt(0).toUpperCase() + name.slice(1), value: count as number }))
           .sort((a, b) => b.value - a.value);
         setReportsByType(byType);
@@ -49,7 +53,7 @@ export function AdminDashboard() {
           resuelto: "#10b981",
           cancelado: "#ef4444",
         };
-        const byStatus = Object.entries(statsData.by_status || {}).map(([name, count]) => ({
+        const byStatus = Object.entries(statsData.reports.byStatus || {}).map(([name, count]) => ({
           name: name === 'pendiente' ? 'Pendiente' : name === 'en_revision' ? 'En revisión' : name === 'en_proceso' ? 'En proceso' : name === 'resuelto' ? 'Solucionado' : 'Cancelado',
           value: count as number,
           color: statusColors[name as keyof typeof statusColors] || "#6b7280",
@@ -60,11 +64,11 @@ export function AdminDashboard() {
       if (reportsData) {
         // Tomar los últimos 4 reportes
         const recent = reportsData.slice(0, 4).map((r: any) => ({
-          id: r.id,
+          id: r.id.substring(0, 8),
           type: r.titulo,
-          location: r.direccion_ubicacion,
+          location: r.direccion_ubicacion || 'Buenaventura',
           status: r.estado,
-          time: `Hace ${Math.floor((Date.now() - new Date(r.fecha_creacion).getTime()) / 60000)} min`,
+          time: new Date(r.fecha_creacion).toLocaleDateString('es-CO'),
         }));
         setRecentReports(recent);
       }
@@ -84,10 +88,10 @@ export function AdminDashboard() {
   ];
 
   const stats = [
-    { label: "Total reportes", value: recentReports.length.toString(), icon: TrendingUp, color: "bg-blue-100 text-blue-600" },
-    { label: "Pendientes", value: reportsByStatus.find(s => s.name === 'Pendiente')?.value.toString() || "0", icon: Clock, color: "bg-yellow-100 text-yellow-600" },
-    { label: "En revisión", value: reportsByStatus.find(s => s.name === 'En revisión')?.value.toString() || "0", icon: AlertCircle, color: "bg-blue-100 text-blue-600" },
-    { label: "Solucionados", value: reportsByStatus.find(s => s.name === 'Solucionado')?.value.toString() || "0", icon: CheckCircle2, color: "bg-green-100 text-green-600" },
+    { label: "Total reportes", value: (totalStats?.reports?.total || 0).toString(), icon: TrendingUp, color: "bg-blue-100 text-blue-600" },
+    { label: "Pendientes", value: (totalStats?.reports?.byStatus?.pendiente || 0).toString(), icon: Clock, color: "bg-yellow-100 text-yellow-600" },
+    { label: "Usuarios", value: (totalStats?.users?.total || 0).toString(), icon: Users, color: "bg-purple-100 text-purple-600" },
+    { label: "Solucionados", value: (totalStats?.reports?.byStatus?.resuelto || 0).toString(), icon: CheckCircle2, color: "bg-green-100 text-green-600" },
   ];
 
   const tabs = [

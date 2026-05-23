@@ -6,25 +6,51 @@ import { Input } from "../../components/ui/Input";
 import { Textarea } from "../../components/ui/Textarea";
 import { IncidentTypeSelector } from "../../components/IncidentTypeSelector";
 import { MapPin, Camera, ArrowLeft, Upload } from "lucide-react";
-import { createReport, uploadReportImage } from "../../../lib/reports";
+import { createReport, uploadReportImage, getReportCategories } from "../../../lib/reports";
+import { getAllEntities } from "../../../lib/admin";
 import { useAuth } from "../../../hooks/useAuth";
 import { toast } from "sonner";
 import { LocationPickerMap } from "../../components/LocationPickerMap";
+import { useEffect } from "react";
+import { Building2 } from "lucide-react";
 
 export function CreateReportPage() {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const [selectedType, setSelectedType] = useState<string>();
+  const [selectedEntity, setSelectedEntity] = useState<string>("");
+  const [categories, setCategories] = useState<any[]>([]);
+  const [entities, setEntities] = useState<any[]>([]);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [imagePreview, setImagePreview] = useState<string>();
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
   const [location, setLocation] = useState({
     address: "Buenaventura, Colombia",
     lat: 3.8801,
     lng: -77.0311
   });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [catsRes, entsRes] = await Promise.all([
+          getReportCategories(),
+          getAllEntities()
+        ]);
+        
+        if (catsRes.data) setCategories(catsRes.data);
+        if (entsRes.data) setEntities(entsRes.data);
+      } catch (error) {
+        console.error("Error fetching form data:", error);
+      } finally {
+        setFetching(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   const handleLocationSelect = (lat: number, lng: number) => {
     setLocation({
@@ -68,6 +94,7 @@ export function CreateReportPage() {
         titulo: title,
         descripcion: description,
         categoria: selectedType,
+        id_entidad: selectedEntity || null,
         direccion_ubicacion: location.address,
         latitud: location.lat.toString(),
         longitud: location.lng.toString(),
@@ -145,7 +172,34 @@ export function CreateReportPage() {
             <IncidentTypeSelector
               selectedType={selectedType}
               onSelect={setSelectedType}
+              types={categories}
             />
+          </motion.div>
+
+          {/* Entity Selection */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.02 }}
+            className="bg-white rounded-lg shadow-sm p-6"
+          >
+            <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-blue-600" />
+              1.5 ¿A qué entidad va dirigido? <span className="text-gray-400">(opcional)</span>
+            </h2>
+            <select
+              value={selectedEntity}
+              onChange={(e) => setSelectedEntity(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white transition-all"
+            >
+              <option value="">Selecciona una entidad (opcional)</option>
+              {entities.map(ent => (
+                <option key={ent.id} value={ent.id}>{ent.nombre}</option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-500 mt-2">
+              Si no sabes a qué entidad dirigirlo, déjalo en blanco y nosotros lo asignaremos.
+            </p>
           </motion.div>
 
           {/* Title */}

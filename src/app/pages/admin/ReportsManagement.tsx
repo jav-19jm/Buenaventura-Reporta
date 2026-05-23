@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Card } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
@@ -8,259 +8,135 @@ import { Textarea } from "../../components/ui/Textarea";
 import { Search, Filter, Eye, Edit, Trash2, X, MapPin, User, Calendar, MessageSquare, History, Building2 } from "lucide-react";
 import { toast } from "sonner";
 
-// Mock data de reportes
-const mockReports = [
-  {
-    id: "1",
-    title: "Luminaria dañada en calle principal",
-    description: "La luminaria de la Calle 5 con Carrera 3 no enciende desde hace 3 días",
-    category: "alumbrado",
-    location: "Calle 5 con Carrera 3",
-    status: "pendiente" as const,
-    user: "María González",
-    userId: "user123",
-    date: "2026-04-10",
-    image: "https://images.unsplash.com/photo-1550592704-6c76defa9985?w=400",
-    entity: null,
-    comments: [] as string[],
-    history: [
-      { action: "Reporte creado", date: "2026-04-10 10:30 AM", user: "María González" }
-    ]
-  },
-  {
-    id: "2",
-    title: "Basura acumulada en vía pública",
-    description: "Basura sin recoger hace más de una semana en la Av. Simón Bolívar",
-    category: "basura",
-    location: "Av. Simón Bolívar #45-67",
-    status: "en-proceso" as const,
-    user: "Carlos Pérez",
-    userId: "user456",
-    date: "2026-04-12",
-    image: "https://images.unsplash.com/photo-1530587191325-3db32d826c18?w=400",
-    entity: "Empresa de Aseo Municipal",
-    comments: ["Equipo asignado para revisión mañana"],
-    history: [
-      { action: "Reporte creado", date: "2026-04-12 09:00 AM", user: "Carlos Pérez" },
-      { action: "Estado cambiado a En Proceso", date: "2026-04-12 11:30 AM", user: "Admin" },
-      { action: "Asignado a Empresa de Aseo Municipal", date: "2026-04-12 11:31 AM", user: "Admin" }
-    ]
-  },
-  {
-    id: "3",
-    title: "Semáforo dañado causa congestión",
-    description: "Semáforo en mal estado, intermitente y peligroso",
-    category: "transporte",
-    location: "Carrera 2 con Calle 10",
-    status: "resuelto" as const,
-    user: "Ana Rodríguez",
-    userId: "user789",
-    date: "2026-04-09",
-    image: "https://images.unsplash.com/photo-1534595038511-9f219fe0c979?w=400",
-    entity: "Secretaría de Movilidad",
-    comments: ["Reparación completada", "Nuevo semáforo instalado"],
-    history: [
-      { action: "Reporte creado", date: "2026-04-09 08:15 AM", user: "Ana Rodríguez" },
-      { action: "Estado cambiado a En Proceso", date: "2026-04-09 10:00 AM", user: "Admin" },
-      { action: "Asignado a Secretaría de Movilidad", date: "2026-04-09 10:01 AM", user: "Admin" },
-      { action: "Estado cambiado a Resuelto", date: "2026-04-14 03:00 PM", user: "Admin" }
-    ]
-  },
-  {
-    id: "4",
-    title: "Fuga de agua en tubería principal",
-    description: "Gran fuga de agua desperdiciando el recurso",
-    category: "agua",
-    location: "Calle 8 #23-45",
-    status: "en-proceso" as const,
-    user: "Juan Martínez",
-    userId: "user321",
-    date: "2026-04-13",
-    image: "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=400",
-    entity: "Acueducto Municipal",
-    comments: ["Personal técnico en camino"],
-    history: [
-      { action: "Reporte creado", date: "2026-04-13 02:45 PM", user: "Juan Martínez" },
-      { action: "Estado cambiado a En Proceso", date: "2026-04-13 03:00 PM", user: "Admin" },
-      { action: "Asignado a Acueducto Municipal", date: "2026-04-13 03:01 PM", user: "Admin" }
-    ]
-  },
-  {
-    id: "5",
-    title: "Daño en pavimento genera peligro",
-    description: "Hueco grande en la vía que puede causar accidentes",
-    category: "vias",
-    location: "Calle 15 con Carrera 8",
-    status: "pendiente" as const,
-    user: "Laura Sánchez",
-    userId: "user654",
-    date: "2026-04-15",
-    image: "https://images.unsplash.com/photo-1625464281661-76854d766c4d?w=400",
-    entity: null,
-    comments: [],
-    history: [
-      { action: "Reporte creado", date: "2026-04-15 11:20 AM", user: "Laura Sánchez" }
-    ]
-  },
-  {
-    id: "6",
-    title: "Árbol caído bloquea vía",
-    description: "Árbol cayó por las lluvias y bloquea completamente la calle",
-    category: "vias",
-    location: "Carrera 12 #34-56",
-    status: "pendiente" as const,
-    user: "Roberto Torres",
-    userId: "user987",
-    date: "2026-04-16",
-    image: "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=400",
-    entity: null,
-    comments: [],
-    history: [
-      { action: "Reporte creado", date: "2026-04-16 07:30 AM", user: "Roberto Torres" }
-    ]
-  }
-];
+import { getPublicReports, updateReportStatus, getReportMessages } from "../../../lib/reports";
+import { assignReportEntity, deleteReportAdmin, addAdminComment, getAllEntities } from "../../../lib/admin";
 
-const entities = [
-  "Empresa de Aseo Municipal",
-  "Secretaría de Movilidad",
-  "Acueducto Municipal",
-  "Policía Nacional",
-  "Alcaldía Municipal",
-  "Bomberos",
-  "Secretaría de Salud",
-  "Secretaría de Obras Públicas"
-];
 
-type ReportStatus = "pendiente" | "en-proceso" | "resuelto";
+type ReportStatus = "pendiente" | "en_revision" | "en_proceso" | "resuelto" | "cancelado";
 
 export function ReportsManagement() {
-  const [reports, setReports] = useState(mockReports);
+  const [reports, setReports] = useState<any[]>([]);
+  const [entities, setEntities] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<ReportStatus | "all">("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  const [selectedReport, setSelectedReport] = useState<typeof mockReports[0] | null>(null);
+  const [selectedReport, setSelectedReport] = useState<any | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [newComment, setNewComment] = useState("");
+  const [reportMessages, setReportMessages] = useState<any[]>([]);
 
   const categories = ["alumbrado", "basura", "transporte", "agua", "vias", "seguridad", "salud"];
 
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const { data: reportsData, error: reportsError } = await getPublicReports();
+      const { data: entitiesData, error: entitiesError } = await getAllEntities();
+      
+      if (reportsError) throw new Error(reportsError);
+      if (entitiesError) throw new Error(entitiesError);
+      
+      if (reportsData) setReports(reportsData);
+      if (entitiesData) setEntities(entitiesData);
+    } catch (error: any) {
+      console.error('Error fetching reports:', error);
+      toast.error("Error al cargar reportes: " + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filteredReports = reports.filter((report) => {
     const matchesSearch = 
-      report.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      report.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      report.user.toLowerCase().includes(searchTerm.toLowerCase());
+      (report.titulo || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (report.direccion_ubicacion || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (report.perfiles?.nombre_completo || "").toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesStatus = statusFilter === "all" || report.status === statusFilter;
-    const matchesCategory = categoryFilter === "all" || report.category === categoryFilter;
+    const matchesStatus = statusFilter === "all" || report.estado === statusFilter;
+    const matchesCategory = categoryFilter === "all" || report.categoria === categoryFilter;
     
     return matchesSearch && matchesStatus && matchesCategory;
   });
 
   const statusCounts = {
-    pendiente: reports.filter(r => r.status === "pendiente").length,
-    "en-proceso": reports.filter(r => r.status === "en-proceso").length,
-    resuelto: reports.filter(r => r.status === "resuelto").length,
+    pendiente: reports.filter(r => r.estado === "pendiente").length,
+    "en_proceso": reports.filter(r => r.estado === "en_proceso").length,
+    resuelto: reports.filter(r => r.estado === "resuelto").length,
   };
 
-  const handleStatusChange = (reportId: string, newStatus: ReportStatus) => {
-    setReports(reports.map(report => {
-      if (report.id === reportId) {
-        const updatedReport = {
-          ...report,
-          status: newStatus,
-          history: [
-            ...report.history,
-            {
-              action: `Estado cambiado a ${newStatus === "pendiente" ? "Pendiente" : newStatus === "en-proceso" ? "En Proceso" : "Resuelto"}`,
-              date: new Date().toLocaleString(),
-              user: "Admin"
-            }
-          ]
-        };
-        
-        if (selectedReport?.id === reportId) {
-          setSelectedReport(updatedReport);
-        }
-        
-        return updatedReport;
-      }
-      return report;
-    }));
+  const handleStatusChange = async (reportId: string, newStatus: ReportStatus) => {
+    const { error } = await updateReportStatus(reportId, newStatus);
+    if (error) {
+      toast.error("Error al actualizar estado");
+      return;
+    }
     
-    toast.success("Estado del reporte actualizado", {
-      description: "El usuario será notificado del cambio"
-    });
+    fetchData();
+    if (selectedReport?.id === reportId) {
+      setSelectedReport({ ...selectedReport, estado: newStatus });
+    }
+    
+    toast.success("Estado del reporte actualizado");
   };
 
-  const handleAssignEntity = (reportId: string, entity: string) => {
-    setReports(reports.map(report => {
-      if (report.id === reportId) {
-        const updatedReport = {
-          ...report,
-          entity,
-          history: [
-            ...report.history,
-            {
-              action: `Asignado a ${entity}`,
-              date: new Date().toLocaleString(),
-              user: "Admin"
-            }
-          ]
-        };
-        
-        if (selectedReport?.id === reportId) {
-          setSelectedReport(updatedReport);
-        }
-        
-        return updatedReport;
-      }
-      return report;
-    }));
+  const handleAssignEntity = async (reportId: string, id_entidad: string) => {
+    const { error } = await assignReportEntity(reportId, id_entidad);
+    if (error) {
+      toast.error("Error al asignar entidad");
+      return;
+    }
+
+    fetchData();
+    if (selectedReport?.id === reportId) {
+      setSelectedReport({ ...selectedReport, id_entidad });
+    }
     
     toast.success("Entidad asignada correctamente");
   };
 
-  const handleAddComment = () => {
+  const handleAddComment = async () => {
     if (!newComment.trim() || !selectedReport) return;
     
-    setReports(reports.map(report => {
-      if (report.id === selectedReport.id) {
-        const updatedReport = {
-          ...report,
-          comments: [...report.comments, newComment],
-          history: [
-            ...report.history,
-            {
-              action: `Comentario agregado: "${newComment}"`,
-              date: new Date().toLocaleString(),
-              user: "Admin"
-            }
-          ]
-        };
-        
-        setSelectedReport(updatedReport);
-        return updatedReport;
-      }
-      return report;
-    }));
+    const { error } = await addAdminComment(selectedReport.id, newComment);
+    if (error) {
+      toast.error("Error al agregar comentario");
+      return;
+    }
+    
+    // Recargar mensajes
+    const { data: messages } = await getReportMessages(selectedReport.id);
+    if (messages) setReportMessages(messages);
     
     setNewComment("");
     toast.success("Comentario agregado correctamente");
   };
 
-  const handleDeleteReport = (reportId: string) => {
+  const handleDeleteReport = async (reportId: string) => {
     if (window.confirm("¿Estás seguro de eliminar este reporte? Esta acción no se puede deshacer.")) {
-      setReports(reports.filter(r => r.id !== reportId));
+      const { error } = await deleteReportAdmin(reportId);
+      if (error) {
+        toast.error("Error al eliminar: " + error);
+        return;
+      }
+      fetchData();
       setShowDetailModal(false);
       setSelectedReport(null);
       toast.success("Reporte eliminado correctamente");
     }
   };
 
-  const openDetailModal = (report: typeof mockReports[0]) => {
+  const openDetailModal = async (report: any) => {
     setSelectedReport(report);
     setShowDetailModal(true);
+    
+    // Cargar mensajes/historial
+    const { data: messages } = await getReportMessages(report.id);
+    if (messages) setReportMessages(messages);
   };
 
   return (
@@ -295,7 +171,7 @@ export function ReportsManagement() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-blue-800 font-medium mb-1">En Proceso</p>
-                <p className="text-3xl font-bold text-blue-900">{statusCounts["en-proceso"]}</p>
+                <p className="text-3xl font-bold text-blue-900">{statusCounts["en_proceso"]}</p>
               </div>
               <div className="w-12 h-12 bg-blue-200 rounded-lg flex items-center justify-center">
                 <Edit className="w-6 h-6 text-blue-700" />
@@ -345,8 +221,10 @@ export function ReportsManagement() {
           >
             <option value="all">Todos los estados</option>
             <option value="pendiente">Pendiente</option>
-            <option value="en-proceso">En Proceso</option>
+            <option value="en_revision">En Revisión</option>
+            <option value="en_proceso">En Proceso</option>
             <option value="resuelto">Resuelto</option>
+            <option value="cancelado">Cancelado</option>
           </select>
 
           <select
@@ -391,36 +269,38 @@ export function ReportsManagement() {
                   animate={{ opacity: 1 }}
                   className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
                 >
-                  <td className="py-3 px-4 text-sm text-gray-600">#{report.id}</td>
+                  <td className="py-3 px-4 text-sm text-gray-600">#{report.id.substring(0, 8)}</td>
                   <td className="py-3 px-4 text-sm text-gray-900 font-medium max-w-xs truncate">
-                    {report.title}
+                    {report.titulo}
                   </td>
                   <td className="py-3 px-4">
                     <Badge variant="outline">
-                      {report.category.charAt(0).toUpperCase() + report.category.slice(1)}
+                      {report.categoria?.charAt(0).toUpperCase() + report.categoria?.slice(1)}
                     </Badge>
                   </td>
                   <td className="py-3 px-4 text-sm text-gray-600 max-w-xs truncate">
-                    {report.location}
+                    {report.direccion_ubicacion}
                   </td>
-                  <td className="py-3 px-4 text-sm text-gray-600">{report.user}</td>
+                  <td className="py-3 px-4 text-sm text-gray-600">{report.perfiles?.nombre_completo || 'Usuario'}</td>
                   <td className="py-3 px-4">
                     <Badge 
                       variant={
-                        report.status === "pendiente" ? "warning" :
-                        report.status === "en-proceso" ? "info" :
-                        "success"
+                        report.estado === "pendiente" ? "warning" :
+                        report.estado === "en_proceso" ? "info" :
+                        report.estado === "resuelto" ? "success" :
+                        "danger"
                       }
                     >
-                      {report.status === "pendiente" ? "Pendiente" :
-                       report.status === "en-proceso" ? "En Proceso" :
-                       "Resuelto"}
+                      {report.estado === "pendiente" ? "Pendiente" :
+                       report.estado === "en_proceso" ? "En Proceso" :
+                       report.estado === "resuelto" ? "Resuelto" :
+                       report.estado === "en_revision" ? "En Revisión" : "Cancelado"}
                     </Badge>
                   </td>
                   <td className="py-3 px-4 text-sm text-gray-600 max-w-xs truncate">
-                    {report.entity || <span className="text-gray-400">Sin asignar</span>}
+                    {report.entidades?.nombre || <span className="text-gray-400">Sin asignar</span>}
                   </td>
-                  <td className="py-3 px-4 text-sm text-gray-600">{report.date}</td>
+                  <td className="py-3 px-4 text-sm text-gray-600">{new Date(report.fecha_creacion).toLocaleDateString()}</td>
                   <td className="py-3 px-4">
                     <Button
                       variant="ghost"
@@ -475,8 +355,8 @@ export function ReportsManagement() {
                 {/* Image */}
                 <div className="aspect-video rounded-lg overflow-hidden bg-gray-100">
                   <img
-                    src={selectedReport.image}
-                    alt={selectedReport.title}
+                    src={selectedReport.url_imagen}
+                    alt={selectedReport.titulo}
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -488,7 +368,7 @@ export function ReportsManagement() {
                       <MapPin className="w-5 h-5 text-green-600 mt-1" />
                       <div>
                         <p className="text-sm text-gray-600 mb-1">Ubicación</p>
-                        <p className="font-medium text-gray-900">{selectedReport.location}</p>
+                        <p className="font-medium text-gray-900">{selectedReport.direccion_ubicacion}</p>
                       </div>
                     </div>
                   </Card>
@@ -498,7 +378,7 @@ export function ReportsManagement() {
                       <User className="w-5 h-5 text-green-600 mt-1" />
                       <div>
                         <p className="text-sm text-gray-600 mb-1">Usuario</p>
-                        <p className="font-medium text-gray-900">{selectedReport.user}</p>
+                        <p className="font-medium text-gray-900">{selectedReport.perfiles?.nombre_completo || 'Usuario'}</p>
                       </div>
                     </div>
                   </Card>
@@ -508,7 +388,7 @@ export function ReportsManagement() {
                       <Calendar className="w-5 h-5 text-green-600 mt-1" />
                       <div>
                         <p className="text-sm text-gray-600 mb-1">Fecha</p>
-                        <p className="font-medium text-gray-900">{selectedReport.date}</p>
+                        <p className="font-medium text-gray-900">{new Date(selectedReport.fecha_creacion).toLocaleString()}</p>
                       </div>
                     </div>
                   </Card>
@@ -519,7 +399,7 @@ export function ReportsManagement() {
                       <div>
                         <p className="text-sm text-gray-600 mb-1">Entidad Asignada</p>
                         <p className="font-medium text-gray-900">
-                          {selectedReport.entity || "Sin asignar"}
+                          {selectedReport.entidades?.nombre || "Sin asignar"}
                         </p>
                       </div>
                     </div>
@@ -529,34 +409,23 @@ export function ReportsManagement() {
                 {/* Description */}
                 <Card>
                   <h3 className="font-semibold text-gray-900 mb-2">Descripción</h3>
-                  <p className="text-gray-700">{selectedReport.description}</p>
+                  <p className="text-gray-700">{selectedReport.descripcion}</p>
                 </Card>
 
                 {/* Status Change */}
                 <Card>
                   <h3 className="font-semibold text-gray-900 mb-3">Cambiar Estado</h3>
                   <div className="flex flex-wrap gap-2">
-                    <Button
-                      variant={selectedReport.status === "pendiente" ? "primary" : "outline"}
-                      size="sm"
-                      onClick={() => handleStatusChange(selectedReport.id, "pendiente")}
-                    >
-                      Pendiente
-                    </Button>
-                    <Button
-                      variant={selectedReport.status === "en-proceso" ? "primary" : "outline"}
-                      size="sm"
-                      onClick={() => handleStatusChange(selectedReport.id, "en-proceso")}
-                    >
-                      En Proceso
-                    </Button>
-                    <Button
-                      variant={selectedReport.status === "resuelto" ? "primary" : "outline"}
-                      size="sm"
-                      onClick={() => handleStatusChange(selectedReport.id, "resuelto")}
-                    >
-                      Resuelto
-                    </Button>
+                    {["pendiente", "en_revision", "en_proceso", "resuelto", "cancelado"].map((status) => (
+                      <Button
+                        key={status}
+                        variant={selectedReport.estado === status ? "primary" : "outline"}
+                        size="sm"
+                        onClick={() => handleStatusChange(selectedReport.id, status as ReportStatus)}
+                      >
+                        {status.replace('_', ' ').charAt(0).toUpperCase() + status.slice(1).replace('_', ' ')}
+                      </Button>
+                    ))}
                   </div>
                 </Card>
 
@@ -564,13 +433,13 @@ export function ReportsManagement() {
                 <Card>
                   <h3 className="font-semibold text-gray-900 mb-3">Asignar Entidad</h3>
                   <select
-                    value={selectedReport.entity || ""}
+                    value={selectedReport.id_entidad || ""}
                     onChange={(e) => handleAssignEntity(selectedReport.id, e.target.value)}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   >
                     <option value="">Seleccionar entidad...</option>
                     {entities.map(entity => (
-                      <option key={entity} value={entity}>{entity}</option>
+                      <option key={entity.id} value={entity.id}>{entity.nombre}</option>
                     ))}
                   </select>
                 </Card>
@@ -582,11 +451,19 @@ export function ReportsManagement() {
                     Comentarios y Seguimiento
                   </h3>
                   
-                  {selectedReport.comments.length > 0 ? (
-                    <div className="space-y-2 mb-4">
-                      {selectedReport.comments.map((comment, idx) => (
-                        <div key={idx} className="bg-gray-50 p-3 rounded-lg">
-                          <p className="text-sm text-gray-700">{comment}</p>
+                  {reportMessages.length > 0 ? (
+                    <div className="space-y-4 mb-4">
+                      {reportMessages.map((msg, idx) => (
+                        <div key={idx} className={`p-3 rounded-lg ${msg.tipo_remitente === 'usuario' ? 'bg-blue-50 ml-4' : 'bg-gray-50 mr-4'}`}>
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-xs font-bold text-gray-700">
+                              {msg.perfiles?.nombre_completo || 'Sistema'} ({msg.tipo_remitente})
+                            </span>
+                            <span className="text-[10px] text-gray-500">
+                              {new Date(msg.fecha_creacion).toLocaleString()}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-700">{msg.mensaje}</p>
                         </div>
                       ))}
                     </div>
@@ -607,22 +484,21 @@ export function ReportsManagement() {
                   </div>
                 </Card>
 
-                {/* History */}
+                {/* History (Ahora integrado en comentarios) */}
                 <Card>
                   <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                     <History className="w-5 h-5 text-green-600" />
-                    Historial de Cambios
+                    Historial del Reporte
                   </h3>
+                  <p className="text-xs text-gray-500 mb-2">Los cambios de estado y comentarios se registran cronológicamente.</p>
                   <div className="space-y-3">
-                    {selectedReport.history.map((entry, idx) => (
-                      <div key={idx} className="flex gap-3 pb-3 border-b border-gray-100 last:border-0">
-                        <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-900">{entry.action}</p>
-                          <p className="text-xs text-gray-500">{entry.date} • {entry.user}</p>
-                        </div>
+                    <div className="flex gap-3 pb-3 border-b border-gray-100 last:border-0">
+                      <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-900">Reporte creado</p>
+                        <p className="text-xs text-gray-500">{new Date(selectedReport.fecha_creacion).toLocaleString()}</p>
                       </div>
-                    ))}
+                    </div>
                   </div>
                 </Card>
 

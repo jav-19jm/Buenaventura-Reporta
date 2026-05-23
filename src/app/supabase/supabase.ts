@@ -82,6 +82,8 @@ export interface Reporte {
   visto: boolean;
   fecha_creacion: string;
   fecha_actualizacion: string;
+  entidades?: Entidad;
+  perfiles?: Perfil;
 }
 
 export interface Mensaje {
@@ -114,6 +116,7 @@ export interface Noticia {
   fecha_publicacion: string | null;
   fecha_creacion: string;
   fecha_actualizacion: string;
+  entidades?: Entidad;
 }
 
 export interface HistorialReporte {

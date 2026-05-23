@@ -8,174 +8,104 @@ import { Textarea } from "../../components/ui/Textarea";
 import { Search, User, Shield, ShieldOff, Eye, X, Mail, Calendar, MessageSquare, AlertTriangle, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 
-const mockUsers = [
-  {
-    id: "user123",
-    name: "María González",
-    email: "maria.gonzalez@email.com",
-    status: "activo" as const,
-    reportsCount: 12,
-    joinDate: "2026-01-15",
-    reputation: 85,
-    lastActivity: "2026-04-10",
-    blockedReason: null
-  },
-  {
-    id: "user456",
-    name: "Carlos Pérez",
-    email: "carlos.perez@email.com",
-    status: "activo" as const,
-    reportsCount: 8,
-    joinDate: "2026-02-20",
-    reputation: 92,
-    lastActivity: "2026-04-12",
-    blockedReason: null
-  },
-  {
-    id: "user789",
-    name: "Ana Rodríguez",
-    email: "ana.rodriguez@email.com",
-    status: "activo" as const,
-    reportsCount: 25,
-    joinDate: "2025-11-10",
-    reputation: 98,
-    lastActivity: "2026-04-09",
-    blockedReason: null
-  },
-  {
-    id: "user321",
-    name: "Juan Martínez",
-    email: "juan.martinez@email.com",
-    status: "bloqueado" as const,
-    reportsCount: 3,
-    joinDate: "2026-03-05",
-    reputation: 15,
-    lastActivity: "2026-04-01",
-    blockedReason: "Múltiples reportes falsos detectados"
-  },
-  {
-    id: "user654",
-    name: "Laura Sánchez",
-    email: "laura.sanchez@email.com",
-    status: "activo" as const,
-    reportsCount: 15,
-    joinDate: "2026-01-28",
-    reputation: 88,
-    lastActivity: "2026-04-15",
-    blockedReason: null
-  },
-  {
-    id: "user987",
-    name: "Roberto Torres",
-    email: "roberto.torres@email.com",
-    status: "suspendido" as const,
-    reportsCount: 5,
-    joinDate: "2026-03-12",
-    reputation: 45,
-    lastActivity: "2026-04-14",
-    blockedReason: "Comportamiento inapropiado en comentarios"
-  }
-];
+import { getAllUsers, updateUserStatus } from "../../../lib/admin";
+import { useEffect } from "react";
 
-type UserStatus = "activo" | "bloqueado" | "suspendido";
+type UserStatus = "activo" | "inactivo" | "suspendido";
 
 export function UsersManagement() {
-  const [users, setUsers] = useState(mockUsers);
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<UserStatus | "all">("all");
-  const [selectedUser, setSelectedUser] = useState<typeof mockUsers[0] | null>(null);
+  const [selectedUser, setSelectedUser] = useState<any | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [blockReason, setBlockReason] = useState("");
 
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    setLoading(true);
+    const { data } = await getAllUsers();
+    if (data) {
+      setUsers(data);
+    }
+    setLoading(false);
+  };
+
   const filteredUsers = users.filter((user) => {
     const matchesSearch = 
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (user.nombre_completo || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesStatus = statusFilter === "all" || user.status === statusFilter;
+    const matchesStatus = statusFilter === "all" || user.estado === statusFilter;
     
     return matchesSearch && matchesStatus;
   });
 
   const statusCounts = {
-    activo: users.filter(u => u.status === "activo").length,
-    bloqueado: users.filter(u => u.status === "bloqueado").length,
-    suspendido: users.filter(u => u.status === "suspendido").length,
+    activo: users.filter(u => u.estado === "activo").length,
+    inactivo: users.filter(u => u.estado === "inactivo").length,
+    suspendido: users.filter(u => u.estado === "suspendido").length,
   };
 
-  const handleBlockUser = () => {
+  const handleBlockUser = async () => {
     if (!selectedUser || !blockReason.trim()) {
       toast.error("Por favor ingresa un motivo de bloqueo");
       return;
     }
 
-    setUsers(users.map(user => {
-      if (user.id === selectedUser.id) {
-        return {
-          ...user,
-          status: "bloqueado" as const,
-          blockedReason: blockReason
-        };
-      }
-      return user;
-    }));
+    const { error } = await updateUserStatus(selectedUser.id, 'inactivo');
+    if (error) {
+      toast.error("Error al bloquear usuario");
+      return;
+    }
 
+    fetchUsers();
     setShowBlockModal(false);
     setShowDetailModal(false);
     setBlockReason("");
     setSelectedUser(null);
     
-    toast.success("Usuario bloqueado correctamente", {
-      description: "El usuario no podrá crear nuevos reportes"
-    });
+    toast.success("Usuario bloqueado correctamente");
   };
 
-  const handleSuspendUser = () => {
+  const handleSuspendUser = async () => {
     if (!selectedUser || !blockReason.trim()) {
       toast.error("Por favor ingresa un motivo de suspensión");
       return;
     }
 
-    setUsers(users.map(user => {
-      if (user.id === selectedUser.id) {
-        return {
-          ...user,
-          status: "suspendido" as const,
-          blockedReason: blockReason
-        };
-      }
-      return user;
-    }));
+    const { error } = await updateUserStatus(selectedUser.id, 'suspendido');
+    if (error) {
+      toast.error("Error al suspender usuario");
+      return;
+    }
 
+    fetchUsers();
     setShowBlockModal(false);
     setShowDetailModal(false);
     setBlockReason("");
     setSelectedUser(null);
     
-    toast.success("Usuario suspendido temporalmente", {
-      description: "El usuario tiene acceso limitado a la plataforma"
-    });
+    toast.success("Usuario suspendido temporalmente");
   };
 
-  const handleUnblockUser = (userId: string) => {
-    setUsers(users.map(user => {
-      if (user.id === userId) {
-        return {
-          ...user,
-          status: "activo" as const,
-          blockedReason: null
-        };
-      }
-      return user;
-    }));
+  const handleUnblockUser = async (userId: string) => {
+    const { error } = await updateUserStatus(userId, 'activo');
+    if (error) {
+      toast.error("Error al desbloquear usuario");
+      return;
+    }
 
+    fetchUsers();
     setShowDetailModal(false);
     setSelectedUser(null);
     
-    toast.success("Usuario desbloqueado correctamente", {
-      description: "El usuario puede crear reportes nuevamente"
-    });
+    toast.success("Usuario desbloqueado correctamente");
   };
 
   const openDetailModal = (user: typeof mockUsers[0]) => {
@@ -238,8 +168,8 @@ export function UsersManagement() {
           <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-red-800 font-medium mb-1">Bloqueados</p>
-                <p className="text-3xl font-bold text-red-900">{statusCounts.bloqueado}</p>
+                <p className="text-sm text-red-800 font-medium mb-1">Inactivos / Bloqueados</p>
+                <p className="text-3xl font-bold text-red-900">{statusCounts.inactivo}</p>
               </div>
               <div className="w-12 h-12 bg-red-200 rounded-lg flex items-center justify-center">
                 <ShieldOff className="w-6 h-6 text-red-700" />
@@ -271,7 +201,7 @@ export function UsersManagement() {
             <option value="all">Todos los estados</option>
             <option value="activo">Activos</option>
             <option value="suspendido">Suspendidos</option>
-            <option value="bloqueado">Bloqueados</option>
+            <option value="inactivo">Inactivos / Bloqueados</option>
           </select>
         </div>
       </Card>
@@ -305,43 +235,43 @@ export function UsersManagement() {
                 >
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-green-600 rounded-full flex items-center justify-center">
-                        <User className="w-5 h-5 text-white" />
+                      <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-green-600 rounded-full flex items-center justify-center text-white">
+                        <User className="w-5 h-5" />
                       </div>
-                      <span className="font-medium text-gray-900">{user.name}</span>
+                      <span className="font-medium text-gray-900">{user.nombre_completo || 'Usuario'}</span>
                     </div>
                   </td>
                   <td className="py-3 px-4 text-sm text-gray-600">{user.email}</td>
-                  <td className="py-3 px-4 text-sm text-gray-900 font-medium">{user.reportsCount}</td>
+                  <td className="py-3 px-4 text-sm text-gray-900 font-medium">{user.reportes_creados || 0}</td>
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-2">
                       <div className="flex-1 bg-gray-200 rounded-full h-2 max-w-[80px]">
                         <div
                           className={`h-2 rounded-full ${
-                            user.reputation >= 80 ? 'bg-green-500' :
-                            user.reputation >= 50 ? 'bg-yellow-500' :
+                            (user.puntuacion_reputacion || 0) >= 80 ? 'bg-green-500' :
+                            (user.puntuacion_reputacion || 0) >= 50 ? 'bg-yellow-500' :
                             'bg-red-500'
                           }`}
-                          style={{ width: `${user.reputation}%` }}
+                          style={{ width: `${Math.min(user.puntuacion_reputacion || 0, 100)}%` }}
                         ></div>
                       </div>
-                      <span className="text-sm font-medium text-gray-700">{user.reputation}%</span>
+                      <span className="text-sm font-medium text-gray-700">{user.puntuacion_reputacion || 0}</span>
                     </div>
                   </td>
                   <td className="py-3 px-4">
                     <Badge 
                       variant={
-                        user.status === "activo" ? "success" :
-                        user.status === "suspendido" ? "warning" :
+                        user.estado === "activo" ? "success" :
+                        user.estado === "suspendido" ? "warning" :
                         "danger"
                       }
                     >
-                      {user.status === "activo" ? "Activo" :
-                       user.status === "suspendido" ? "Suspendido" :
+                      {user.estado === "activo" ? "Activo" :
+                       user.estado === "suspendido" ? "Suspendido" :
                        "Bloqueado"}
                     </Badge>
                   </td>
-                  <td className="py-3 px-4 text-sm text-gray-600">{user.lastActivity}</td>
+                  <td className="py-3 px-4 text-sm text-gray-600">{new Date(user.fecha_creacion).toLocaleDateString()}</td>
                   <td className="py-3 px-4">
                     <div className="flex gap-2">
                       <Button
@@ -351,7 +281,7 @@ export function UsersManagement() {
                       >
                         <Eye className="w-4 h-4" />
                       </Button>
-                      {user.status === "activo" && (
+                      {user.estado === "activo" && (
                         <Button
                           variant="ghost"
                           size="sm"
@@ -360,7 +290,7 @@ export function UsersManagement() {
                           <ShieldOff className="w-4 h-4 text-red-600" />
                         </Button>
                       )}
-                      {(user.status === "bloqueado" || user.status === "suspendido") && (
+                      {(user.estado === "inactivo" || user.estado === "suspendido") && (
                         <Button
                           variant="ghost"
                           size="sm"

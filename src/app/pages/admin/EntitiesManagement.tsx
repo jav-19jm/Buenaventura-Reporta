@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Card } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
@@ -7,196 +7,132 @@ import { Input } from "../../components/ui/Input";
 import { Search, Plus, Edit, Trash2, X, Building2, Phone, Mail, MapPin } from "lucide-react";
 import { toast } from "sonner";
 
-const mockEntities = [
-  {
-    id: "1",
-    name: "Empresa de Aseo Municipal",
-    description: "Encargada del servicio de recolección de basuras y aseo público",
-    contact: "Juan López",
-    phone: "+57 300 123 4567",
-    email: "aseo@buenaventura.gov.co",
-    address: "Calle 10 #5-20",
-    assignedReports: 12,
-    resolvedReports: 8,
-    category: "servicios-publicos"
-  },
-  {
-    id: "2",
-    name: "Secretaría de Movilidad",
-    description: "Responsable del sistema de semáforos, señalización vial y tránsito",
-    contact: "María Rodríguez",
-    phone: "+57 300 234 5678",
-    email: "movilidad@buenaventura.gov.co",
-    address: "Carrera 3 #15-40",
-    assignedReports: 8,
-    resolvedReports: 6,
-    category: "transporte"
-  },
-  {
-    id: "3",
-    name: "Acueducto Municipal",
-    description: "Gestión del servicio de agua potable y alcantarillado",
-    contact: "Carlos Pérez",
-    phone: "+57 300 345 6789",
-    email: "acueducto@buenaventura.gov.co",
-    address: "Av. Simón Bolívar #45-67",
-    assignedReports: 15,
-    resolvedReports: 12,
-    category: "servicios-publicos"
-  },
-  {
-    id: "4",
-    name: "Secretaría de Obras Públicas",
-    description: "Mantenimiento de vías, parques y espacios públicos",
-    contact: "Ana García",
-    phone: "+57 300 456 7890",
-    email: "obras@buenaventura.gov.co",
-    address: "Calle 8 #23-45",
-    assignedReports: 20,
-    resolvedReports: 15,
-    category: "infraestructura"
-  },
-  {
-    id: "5",
-    name: "Policía Nacional",
-    description: "Seguridad ciudadana y orden público",
-    contact: "Mayor José Martínez",
-    phone: "+57 300 567 8901",
-    email: "policia@buenaventura.gov.co",
-    address: "Carrera 5 #12-30",
-    assignedReports: 5,
-    resolvedReports: 4,
-    category: "seguridad"
-  },
-  {
-    id: "6",
-    name: "Bomberos",
-    description: "Atención de emergencias e incendios",
-    contact: "Capitán Luis Torres",
-    phone: "+57 300 678 9012",
-    email: "bomberos@buenaventura.gov.co",
-    address: "Calle 15 con Carrera 8",
-    assignedReports: 3,
-    resolvedReports: 3,
-    category: "emergencias"
-  }
-];
+import { getAllEntities, createEntity, updateEntity, deleteEntity } from "../../../lib/admin";
+
 
 const categories = [
   "servicios-publicos",
-  "transporte",
-  "infraestructura",
   "seguridad",
-  "emergencias",
   "salud",
-  "medio-ambiente"
+  "infraestructura",
+  "ambiente",
+  "otro"
 ];
 
 export function EntitiesManagement() {
-  const [entities, setEntities] = useState(mockEntities);
+  const [entities, setEntities] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [showFormModal, setShowFormModal] = useState(false);
-  const [editingEntity, setEditingEntity] = useState<typeof mockEntities[0] | null>(null);
+  const [editingEntity, setEditingEntity] = useState<any | null>(null);
 
   const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    contact: "",
-    phone: "",
+    nombre: "",
+    slug: "",
+    descripcion: "",
+    tipo: "servicios-publicos",
     email: "",
-    address: "",
-    category: "servicios-publicos"
+    telefono: "",
+    color: "#6366f1",
   });
+
+  useEffect(() => {
+    fetchEntities();
+  }, []);
+
+  const fetchEntities = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await getAllEntities();
+      if (error) throw new Error(error);
+      if (data) setEntities(data);
+    } catch (error: any) {
+      console.error('Error fetching entities:', error);
+      toast.error("Error al cargar entidades: " + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredEntities = entities.filter((entity) => {
     const matchesSearch = 
-      entity.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      entity.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      entity.contact.toLowerCase().includes(searchTerm.toLowerCase());
+      (entity.nombre || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (entity.descripcion || "").toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesCategory = categoryFilter === "all" || entity.category === categoryFilter;
+    const matchesCategory = categoryFilter === "all" || entity.tipo === categoryFilter;
     
     return matchesSearch && matchesCategory;
   });
 
-  const totalAssigned = entities.reduce((sum, e) => sum + e.assignedReports, 0);
-  const totalResolved = entities.reduce((sum, e) => sum + e.resolvedReports, 0);
+  const totalAssigned = 0; // Se podría calcular con una query agregada si fuera necesario
+  const totalResolved = 0;
 
   const handleCreateEntity = () => {
     setEditingEntity(null);
     setFormData({
-      name: "",
-      description: "",
-      contact: "",
-      phone: "",
+      nombre: "",
+      slug: "",
+      descripcion: "",
+      tipo: "servicios-publicos",
       email: "",
-      address: "",
-      category: "servicios-publicos"
+      telefono: "",
+      color: "#6366f1",
     });
     setShowFormModal(true);
   };
 
-  const handleEditEntity = (entity: typeof mockEntities[0]) => {
+  const handleEditEntity = (entity: any) => {
     setEditingEntity(entity);
     setFormData({
-      name: entity.name,
-      description: entity.description,
-      contact: entity.contact,
-      phone: entity.phone,
-      email: entity.email,
-      address: entity.address,
-      category: entity.category
+      nombre: entity.nombre,
+      slug: entity.slug,
+      descripcion: entity.descripcion || "",
+      tipo: entity.tipo,
+      email: entity.email || "",
+      telefono: entity.telefono || "",
+      color: entity.color || "#6366f1",
     });
     setShowFormModal(true);
   };
 
-  const handleSubmitForm = (e: React.FormEvent) => {
+  const handleSubmitForm = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name.trim() || !formData.email.trim()) {
-      toast.error("Por favor completa los campos requeridos");
+    if (!formData.nombre.trim() || !formData.slug.trim()) {
+      toast.error("Por favor completa los campos requeridos (Nombre y Slug)");
       return;
     }
 
     if (editingEntity) {
-      // Edit existing entity
-      setEntities(entities.map(entity => {
-        if (entity.id === editingEntity.id) {
-          return {
-            ...entity,
-            ...formData
-          };
-        }
-        return entity;
-      }));
+      const { error } = await updateEntity(editingEntity.id, formData);
+      if (error) {
+        toast.error("Error al actualizar entidad: " + error);
+        return;
+      }
       toast.success("Entidad actualizada correctamente");
     } else {
-      // Create new entity
-      const newEntity = {
-        id: String(Date.now()),
-        ...formData,
-        assignedReports: 0,
-        resolvedReports: 0
-      };
-      setEntities([...entities, newEntity]);
+      const { error } = await createEntity(formData);
+      if (error) {
+        toast.error("Error al crear entidad: " + error);
+        return;
+      }
       toast.success("Entidad creada correctamente");
     }
 
+    fetchEntities();
     setShowFormModal(false);
     setEditingEntity(null);
   };
 
-  const handleDeleteEntity = (entityId: string) => {
-    const entity = entities.find(e => e.id === entityId);
-    
-    if (entity && entity.assignedReports > 0) {
-      toast.error("No puedes eliminar una entidad con reportes asignados");
-      return;
-    }
-
+  const handleDeleteEntity = async (entityId: string) => {
     if (window.confirm("¿Estás seguro de eliminar esta entidad?")) {
-      setEntities(entities.filter(e => e.id !== entityId));
+      const { error } = await deleteEntity(entityId);
+      if (error) {
+        toast.error("Error al eliminar: " + error);
+        return;
+      }
+      fetchEntities();
       toast.success("Entidad eliminada correctamente");
     }
   };
@@ -308,53 +244,41 @@ export function EntitiesManagement() {
             <Card className="h-full flex flex-col">
               {/* Header */}
               <div className="flex items-start justify-between mb-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-green-600 rounded-lg flex items-center justify-center">
-                  <Building2 className="w-6 h-6 text-white" />
+                <div className="w-12 h-12 rounded-lg flex items-center justify-center text-white" style={{ backgroundColor: entity.color || '#6366f1' }}>
+                  <Building2 className="w-6 h-6" />
                 </div>
                 <Badge variant="outline">
-                  {entity.category.charAt(0).toUpperCase() + entity.category.slice(1).replace('-', ' ')}
+                  {entity.tipo.charAt(0).toUpperCase() + entity.tipo.slice(1).replace('-', ' ')}
                 </Badge>
               </div>
 
               {/* Content */}
               <h3 className="font-semibold text-gray-900 mb-2">
-                {entity.name}
+                {entity.nombre}
               </h3>
 
               <p className="text-sm text-gray-600 mb-4 flex-1">
-                {entity.description}
+                {entity.descripcion || 'Sin descripción'}
               </p>
 
               {/* Contact Info */}
               <div className="space-y-2 mb-4 text-sm">
                 <div className="flex items-center gap-2 text-gray-600">
                   <Phone className="w-3 h-3" />
-                  {entity.phone}
+                  {entity.telefono || 'Sin teléfono'}
                 </div>
                 <div className="flex items-center gap-2 text-gray-600">
                   <Mail className="w-3 h-3" />
-                  {entity.email}
+                  {entity.email || 'Sin email'}
                 </div>
                 <div className="flex items-center gap-2 text-gray-600">
                   <MapPin className="w-3 h-3" />
-                  {entity.address}
-                </div>
-              </div>
-
-              {/* Stats */}
-              <div className="grid grid-cols-2 gap-2 mb-4 pt-4 border-t border-gray-200">
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-gray-900">{entity.assignedReports}</p>
-                  <p className="text-xs text-gray-600">Asignados</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-green-600">{entity.resolvedReports}</p>
-                  <p className="text-xs text-gray-600">Resueltos</p>
+                  Slug: {entity.slug}
                 </div>
               </div>
 
               {/* Actions */}
-              <div className="flex gap-2">
+              <div className="flex gap-2 pt-4 border-t border-gray-200">
                 <Button
                   variant="outline"
                   size="sm"
@@ -368,7 +292,6 @@ export function EntitiesManagement() {
                   variant="ghost"
                   size="sm"
                   onClick={() => handleDeleteEntity(entity.id)}
-                  disabled={entity.assignedReports > 0}
                 >
                   <Trash2 className="w-4 h-4 text-red-600" />
                 </Button>
@@ -423,21 +346,31 @@ export function EntitiesManagement() {
               </div>
 
               <form onSubmit={handleSubmitForm} className="p-6 space-y-4">
-                <Input
-                  label="Nombre de la Entidad *"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Ej: Empresa de Aseo Municipal"
-                  required
-                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input
+                    label="Nombre de la Entidad *"
+                    value={formData.nombre}
+                    onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                    placeholder="Ej: Empresa de Aseo Municipal"
+                    required
+                  />
+                  <Input
+                    label="Slug (URL Amigable) *"
+                    value={formData.slug}
+                    onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                    placeholder="ej-empresa-aseo"
+                    required
+                    disabled={!!editingEntity}
+                  />
+                </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Descripción
                   </label>
                   <textarea
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    value={formData.descripcion}
+                    onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
                     placeholder="Breve descripción de la entidad y sus funciones"
                     rows={3}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
@@ -446,53 +379,47 @@ export function EntitiesManagement() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input
-                    label="Persona de Contacto"
-                    value={formData.contact}
-                    onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
-                    placeholder="Nombre del responsable"
+                    label="Email *"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="contacto@entidad.gov.co"
+                    required
                   />
 
                   <Input
                     label="Teléfono"
                     type="tel"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    value={formData.telefono}
+                    onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
                     placeholder="+57 300 123 4567"
                   />
                 </div>
 
-                <Input
-                  label="Email *"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="contacto@entidad.gov.co"
-                  required
-                />
-
-                <Input
-                  label="Dirección"
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  placeholder="Calle 10 #5-20"
-                />
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Categoría *
-                  </label>
-                  <select
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    required
-                  >
-                    {categories.map(cat => (
-                      <option key={cat} value={cat}>
-                        {cat.charAt(0).toUpperCase() + cat.slice(1).replace('-', ' ')}
-                      </option>
-                    ))}
-                  </select>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Categoría (Tipo) *
+                    </label>
+                    <select
+                      value={formData.tipo}
+                      onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      required
+                    >
+                      {categories.map(cat => (
+                        <option key={cat} value={cat}>
+                          {cat.charAt(0).toUpperCase() + cat.slice(1).replace('-', ' ')}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <Input
+                    label="Color (Hex)"
+                    type="color"
+                    value={formData.color}
+                    onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                  />
                 </div>
 
                 <div className="flex gap-3 pt-4 border-t border-gray-200">

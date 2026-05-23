@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Card } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
@@ -8,49 +8,7 @@ import { Textarea } from "../../components/ui/Textarea";
 import { ImageWithFallback } from "../../components/figma/ImageWithFallback";
 import { Search, Plus, Edit, Trash2, X, Eye, Calendar, Tag, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
-
-const mockNews = [
-  {
-    id: "1",
-    title: "Nueva ciclovía en el centro de Buenaventura",
-    description: "La alcaldía anuncia la construcción de una moderna ciclovía que conectará el centro con la zona turística.",
-    image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800",
-    category: "infraestructura",
-    date: "2026-04-15",
-    author: "Admin",
-    published: true
-  },
-  {
-    id: "2",
-    title: "Jornada de limpieza en playas locales",
-    description: "Este sábado se realizará una jornada comunitaria de limpieza en las principales playas de la ciudad.",
-    image: "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=800",
-    category: "medio-ambiente",
-    date: "2026-04-14",
-    author: "Admin",
-    published: true
-  },
-  {
-    id: "3",
-    title: "Mejoras en el sistema de alumbrado público",
-    description: "Se instalarán nuevas luminarias LED en más de 50 calles del municipio para mejorar la seguridad.",
-    image: "https://images.unsplash.com/photo-1513828583688-c52646db42da?w=800",
-    category: "servicios",
-    date: "2026-04-12",
-    author: "Admin",
-    published: true
-  },
-  {
-    id: "4",
-    title: "Festival Cultural de Buenaventura 2026",
-    description: "Borrador del anuncio del festival cultural anual con música, danza y gastronomía local.",
-    image: "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800",
-    category: "cultura",
-    date: "2026-04-10",
-    author: "Admin",
-    published: false
-  }
-];
+import { getAllNews, createNews, updateNews, deleteNews, togglePublishNews, getAllEntities } from "../../../lib/admin";
 
 const categories = [
   "infraestructura",
@@ -64,124 +22,146 @@ const categories = [
 ];
 
 export function NewsManagement() {
-  const [news, setNews] = useState(mockNews);
+  const [news, setNews] = useState<any[]>([]);
+  const [entities, setEntities] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [showFormModal, setShowFormModal] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
-  const [editingNews, setEditingNews] = useState<typeof mockNews[0] | null>(null);
-  const [previewNews, setPreviewNews] = useState<typeof mockNews[0] | null>(null);
+  const [editingNews, setEditingNews] = useState<any | null>(null);
+  const [previewNews, setPreviewNews] = useState<any | null>(null);
 
   const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    image: "",
-    category: "infraestructura",
-    published: true
+    titulo: "",
+    contenido: "",
+    url_imagen: "",
+    categoria: "infraestructura",
+    esta_publicada: true,
+    id_entidad: ""
   });
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const { data: newsData, error: newsError } = await getAllNews();
+      const { data: entitiesData, error: entitiesError } = await getAllEntities();
+      
+      if (newsError) throw new Error(newsError);
+      if (entitiesError) throw new Error(entitiesError);
+      
+      if (newsData) setNews(newsData);
+      if (entitiesData) setEntities(entitiesData);
+    } catch (error: any) {
+      console.error('Error fetching news:', error);
+      toast.error("Error al cargar noticias: " + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredNews = news.filter((item) => {
     const matchesSearch = 
-      item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.description.toLowerCase().includes(searchTerm.toLowerCase());
+      (item.titulo || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (item.contenido || "").toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesCategory = categoryFilter === "all" || item.category === categoryFilter;
+    const matchesCategory = categoryFilter === "all" || item.categoria === categoryFilter;
     
     return matchesSearch && matchesCategory;
   });
 
-  const publishedCount = news.filter(n => n.published).length;
-  const draftCount = news.filter(n => !n.published).length;
+  const publishedCount = news.filter(n => n.esta_publicada).length;
+  const draftCount = news.filter(n => !n.esta_publicada).length;
 
   const handleCreateNews = () => {
     setEditingNews(null);
     setFormData({
-      title: "",
-      description: "",
-      image: "",
-      category: "infraestructura",
-      published: true
+      titulo: "",
+      contenido: "",
+      url_imagen: "",
+      categoria: "infraestructura",
+      esta_publicada: true,
+      id_entidad: ""
     });
     setShowFormModal(true);
   };
 
-  const handleEditNews = (newsItem: typeof mockNews[0]) => {
+  const handleEditNews = (newsItem: any) => {
     setEditingNews(newsItem);
     setFormData({
-      title: newsItem.title,
-      description: newsItem.description,
-      image: newsItem.image,
-      category: newsItem.category,
-      published: newsItem.published
+      titulo: newsItem.titulo,
+      contenido: newsItem.contenido,
+      url_imagen: newsItem.url_imagen || "",
+      categoria: newsItem.categoria || "infraestructura",
+      esta_publicada: newsItem.esta_publicada,
+      id_entidad: newsItem.id_entidad || ""
     });
     setShowFormModal(true);
   };
 
-  const handleSubmitForm = (e: React.FormEvent) => {
+  const handleSubmitForm = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.title.trim() || !formData.description.trim()) {
-      toast.error("Por favor completa todos los campos requeridos");
+    if (!formData.titulo.trim() || !formData.contenido.trim()) {
+      toast.error("Por favor completa los campos requeridos");
       return;
     }
 
+    const newsToSubmit = {
+      ...formData,
+      id_entidad: formData.id_entidad === "" ? null : formData.id_entidad
+    };
+
     if (editingNews) {
-      // Edit existing news
-      setNews(news.map(item => {
-        if (item.id === editingNews.id) {
-          return {
-            ...item,
-            ...formData,
-            date: new Date().toISOString().split('T')[0]
-          };
-        }
-        return item;
-      }));
+      const { error } = await updateNews(editingNews.id, newsToSubmit);
+      if (error) {
+        toast.error("Error al actualizar: " + error);
+        return;
+      }
       toast.success("Noticia actualizada correctamente");
     } else {
-      // Create new news
-      const newNewsItem = {
-        id: String(Date.now()),
-        ...formData,
-        date: new Date().toISOString().split('T')[0],
-        author: "Admin"
-      };
-      setNews([newNewsItem, ...news]);
+      const { error } = await createNews(newsToSubmit);
+      if (error) {
+        toast.error("Error al crear: " + error);
+        return;
+      }
       toast.success("Noticia creada correctamente");
     }
 
+    fetchData();
     setShowFormModal(false);
     setEditingNews(null);
-    setFormData({
-      title: "",
-      description: "",
-      image: "",
-      category: "infraestructura",
-      published: true
-    });
   };
 
-  const handleDeleteNews = (newsId: string) => {
-    if (window.confirm("¿Estás seguro de eliminar esta noticia? Esta acción no se puede deshacer.")) {
-      setNews(news.filter(item => item.id !== newsId));
+  const handleDeleteNews = async (newsId: string) => {
+    if (window.confirm("¿Estás seguro de eliminar esta noticia?")) {
+      const { error } = await deleteNews(newsId);
+      if (error) {
+        toast.error("Error al eliminar: " + error);
+        return;
+      }
+      fetchData();
       toast.success("Noticia eliminada correctamente");
     }
   };
 
-  const handlePreview = (newsItem: typeof mockNews[0]) => {
+  const handlePreview = (newsItem: any) => {
     setPreviewNews(newsItem);
     setShowPreviewModal(true);
   };
 
-  const handleTogglePublish = (newsId: string) => {
-    setNews(news.map(item => {
-      if (item.id === newsId) {
-        const newPublished = !item.published;
-        toast.success(newPublished ? "Noticia publicada" : "Noticia guardada como borrador");
-        return { ...item, published: newPublished };
-      }
-      return item;
-    }));
+  const handleTogglePublish = async (newsId: string, currentStatus: boolean) => {
+    const { error } = await togglePublishNews(newsId, !currentStatus);
+    if (error) {
+      toast.error("Error al cambiar estado");
+      return;
+    }
+    fetchData();
+    toast.success(!currentStatus ? "Noticia publicada" : "Noticia guardada como borrador");
   };
 
   return (
@@ -273,8 +253,8 @@ export function NewsManagement() {
               {/* Image */}
               <div className="aspect-video rounded-t-lg overflow-hidden bg-gray-100">
                 <ImageWithFallback
-                  src={newsItem.image}
-                  alt={newsItem.title}
+                  src={newsItem.url_imagen}
+                  alt={newsItem.titulo}
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -283,24 +263,24 @@ export function NewsManagement() {
               <div className="p-4 flex-1 flex flex-col">
                 <div className="flex items-start justify-between mb-2">
                   <Badge variant="outline">
-                    {newsItem.category.charAt(0).toUpperCase() + newsItem.category.slice(1).replace('-', ' ')}
+                    {newsItem.categoria?.charAt(0).toUpperCase() + newsItem.categoria?.slice(1).replace('-', ' ')}
                   </Badge>
-                  <Badge variant={newsItem.published ? "success" : "warning"}>
-                    {newsItem.published ? "Publicada" : "Borrador"}
+                  <Badge variant={newsItem.esta_publicada ? "success" : "warning"}>
+                    {newsItem.esta_publicada ? "Publicada" : "Borrador"}
                   </Badge>
                 </div>
 
                 <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">
-                  {newsItem.title}
+                  {newsItem.titulo}
                 </h3>
 
                 <p className="text-sm text-gray-600 mb-4 line-clamp-3 flex-1">
-                  {newsItem.description}
+                  {newsItem.contenido}
                 </p>
 
                 <div className="flex items-center gap-2 text-xs text-gray-500 mb-4">
                   <Calendar className="w-3 h-3" />
-                  {newsItem.date}
+                  {new Date(newsItem.fecha_creacion).toLocaleDateString()} • {newsItem.entidades?.nombre || 'General'}
                 </div>
 
                 {/* Actions */}
@@ -331,12 +311,12 @@ export function NewsManagement() {
                 </div>
 
                 <Button
-                  variant={newsItem.published ? "outline" : "primary"}
+                  variant={newsItem.esta_publicada ? "outline" : "primary"}
                   size="sm"
                   className="mt-2"
-                  onClick={() => handleTogglePublish(newsItem.id)}
+                  onClick={() => handleTogglePublish(newsItem.id, newsItem.esta_publicada)}
                 >
-                  {newsItem.published ? "Guardar como borrador" : "Publicar"}
+                  {newsItem.esta_publicada ? "Guardar como borrador" : "Publicar"}
                 </Button>
               </div>
             </Card>
@@ -391,20 +371,20 @@ export function NewsManagement() {
               <form onSubmit={handleSubmitForm} className="p-6 space-y-4">
                 <Input
                   label="Título *"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  value={formData.titulo}
+                  onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
                   placeholder="Título de la noticia"
                   required
                 />
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Descripción *
+                    Contenido *
                   </label>
                   <Textarea
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Descripción completa de la noticia"
+                    value={formData.contenido}
+                    onChange={(e) => setFormData({ ...formData, contenido: e.target.value })}
+                    placeholder="Contenido completo de la noticia"
                     rows={5}
                     required
                   />
@@ -418,16 +398,16 @@ export function NewsManagement() {
                     <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input
                       type="url"
-                      value={formData.image}
-                      onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                      value={formData.url_imagen}
+                      onChange={(e) => setFormData({ ...formData, url_imagen: e.target.value })}
                       placeholder="https://ejemplo.com/imagen.jpg"
                       className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     />
                   </div>
-                  {formData.image && (
+                  {formData.url_imagen && (
                     <div className="mt-3 aspect-video rounded-lg overflow-hidden bg-gray-100">
                       <ImageWithFallback
-                        src={formData.image}
+                        src={formData.url_imagen}
                         alt="Preview"
                         className="w-full h-full object-cover"
                       />
@@ -435,30 +415,47 @@ export function NewsManagement() {
                   )}
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Categoría *
-                  </label>
-                  <select
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    required
-                  >
-                    {categories.map(cat => (
-                      <option key={cat} value={cat}>
-                        {cat.charAt(0).toUpperCase() + cat.slice(1).replace('-', ' ')}
-                      </option>
-                    ))}
-                  </select>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Categoría *
+                    </label>
+                    <select
+                      value={formData.categoria}
+                      onChange={(e) => setFormData({ ...formData, categoria: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      required
+                    >
+                      {categories.map(cat => (
+                        <option key={cat} value={cat}>
+                          {cat.charAt(0).toUpperCase() + cat.slice(1).replace('-', ' ')}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Entidad Responsable
+                    </label>
+                    <select
+                      value={formData.id_entidad}
+                      onChange={(e) => setFormData({ ...formData, id_entidad: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    >
+                      <option value="">General / Alcaldía</option>
+                      {entities.map(ent => (
+                        <option key={ent.id} value={ent.id}>{ent.nombre}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-3">
                   <input
                     type="checkbox"
                     id="published"
-                    checked={formData.published}
-                    onChange={(e) => setFormData({ ...formData, published: e.target.checked })}
+                    checked={formData.esta_publicada}
+                    onChange={(e) => setFormData({ ...formData, esta_publicada: e.target.checked })}
                     className="w-4 h-4 text-green-600 rounded focus:ring-2 focus:ring-green-500"
                   />
                   <label htmlFor="published" className="text-sm font-medium text-gray-700">
@@ -520,8 +517,8 @@ export function NewsManagement() {
                 {/* Image */}
                 <div className="aspect-video rounded-lg overflow-hidden bg-gray-100 mb-6">
                   <ImageWithFallback
-                    src={previewNews.image}
-                    alt={previewNews.title}
+                    src={previewNews.url_imagen}
+                    alt={previewNews.titulo}
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -530,25 +527,25 @@ export function NewsManagement() {
                 <div className="flex items-center gap-3 mb-4">
                   <Badge variant="outline">
                     <Tag className="w-3 h-3 mr-1" />
-                    {previewNews.category.charAt(0).toUpperCase() + previewNews.category.slice(1).replace('-', ' ')}
+                    {previewNews.categoria?.charAt(0).toUpperCase() + previewNews.categoria?.slice(1).replace('-', ' ')}
                   </Badge>
                   <span className="text-sm text-gray-600 flex items-center gap-1">
                     <Calendar className="w-3 h-3" />
-                    {previewNews.date}
+                    {new Date(previewNews.fecha_creacion).toLocaleDateString()}
                   </span>
-                  <Badge variant={previewNews.published ? "success" : "warning"}>
-                    {previewNews.published ? "Publicada" : "Borrador"}
+                  <Badge variant={previewNews.esta_publicada ? "success" : "warning"}>
+                    {previewNews.esta_publicada ? "Publicada" : "Borrador"}
                   </Badge>
                 </div>
 
                 {/* Title */}
                 <h1 className="text-3xl font-bold text-gray-900 mb-4">
-                  {previewNews.title}
+                  {previewNews.titulo}
                 </h1>
 
                 {/* Description */}
                 <p className="text-gray-700 leading-relaxed text-lg">
-                  {previewNews.description}
+                  {previewNews.contenido}
                 </p>
 
                 {/* Actions */}

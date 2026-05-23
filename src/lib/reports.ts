@@ -451,6 +451,44 @@ export async function createReportMessage(reporteId: string, mensaje: string) {
   }
 }
 
+/**
+ * Obtener todas las categorías de reportes activas
+ */
+export async function getReportCategories() {
+  try {
+    const { data, error } = await supabase
+      .from('categorias_reportes')
+      .select('*')
+      .eq('esta_activa', true)
+      .order('nombre', { ascending: true });
+
+    if (error) throw error;
+    return { data, error: null };
+  } catch (error: any) {
+    console.error('Error al obtener categorías:', error);
+    return { data: null, error: error.message };
+  }
+}
+
+/**
+ * Obtener noticias publicadas para el panel de usuario
+ */
+export async function getPublicNews() {
+  try {
+    const { data, error } = await supabase
+      .from('noticias')
+      .select('*, entidades(nombre)')
+      .eq('esta_publicada', true)
+      .order('fecha_creacion', { ascending: false });
+
+    if (error) throw error;
+    return { data, error: null };
+  } catch (error: any) {
+    console.error('Error al obtener noticias:', error);
+    return { data: null, error: error.message };
+  }
+}
+
 // ==========================================
 // FUNCIONES AUXILIARES
 // ==========================================

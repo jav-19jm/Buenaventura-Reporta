@@ -1,36 +1,49 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "motion/react";
-import { Building2, Hospital, School, Bus, ShoppingBag, Coffee, Search, Shield } from "lucide-react";
+import { Building2, Hospital, School, Bus, Search, Shield, Info, Phone, Clock, TreePalm } from "lucide-react";
 import { Card } from "./ui/Card";
 import { Input } from "./ui/Input";
 import { Badge } from "./ui/Badge";
+import { getAllServices } from "../../lib/admin";
+import type { Servicio } from "../supabase/supabase";
+
+import { SERVICE_TYPES } from "../../lib/service-types";
 
 const serviceTypes = [
   { id: "all", label: "Todos", icon: Building2, color: "text-gray-600" },
-  { id: "health", label: "Salud", icon: Hospital, color: "text-red-600" },
-  { id: "education", label: "Educación", icon: School, color: "text-green-600" },
-  { id: "transport", label: "Transporte", icon: Bus, color: "text-green-600" },
-  { id: "commerce", label: "Comercio", icon: ShoppingBag, color: "text-yellow-600" },
-  { id: "security", label: "Seguridad", icon: Shield, color: "text-yellow-600" },
-  { id: "recreation", label: "Recreación", icon: Building2, color: "text-green-600" },
+  ...SERVICE_TYPES.map(t => ({
+    ...t,
+    color: `text-${t.color}-600`
+  }))
 ];
 
-const mockServices = [
-  { id: "1", name: "Hospital San José", type: "health", address: "Calle 2 #3-45", phone: "123-4567", distance: "1.2 km" },
-  { id: "2", name: "Colegio Nacional", type: "education", address: "Av. Simón Bolívar", phone: "234-5678", distance: "0.8 km" },
-  { id: "3", name: "Terminal de Transporte", type: "transport", address: "Calle 10 #5-20", phone: "345-6789", distance: "2.5 km" },
-  { id: "4", name: "Centro Comercial Plaza", type: "commerce", address: "Carrera 5 #8-30", phone: "456-7890", distance: "1.5 km" },
-  { id: "5", name: "Parque Central", type: "recreation", address: "Calle 1 #1-10", phone: "567-8901", distance: "0.5 km" },
-  { id: "6", name: "Clínica del Puerto", type: "health", address: "Carrera 3 #4-15", phone: "678-9012", distance: "1.8 km" },
-];
 
 export function CityServicesFilter() {
   const [selectedType, setSelectedType] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [services, setServices] = useState<Servicio[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredServices = mockServices.filter(service => {
-    const matchesType = selectedType === "all" || service.type === selectedType;
-    const matchesSearch = service.name.toLowerCase().includes(searchQuery.toLowerCase());
+  useEffect(() => {
+    async function loadServices() {
+      setLoading(true);
+      try {
+        const { data, error } = await getAllServices();
+        if (error) throw new Error(error);
+        if (data) setServices(data.filter((s: Servicio) => s.esta_activo));
+      } catch (error) {
+        console.error("Error loading services:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadServices();
+  }, []);
+
+  const filteredServices = services.filter(service => {
+    const matchesType = selectedType === "all" || service.tipo === selectedType;
+    const matchesSearch = (service.nombre || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         (service.descripcion || "").toLowerCase().includes(searchQuery.toLowerCase());
     return matchesType && matchesSearch;
   });
 
@@ -40,7 +53,7 @@ export function CityServicesFilter() {
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
         <Input
-          placeholder="Buscar servicios..."
+          placeholder="Buscar servicios por nombre o descripción..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="pl-10"
@@ -48,7 +61,7 @@ export function CityServicesFilter() {
       </div>
 
       {/* Filter Buttons */}
-      <div className="flex gap-2 overflow-x-auto pb-2">
+      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
         {serviceTypes.map((type, index) => {
           const Icon = type.icon;
           const isSelected = selectedType === type.id;
@@ -62,14 +75,14 @@ export function CityServicesFilter() {
               onClick={() => setSelectedType(type.id)}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 whitespace-nowrap transition-all ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl border-2 whitespace-nowrap transition-all ${
                 isSelected
-                  ? "border-green-600 bg-green-50"
-                  : "border-gray-200 bg-white hover:border-gray-300"
+                  ? "border-green-600 bg-green-50 shadow-sm"
+                  : "border-gray-100 bg-white hover:border-gray-200"
               }`}
             >
               <Icon className={`w-4 h-4 ${isSelected ? "text-green-600" : type.color}`} />
-              <span className={`text-sm ${isSelected ? "text-green-900 font-medium" : "text-gray-700"}`}>
+              <span className={`text-sm ${isSelected ? "text-green-900 font-bold" : "text-gray-600 font-medium"}`}>
                 {type.label}
               </span>
             </motion.button>
@@ -78,49 +91,87 @@ export function CityServicesFilter() {
       </div>
 
       {/* Services List */}
-      <div className="grid md:grid-cols-2 gap-3">
-        {filteredServices.map((service, index) => {
-          const serviceType = serviceTypes.find(t => t.id === service.type);
-          const Icon = serviceType?.icon || Building2;
-          
-          return (
-            <motion.div
-              key={service.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-              whileHover={{ scale: 1.02 }}
-            >
-              <Card hover className="p-4">
-                <div className="flex items-start gap-3">
-                  <div className={`w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0`}>
-                    <Icon className={`w-5 h-5 ${serviceType?.color}`} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-medium text-gray-900 mb-1">{service.name}</h4>
-                    <p className="text-sm text-gray-600 mb-2">{service.address}</p>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Badge variant="default" className="text-xs">📞 {service.phone}</Badge>
-                      <Badge variant="info" className="text-xs">📍 {service.distance}</Badge>
+      {loading ? (
+        <div className="grid md:grid-cols-2 gap-3">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-32 bg-gray-100 animate-pulse rounded-2xl" />
+          ))}
+        </div>
+      ) : (
+        <div className="grid md:grid-cols-2 gap-3">
+          {filteredServices.map((service, index) => {
+            const serviceType = serviceTypes.find(t => t.id === service.tipo);
+            const Icon = serviceType?.icon || Building2;
+            
+            return (
+              <motion.div
+                key={service.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                whileHover={{ y: -4 }}
+              >
+                <Card hover className={`p-4 border-l-4 h-full flex flex-col ${serviceType?.color.replace('text-', 'border-')}`}>
+                  <div className="flex items-start gap-4">
+                    <div className={`w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center flex-shrink-0 border border-gray-100`}>
+                      <Icon className={`w-6 h-6 ${serviceType?.color}`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-start">
+                        <h4 className="font-bold text-gray-900 mb-1 truncate">{service.nombre}</h4>
+                        <Badge variant="outline" className="text-[10px] uppercase">{serviceType?.label}</Badge>
+                      </div>
+                      <p className="text-xs text-gray-500 mb-2 line-clamp-2">{service.descripcion || "Sin descripción"}</p>
+                      
+                      <div className="space-y-1">
+                        {service.direccion && (
+                          <div className="flex items-center gap-2 text-xs text-gray-600">
+                            <Building2 className="w-3 h-3 text-gray-400" />
+                            {service.direccion}
+                          </div>
+                        )}
+                        <div className="flex flex-wrap items-center gap-3 mt-2">
+                          {service.telefono && (
+                            <div className="flex items-center gap-1 text-[11px] font-medium text-green-700 bg-green-50 px-2 py-0.5 rounded-full">
+                              <Phone className="w-3 h-3" />
+                              {service.telefono}
+                            </div>
+                          )}
+                          {service.horario && (
+                            <div className="flex items-center gap-1 text-[11px] font-medium text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full">
+                              <Clock className="w-3 h-3" />
+                              {service.horario}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </Card>
-            </motion.div>
-          );
-        })}
-      </div>
+                </Card>
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
 
-      {filteredServices.length === 0 && (
+      {!loading && filteredServices.length === 0 && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="text-center py-12"
+          className="text-center py-16 bg-white rounded-3xl border border-dashed border-gray-200"
         >
-          <Building2 className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-600">No se encontraron servicios</p>
+          <div className="bg-gray-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Info className="w-10 h-10 text-gray-300" />
+          </div>
+          <p className="text-gray-500 font-medium">No se encontraron servicios que coincidan con tu búsqueda</p>
+          <button 
+            onClick={() => {setSelectedType("all"); setSearchQuery("");}}
+            className="mt-4 text-green-600 text-sm font-bold hover:underline"
+          >
+            Limpiar filtros
+          </button>
         </motion.div>
       )}
     </div>
   );
-}
+}

@@ -4,6 +4,8 @@ import { motion } from "motion/react";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { ArrowLeft, Building2, Droplet, Car, Hammer, Shield, Flame, Leaf } from "lucide-react";
+import { supabase } from "../../supabase/supabase";
+import { toast } from "sonner";
 
 const entityConfigs = {
   aseo: {
@@ -54,17 +56,53 @@ export function EntityLogin() {
   const { entityId } = useParams();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    username: "jose",
-    password: "12345",
+    username: "",
+    password: "",
   });
+  const [loading, setLoading] = useState(false);
 
   const config = entityConfigs[entityId as keyof typeof entityConfigs] || entityConfigs.aseo;
   const Icon = config.icon;
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Navegar al dashboard específico de la entidad
-    navigate(`/entity/dashboard/${entityId}`);
+    setLoading(true);
+    
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: formData.username,
+        password: formData.password,
+      });
+
+      if (error) {
+        toast.error("Error al iniciar sesión: " + error.message);
+        setLoading(false);
+        return;
+      }
+
+      if (data?.user) {
+        // Verificar perfil para asegurar que es una entidad
+        const { data: profile } = await supabase
+          .from('perfiles')
+          .select('rol, id_entidad')
+          .eq('id', data.user.id)
+          .single();
+
+        const metadataRole = data.user.user_metadata?.rol;
+
+        if (profile?.rol === 'entidad' || metadataRole === 'entidad') {
+          toast.success("¡Bienvenido al panel institucional!");
+          navigate("/entity/dashboard");
+        } else if (profile?.rol === 'administrador' || metadataRole === 'administrador') {
+          navigate("/admin");
+        } else {
+          toast.error("Esta cuenta no tiene permisos de entidad institucional.");
+          navigate("/user");
+        }
+      }
+    } catch (error: any) {
+      toast.error("Error de conexión");
+      setLoading(false);
+    }
   };
 
   return (

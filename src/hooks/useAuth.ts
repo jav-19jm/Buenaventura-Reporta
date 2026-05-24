@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../app/supabase/supabase';
 import { getCurrentUser, getSession, onAuthStateChange } from '../lib/auth';
-import type { Profile } from '../app/supabase/supabase';
+import type { Perfil } from '../app/supabase/supabase';
 
 // ==========================================
 // HOOK PERSONALIZADO PARA AUTENTICACIÓN
@@ -9,7 +9,7 @@ import type { Profile } from '../app/supabase/supabase';
 
 export function useAuth() {
   const [user, setUser] = useState<any>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profile, setProfile] = useState<Perfil | null>(null);
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState<any>(null);
 
@@ -33,6 +33,7 @@ export function useAuth() {
       setUser(session?.user ?? null);
 
       if (session?.user) {
+        setLoading(true);
         fetchProfile(session.user.id);
       } else {
         setProfile(null);
@@ -48,13 +49,32 @@ export function useAuth() {
   const fetchProfile = async (userId: string) => {
     try {
       const { data, error } = await supabase
-        .from('profiles')
+        .from('perfiles')
         .select('*')
         .eq('id', userId)
         .single();
 
       if (error) throw error;
-      setProfile(data);
+
+      // Verificar si el usuario está bloqueado o suspendido
+      if (data.estado !== 'activo') {
+        const { toast } = await import('sonner');
+        const motive = data.motivo_bloqueo || 'No se especificó un motivo.';
+        const statusLabel = data.estado === 'suspendido' ? 'suspendida' : 'bloqueada';
+        
+        toast.error(`Cuenta ${statusLabel}`, {
+          description: `${motive}. Si crees que es un error, contacta a los administradores.`,
+          duration: 6000,
+        });
+
+        // Cerrar sesión automáticamente
+        await supabase.auth.signOut();
+        setUser(null);
+        setSession(null);
+        setProfile(null);
+      } else {
+        setProfile(data);
+      }
     } catch (error) {
       console.error('Error al cargar perfil:', error);
       setProfile(null);
@@ -69,8 +89,8 @@ export function useAuth() {
     session,
     loading,
     isAuthenticated: !!user,
-    isAdmin: profile?.role === 'admin',
-    isEntity: profile?.role === 'entity',
-    isCitizen: profile?.role === 'citizen',
+    isAdmin: profile?.rol === 'administrador' || user?.user_metadata?.rol === 'administrador',
+    isEntity: profile?.rol === 'entidad' || user?.user_metadata?.rol === 'entidad',
+    isCitizen: profile?.rol === 'ciudadano' && user?.user_metadata?.rol !== 'entidad' && user?.user_metadata?.rol !== 'administrador',
   };
 }

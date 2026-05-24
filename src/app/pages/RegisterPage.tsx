@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { Button } from "../components/ui/Button";
@@ -6,6 +6,7 @@ import { Input } from "../components/ui/Input";
 import { MapPin } from "lucide-react";
 import { WelcomeAnimation } from "../components/animations/WelcomeAnimation";
 import { signUp } from "../../lib/auth";
+import { useAuth } from "../../hooks/useAuth";
 import { toast } from "sonner";
 
 export function RegisterPage() {
@@ -18,6 +19,13 @@ export function RegisterPage() {
     password: "",
     confirmPassword: "",
   });
+  const { isAuthenticated, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      navigate("/user");
+    }
+  }, [isAuthenticated, authLoading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,8 +53,10 @@ export function RegisterPage() {
       }
 
       if (data?.user) {
-        toast.success("¡Cuenta creada exitosamente!");
-        setShowWelcome(true);
+        toast.success("¡Registro exitoso! Por favor, verifica tu correo electrónico para activar tu cuenta.", {
+          duration: 6000,
+        });
+        navigate("/login");
       }
     } catch (error: any) {
       toast.error("Error al crear cuenta");
@@ -54,22 +64,11 @@ export function RegisterPage() {
     }
   };
 
-  const handleWelcomeComplete = () => {
-    setTimeout(() => {
-      navigate("/user");
-    }, 500);
-  };
+
 
   return (
     <>
-      <AnimatePresence>
-        {showWelcome && (
-          <WelcomeAnimation 
-            userName={formData.fullName} 
-            onComplete={handleWelcomeComplete}
-          />
-        )}
-      </AnimatePresence>
+
 
       <motion.div
         initial={{ opacity: 0 }}

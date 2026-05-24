@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { Button } from "../components/ui/Button";
@@ -6,7 +6,9 @@ import { Input } from "../components/ui/Input";
 import { MapPin, Building2 } from "lucide-react";
 import { WelcomeAnimation } from "../components/animations/WelcomeAnimation";
 import { signIn } from "../../lib/auth";
+import { useAuth } from "../../hooks/useAuth";
 import { toast } from "sonner";
+import { supabase } from "../supabase/supabase";
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -16,6 +18,27 @@ export function LoginPage() {
     email: "",
     password: "",
   });
+  const { isAuthenticated, profile, session, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && isAuthenticated && profile) {
+      // Priorizar el rol del perfil, pero verificar metadata como respaldo
+      const currentRole = profile.rol;
+      const metadataRole = session?.user?.user_metadata?.rol;
+      
+      const isEntity = currentRole === 'entidad' || metadataRole === 'entidad';
+      const isAdmin = currentRole === 'administrador' || metadataRole === 'administrador';
+
+      if (isAdmin) {
+        navigate("/admin");
+      } else if (isEntity) {
+        navigate("/entity/dashboard");
+      } else {
+        navigate("/user");
+      }
+    }
+
+  }, [isAuthenticated, profile, authLoading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,7 +48,13 @@ export function LoginPage() {
       const { data, error } = await signIn(formData.email, formData.password);
 
       if (error) {
-        toast.error(error);
+        if (error.includes("Email not confirmed")) {
+          toast.error("Tu correo electrónico aún no ha sido verificado. Por favor, revisa tu bandeja de entrada.");
+        } else if (error.includes("Invalid login credentials")) {
+          toast.error("Credenciales incorrectas. Por favor, verifica tu correo y contraseña.");
+        } else {
+          toast.error(error);
+        }
         setLoading(false);
         return;
       }
@@ -35,16 +64,38 @@ export function LoginPage() {
         setShowWelcome(true);
       }
     } catch (error: any) {
-      toast.error("Error al iniciar sesión");
+      toast.error("Hubo un problema al conectar con el servidor.");
       setLoading(false);
     }
   };
 
-  const handleWelcomeComplete = () => {
-    // Pequeño delay antes de navegar
-    setTimeout(() => {
-      navigate("/user");
-    }, 500);
+  const handleWelcomeComplete = async () => {
+    // Verificar rol antes de navegar
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: profile } = await supabase
+        .from('perfiles')
+        .select('rol')
+        .eq('id', user.id)
+        .single();
+
+      const metadataRole = user.user_metadata?.rol;
+      
+      setTimeout(() => {
+        if (profile?.rol === 'administrador' || metadataRole === 'administrador') {
+          navigate("/admin");
+        } else if (profile?.rol === 'entidad' || metadataRole === 'entidad') {
+          navigate("/entity/dashboard");
+        } else {
+          navigate("/user");
+        }
+      }, 500);
+
+    } else {
+      setTimeout(() => {
+        navigate("/user");
+      }, 500);
+    }
   };
 
   return (

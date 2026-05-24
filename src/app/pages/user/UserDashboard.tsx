@@ -5,47 +5,54 @@ import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import { MapPin, Plus, Filter, AlertCircle, User, Menu, X, RefreshCw, Layers, Shield } from "lucide-react";
-import { incidentTypes } from "../../components/IncidentTypeSelector";
+
 import { WeatherWidget } from "../../components/WeatherWidget";
 import { NotificationBell } from "../../components/NotificationBell";
 import { NewsSection } from "../../components/NewsSection";
 import { CityServicesFilter } from "../../components/CityServicesFilter";
-import { getPublicReports } from "../../../lib/reports";
+import { getPublicReports, getReportCategories } from "../../../lib/reports";
 import { useAuth } from "../../../hooks/useAuth";
 import { ReportsMap } from "../../components/ReportsMap";
-import type { Report } from "../../supabase/supabase";
+import type { Reporte } from "../../supabase/supabase";
 import { toast } from "sonner";
 
 export function UserDashboard() {
   const navigate = useNavigate();
-  const { user, profile } = useAuth();
+  const { user, profile, isAuthenticated, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      navigate("/login");
+    }
+  }, [isAuthenticated, authLoading, navigate]);
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
-  const [reports, setReports] = useState<Report[]>([]);
+  const [mapFilter, setMapFilter] = useState<'todos' | 'mios'>('todos');
+  const [reports, setReports] = useState<Reporte[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Cargar reportes de Supabase
-  useEffect(() => {
-    loadReports();
-  }, []);
+  const fetchData = async (showLoading = true) => {
+    if (showLoading) setLoading(true);
+    try {
+      const [reportsRes, catsRes] = await Promise.all([
+        getPublicReports(),
+        getReportCategories()
+      ]);
 
-  const loadReports = async () => {
-    setLoading(true);
-    const { data, error } = await getPublicReports();
-
-    if (error) {
-      console.error('Error al cargar reportes:', error);
-      toast.error('Error al cargar reportes');
-      setLoading(false);
-      return;
+      if (reportsRes.data) setReports(reportsRes.data);
+      if (catsRes.data) setCategories(catsRes.data);
+    } catch (error) {
+      console.error('Error al cargar datos:', error);
+      toast.error('Error al cargar datos');
+    } finally {
+      if (showLoading) setLoading(false);
     }
-
-    if (data) {
-      setReports(data);
-      console.log('📊 Reportes cargados desde Supabase:', data.length);
-    }
-
-    setLoading(false);
   };
+
+  // Cargar reportes y categorías de Supabase
+  useEffect(() => {
+    fetchData();
+  }, []);
   const [showFilters, setShowFilters] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [showNews, setShowNews] = useState(false);
@@ -53,8 +60,19 @@ export function UserDashboard() {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const filteredReports = selectedFilter
-    ? reports.filter((r) => r.category === selectedFilter)
+    ? reports.filter((r) => r.categoria === selectedFilter)
     : reports;
+
+  const isMyReport = (r: Reporte) => {
+    if (!user && !profile) return false;
+    return r.id_usuario === user?.id || r.id_usuario === profile?.id || (r.perfiles && (r.perfiles as any).id === user?.id);
+  };
+
+  const mapReports = mapFilter === 'mios'
+    ? filteredReports.filter(isMyReport)
+    : filteredReports;
+
+  const myRecentReports = filteredReports.filter(isMyReport);
 
   const handleRefresh = () => {
     setIsRefreshing(true);
@@ -63,9 +81,6 @@ export function UserDashboard() {
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
-      {/* Weather Widget */}
-      <WeatherWidget />
-
       {/* Header */}
       <header className="bg-white shadow-sm z-10">
         <div className="px-4 py-3 flex items-center justify-between">
@@ -176,16 +191,18 @@ export function UserDashboard() {
                   >
                     Todas
                   </Button>
-                  {incidentTypes.map((type) => (
+                  {categories.length > 0 ? categories.map((cat) => (
                     <Button
-                      key={type.id}
-                      variant={selectedFilter === type.id ? "primary" : "outline"}
+                      key={cat.id}
+                      variant={selectedFilter === cat.id ? "primary" : "outline"}
                       size="sm"
-                      onClick={() => setSelectedFilter(type.id)}
+                      onClick={() => setSelectedFilter(cat.id)}
                     >
-                      {type.label}
+                      {cat.nombre}
                     </Button>
-                  ))}
+                  )) : (
+                    <span className="text-xs text-gray-400">Cargando categorías...</span>
+                  )}
                 </div>
               </div>
             </motion.div>
@@ -229,18 +246,45 @@ export function UserDashboard() {
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         {/* Map Area */}
         <div className="flex-1 relative bg-gradient-to-br from-yellow-50 via-green-50 to-yellow-100">
-          <ReportsMap reports={filteredReports} />
+          <ReportsMap
+            reports={mapReports}
+            onVote={() => fetchData(false)}
+          />
 
-          {/* Emergency Button */}
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            animate={{ scale: [1, 1.05, 1] }}
-            transition={{ duration: 2, repeat: Infinity }}
-            className="absolute bottom-24 md:bottom-6 right-20 md:right-24 w-14 h-14 bg-red-600 rounded-full shadow-xl flex items-center justify-center hover:bg-red-700 transition-colors"
-          >
-            <AlertCircle className="w-7 h-7 text-white" />
-          </motion.button>
+          {/* Floating Map Filter */}
+          <div className="absolute top-4 right-4 z-[5] flex items-end">
+            <motion.div
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              className="bg-white/90 backdrop-blur-md p-1.5 rounded-2xl shadow-xl border border-gray-200 flex items-center gap-1.5"
+            >
+              <button
+                onClick={() => setMapFilter('todos')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${mapFilter === 'todos'
+                  ? 'bg-gradient-to-r from-yellow-500 to-green-600 text-white shadow-lg shadow-green-600/20 scale-105'
+                  : 'text-gray-600 hover:bg-gray-100/80'
+                  }`}
+              >
+                <Layers className="w-4 h-4" />
+                Todos
+              </button>
+              <button
+                onClick={() => setMapFilter('mios')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${mapFilter === 'mios'
+                  ? 'bg-gradient-to-r from-yellow-500 to-green-600 text-white shadow-lg shadow-green-600/20 scale-105'
+                  : 'text-gray-600 hover:bg-gray-100/80'
+                  }`}
+              >
+                <Shield className="w-4 h-4" />
+                Mis Reportes
+              </button>
+            </motion.div>
+          </div>
+
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[5]">
+            {/* Weather Widget */}
+            <WeatherWidget />
+          </div>
 
           {/* Floating Action Button */}
           <Link to="/report/new">
@@ -258,10 +302,10 @@ export function UserDashboard() {
         <div className="w-full md:w-96 bg-white border-t md:border-t-0 md:border-l border-gray-200 overflow-y-auto">
           <div className="p-4">
             <h3 className="font-semibold text-gray-900 mb-4">
-              Reportes recientes ({filteredReports.length})
+              Mis reportes recientes ({myRecentReports.length})
             </h3>
             <div className="space-y-3">
-              {filteredReports.map((report) => {
+              {myRecentReports.map((report) => {
                 const statusVariant = {
                   pendiente: "warning" as const,
                   "en-revision": "info" as const,
@@ -281,16 +325,16 @@ export function UserDashboard() {
                     onClick={() => navigate(`/report/${report.id}`)}
                   >
                     <div className="flex items-start justify-between mb-2">
-                      <h4 className="font-medium text-gray-900">{report.title || report.category}</h4>
-                      <Badge variant={statusVariant[report.status as keyof typeof statusVariant] || "warning"}>
-                        {statusLabel[report.status as keyof typeof statusLabel] || "Desconocido"}
+                      <h4 className="font-medium text-gray-900">{report.titulo || report.categoria}</h4>
+                      <Badge variant={statusVariant[report.estado as keyof typeof statusVariant] || "warning"}>
+                        {statusLabel[report.estado as keyof typeof statusLabel] || "Desconocido"}
                       </Badge>
                     </div>
                     <p className="text-sm text-gray-600 flex items-center gap-1 mb-1">
                       <MapPin className="w-3 h-3" />
-                      {report.location_address || "Sin ubicación"}
+                      {report.direccion_ubicacion || "Sin ubicación"}
                     </p>
-                    <p className="text-xs text-gray-500">{new Date(report.created_at).toLocaleDateString()}</p>
+                    <p className="text-xs text-gray-500">{new Date(report.fecha_creacion).toLocaleDateString()}</p>
                   </Card>
                 );
               })}

@@ -1,22 +1,24 @@
 import { supabase } from '../app/supabase/supabase';
-import type { Report, ReportStatus, ReportPriority } from '../app/supabase/supabase';
+import type { Reporte, EstadoReporte, PrioridadReporte } from '../app/supabase/supabase';
+import { checkAndGrantBadges } from './badges';
 
 // ==========================================
-// CRUD DE REPORTES CON SUPABASE
+// CRUD DE REPORTES CON SUPABASE (ESPAÑOL)
 // ==========================================
 
 /**
  * Crear nuevo reporte
  */
 export async function createReport(reportData: {
-  title: string;
-  description: string;
-  category: string;
-  location_address: string;
-  latitude?: number;
-  longitude?: number;
-  image_url?: string;
-  priority?: ReportPriority;
+  titulo: string;
+  descripcion: string;
+  categoria: string;
+  direccion_ubicacion: string;
+  latitud?: string;
+  longitud?: string;
+  url_imagen?: string;
+  prioridad?: PrioridadReporte;
+  id_entidad?: string | null;
 }) {
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -26,19 +28,46 @@ export async function createReport(reportData: {
     }
 
     const { data, error } = await supabase
-      .from('reports')
+      .from('reportes')
       .insert([
         {
-          user_id: user.id,
-          ...reportData,
-          status: 'pendiente',
-          priority: reportData.priority || 'media'
+          id_usuario: user.id,
+          titulo: reportData.titulo,
+          descripcion: reportData.descripcion,
+          categoria: reportData.categoria,
+          direccion_ubicacion: reportData.direccion_ubicacion,
+          latitud: reportData.latitud,
+          longitud: reportData.longitud,
+          url_imagen: reportData.url_imagen,
+          id_entidad: reportData.id_entidad || null,
+          estado: 'pendiente',
+          prioridad: reportData.prioridad || 'media'
         }
       ])
+
       .select()
       .single();
 
     if (error) throw error;
+
+    // Actualizar estadísticas del perfil
+    if (data) {
+      const { data: profile } = await supabase
+        .from('perfiles')
+        .select('reportes_creados')
+        .eq('id', user.id)
+        .single();
+      
+      if (profile) {
+        await supabase
+          .from('perfiles')
+          .update({ reportes_creados: (profile.reportes_creados || 0) + 1 })
+          .eq('id', user.id);
+      }
+      
+      // Verificar insignias automáticamente
+      await checkAndGrantBadges(user.id);
+    }
 
     console.log('✅ Reporte creado:', data);
     return { data, error: null };
@@ -54,20 +83,23 @@ export async function createReport(reportData: {
 export async function getPublicReports() {
   try {
     const { data, error } = await supabase
-      .from('reports')
+      .from('reportes')
       .select(`
         *,
-        profiles:user_id (
-          full_name,
-          avatar_url
+        perfiles:id_usuario (
+          id,
+          nombre_completo,
+          url_avatar
         ),
-        entities:entity_id (
-          name,
+        entidades:id_entidad (
+          id,
+          nombre,
           slug,
           color
         )
       `)
-      .order('created_at', { ascending: false });
+      .eq('visible', true)
+      .order('fecha_creacion', { ascending: false });
 
     if (error) throw error;
 
@@ -75,6 +107,38 @@ export async function getPublicReports() {
     return { data, error: null };
   } catch (error: any) {
     console.error('Error al obtener reportes:', error);
+    return { data: null, error: error.message };
+  }
+}
+
+/**
+ * Obtener todos los reportes (incluyendo invisibles) para administración
+ */
+export async function getAdminReports() {
+  try {
+    const { data, error } = await supabase
+      .from('reportes')
+      .select(`
+        *,
+        perfiles:id_usuario (
+          id,
+          nombre_completo,
+          url_avatar
+        ),
+        entidades:id_entidad (
+          id,
+          nombre,
+          slug,
+          color
+        )
+      `)
+      .order('fecha_creacion', { ascending: false });
+
+    if (error) throw error;
+
+    return { data, error: null };
+  } catch (error: any) {
+    console.error('Error al obtener reportes administrativos:', error);
     return { data: null, error: error.message };
   }
 }
@@ -91,17 +155,18 @@ export async function getUserReports() {
     }
 
     const { data, error } = await supabase
-      .from('reports')
+      .from('reportes')
       .select(`
         *,
-        entities:entity_id (
-          name,
+        entidades:id_entidad (
+          id,
+          nombre,
           slug,
           color
         )
       `)
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+      .eq('id_usuario', user.id)
+      .order('fecha_creacion', { ascending: false });
 
     if (error) throw error;
 
@@ -119,22 +184,24 @@ export async function getUserReports() {
 export async function getReportById(reportId: string) {
   try {
     const { data, error } = await supabase
-      .from('reports')
+      .from('reportes')
       .select(`
         *,
-        profiles:user_id (
+        perfiles:id_usuario (
           id,
-          full_name,
+          nombre_completo,
           email,
-          phone,
-          avatar_url
+          telefono,
+          url_avatar,
+          puntuacion_reputacion
         ),
-        entities:entity_id (
-          name,
+        entidades:id_entidad (
+          id,
+          nombre,
           slug,
           color,
           email,
-          phone
+          telefono
         )
       `)
       .eq('id', reportId)
@@ -152,13 +219,14 @@ export async function getReportById(reportId: string) {
 /**
  * Actualizar estado de un reporte
  */
-export async function updateReportStatus(reportId: string, status: ReportStatus) {
+export async function updateReportStatus(reportId: string, estado: EstadoReporte) {
   try {
     const { data, error } = await supabase
-      .from('reports')
+      .from('reportes')
       .update({
-        status,
-        ...(status === 'resuelto' ? { resolved_at: new Date().toISOString() } : {})
+        estado,
+        fecha_actualizacion: new Date().toISOString(),
+        visible: (estado === 'resuelto' || estado === 'cancelado') ? false : true
       })
       .eq('id', reportId)
       .select()
@@ -166,7 +234,7 @@ export async function updateReportStatus(reportId: string, status: ReportStatus)
 
     if (error) throw error;
 
-    console.log('✅ Estado actualizado:', status);
+    console.log('✅ Estado actualizado:', estado);
     return { data, error: null };
   } catch (error: any) {
     console.error('Error al actualizar estado:', error);
@@ -186,10 +254,10 @@ export async function deleteReport(reportId: string) {
     }
 
     const { error } = await supabase
-      .from('reports')
-      .delete()
+      .from('reportes')
+      .update({ visible: false })
       .eq('id', reportId)
-      .eq('user_id', user.id);
+      .eq('id_usuario', user.id);
 
     if (error) throw error;
 
@@ -204,7 +272,7 @@ export async function deleteReport(reportId: string) {
 /**
  * Votar en un reporte
  */
-export async function voteReport(reportId: string, voteType: 'upvote' | 'downvote') {
+export async function voteReport(reportId: string, tipoVoto: 'voto_positivo' | 'voto_negativo') {
   try {
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -212,39 +280,103 @@ export async function voteReport(reportId: string, voteType: 'upvote' | 'downvot
       return { error: 'Usuario no autenticado' };
     }
 
-    // Verificar si ya votó
-    const { data: existingVote } = await supabase
-      .from('report_votes')
-      .select('*')
-      .eq('report_id', reportId)
-      .eq('user_id', user.id)
+    // 1. Obtener el reporte para saber quién es el autor
+    const { data: reportData, error: reportError } = await supabase
+      .from('reportes')
+      .select('id_usuario, votos_positivos, votos_negativos')
+      .eq('id', reportId)
       .single();
 
+    if (reportError) throw reportError;
+
+    // 2. Verificar si ya votó
+    const { data: existingVote } = await supabase
+      .from('votos_reportes')
+      .select('*')
+      .eq('id_reporte', reportId)
+      .eq('id_usuario', user.id)
+      .single();
+
+    let reputationChange = 0;
+    
     if (existingVote) {
-      // Actualizar voto existente
+      if (existingVote.tipo_voto === tipoVoto) {
+        return { error: 'Ya has votado lo mismo en este reporte' };
+      }
+      
+      // Cambió de opinión (ej: de positivo a negativo)
+      reputationChange = tipoVoto === 'voto_positivo' ? 2 : -2;
+
       const { error } = await supabase
-        .from('report_votes')
-        .update({ vote_type: voteType })
-        .eq('report_id', reportId)
-        .eq('user_id', user.id);
+        .from('votos_reportes')
+        .update({ tipo_voto: tipoVoto })
+        .eq('id', existingVote.id);
 
       if (error) throw error;
     } else {
-      // Crear nuevo voto
+      // Voto nuevo
+      reputationChange = tipoVoto === 'voto_positivo' ? 1 : -1;
+
       const { error } = await supabase
-        .from('report_votes')
-        .insert([
-          {
-            report_id: reportId,
-            user_id: user.id,
-            vote_type: voteType
-          }
-        ]);
+        .from('votos_reportes')
+        .insert([{
+          id_reporte: reportId,
+          id_usuario: user.id,
+          tipo_voto: tipoVoto
+        }]);
 
       if (error) throw error;
     }
 
-    console.log('✅ Voto registrado:', voteType);
+    // 3. Actualizar contadores en la tabla 'reportes'
+    const { count: posCount } = await supabase
+      .from('votos_reportes')
+      .select('*', { count: 'exact', head: true })
+      .eq('id_reporte', reportId)
+      .eq('tipo_voto', 'voto_positivo');
+
+    const { count: negCount } = await supabase
+      .from('votos_reportes')
+      .select('*', { count: 'exact', head: true })
+      .eq('id_reporte', reportId)
+      .eq('tipo_voto', 'voto_negativo');
+
+    await supabase
+      .from('reportes')
+      .update({
+        votos_positivos: posCount || 0,
+        votos_negativos: negCount || 0,
+        fecha_actualizacion: new Date().toISOString()
+      })
+      .eq('id', reportId);
+
+    // 4. Actualizar reputación del autor del reporte (en la tabla 'perfiles')
+    if (reportData.id_usuario) {
+      // Obtener todos los reportes del usuario para recalcular totales
+      const { data: allUserReports } = await supabase
+        .from('reportes')
+        .select('votos_positivos, votos_negativos')
+        .eq('id_usuario', reportData.id_usuario);
+      
+      if (allUserReports) {
+        const totalPos = allUserReports.reduce((sum, r) => sum + (r.votos_positivos || 0), 0);
+        const totalNeg = allUserReports.reduce((sum, r) => sum + (r.votos_negativos || 0), 0);
+        
+        await supabase
+          .from('perfiles')
+          .update({
+            votos_positivos: totalPos,
+            votos_negativos: totalNeg,
+            puntuacion_reputacion: totalPos - totalNeg
+          })
+          .eq('id', reportData.id_usuario);
+      }
+
+      // 5. Verificar insignias por reputación
+      await checkAndGrantBadges(reportData.id_usuario);
+    }
+
+    console.log('✅ Voto y reputación actualizados:', tipoVoto);
     return { error: null };
   } catch (error: any) {
     console.error('Error al votar:', error);
@@ -293,10 +425,286 @@ export async function uploadReportImage(file: File, reportId: string) {
       .from('report-images')
       .getPublicUrl(filePath);
 
-    console.log('✅ Imagen subida:', data.publicUrl);
+    // Actualizar el reporte con la URL de la imagen
+    const { error: updateError } = await supabase
+      .from('reportes')
+      .update({ url_imagen: data.publicUrl })
+      .eq('id', reportId);
+
+    if (updateError) {
+      console.error('Error al asociar la imagen al reporte:', updateError);
+    }
+
+    console.log('✅ Imagen subida y enlazada:', data.publicUrl);
     return { url: data.publicUrl, error: null };
   } catch (error: any) {
     console.error('Error al subir imagen:', error);
     return { url: null, error: error.message };
   }
+}
+
+/**
+ * Obtener reportes por categoría
+ */
+export async function getReportsByCategory(categoria: string) {
+  try {
+    const { data, error } = await supabase
+      .from('reportes')
+      .select(`
+        *,
+        perfiles:id_usuario (
+          nombre_completo,
+          url_avatar
+        )
+      `)
+      .eq('categoria', categoria)
+      .order('fecha_creacion', { ascending: false });
+
+    if (error) throw error;
+
+    return { data, error: null };
+  } catch (error: any) {
+    console.error('Error al obtener reportes por categoría:', error);
+    return { data: null, error: error.message };
+  }
+}
+
+/**
+ * Obtener reportes por estado
+ */
+export async function getReportsByStatus(estado: EstadoReporte) {
+  try {
+    const { data, error } = await supabase
+      .from('reportes')
+      .select(`
+        *,
+        perfiles:id_usuario (
+          nombre_completo,
+          url_avatar
+        ),
+        entidades:id_entidad (
+          nombre,
+          color
+        )
+      `)
+      .eq('estado', estado)
+      .order('fecha_creacion', { ascending: false });
+
+    if (error) throw error;
+
+    return { data, error: null };
+  } catch (error: any) {
+    console.error('Error al obtener reportes por estado:', error);
+    return { data: null, error: error.message };
+  }
+}
+
+/**
+ * Obtener estadísticas de reportes para admin dashboard
+ */
+export async function getReportStats() {
+  try {
+    const { data, error: error1 } = await supabase
+      .from('reportes')
+      .select('id, estado, categoria');
+
+    if (error1) throw error1;
+
+    const stats = {
+      total: data?.length || 0,
+      byStatus: countByProperty(data || [], 'estado'),
+      byCategory: countByProperty(data || [], 'categoria')
+    };
+
+    return { data: stats, error: null };
+  } catch (error: any) {
+    console.error('Error al obtener estadísticas:', error);
+    return { data: null, error: error.message };
+  }
+}
+
+/**
+ * Obtener mensajes de un reporte
+ */
+export async function getReportMessages(reporteId: string) {
+  try {
+    const { data, error } = await supabase
+      .from('mensajes')
+      .select(`
+        *,
+        perfiles:id_remitente (
+          nombre_completo,
+          url_avatar,
+          rol
+        )
+      `)
+      .eq('id_reporte', reporteId)
+      .order('fecha_creacion', { ascending: true });
+
+    if (error) throw error;
+
+    return { data, error: null };
+  } catch (error: any) {
+    console.error('Error al obtener mensajes:', error);
+    return { data: null, error: error.message };
+  }
+}
+
+/**
+ * Crear mensaje en reporte
+ */
+export async function createReportMessage(reporteId: string, mensaje: string) {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { data: null, error: 'Usuario no autenticado' };
+    }
+
+    const { data, error } = await supabase
+      .from('mensajes')
+      .insert([
+        {
+          id_reporte: reporteId,
+          id_remitente: user.id,
+          tipo_remitente: 'usuario',
+          mensaje
+        }
+      ])
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return { data, error: null };
+  } catch (error: any) {
+    console.error('Error al crear mensaje:', error);
+    return { data: null, error: error.message };
+  }
+}
+
+/**
+ * Actualizar mensaje (solo dentro de los primeros 5 minutos)
+ */
+export async function updateReportMessage(mensajeId: string, nuevoMensaje: string) {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: 'Usuario no autenticado' };
+
+    // Verificar tiempo (5 min = 300000 ms)
+    const { data: existingMsg, error: fetchError } = await supabase
+      .from('mensajes')
+      .select('fecha_creacion, id_remitente')
+      .eq('id', mensajeId)
+      .single();
+
+    if (fetchError || !existingMsg) throw new Error('Mensaje no encontrado');
+    if (existingMsg.id_remitente !== user.id) throw new Error('No tienes permiso para editar este mensaje');
+
+    const diff = Date.now() - new Date(existingMsg.fecha_creacion).getTime();
+    if (diff > 5 * 60 * 1000) {
+      return { error: 'El tiempo límite de 5 minutos para editar ha expirado' };
+    }
+
+    const { data, error } = await supabase
+      .from('mensajes')
+      .update({ mensaje: nuevoMensaje })
+      .eq('id', mensajeId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return { data, error: null };
+  } catch (error: any) {
+    console.error('Error al actualizar mensaje:', error);
+    return { error: error.message };
+  }
+}
+
+/**
+ * Eliminar mensaje (solo dentro de los primeros 5 minutos)
+ */
+export async function deleteReportMessage(mensajeId: string) {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: 'Usuario no autenticado' };
+
+    const { data: existingMsg, error: fetchError } = await supabase
+      .from('mensajes')
+      .select('fecha_creacion, id_remitente')
+      .eq('id', mensajeId)
+      .single();
+
+    if (fetchError || !existingMsg) throw new Error('Mensaje no encontrado');
+    if (existingMsg.id_remitente !== user.id) throw new Error('No tienes permiso para eliminar este mensaje');
+
+    const diff = Date.now() - new Date(existingMsg.fecha_creacion).getTime();
+    if (diff > 5 * 60 * 1000) {
+      return { error: 'El tiempo límite de 5 minutos para eliminar ha expirado' };
+    }
+
+    const { error } = await supabase
+      .from('mensajes')
+      .delete()
+      .eq('id', mensajeId);
+
+    if (error) throw error;
+    return { error: null };
+  } catch (error: any) {
+    console.error('Error al eliminar mensaje:', error);
+    return { error: error.message };
+  }
+}
+
+/**
+ * Obtener todas las categorías de reportes activas
+ */
+export async function getReportCategories() {
+  try {
+    const { data, error } = await supabase
+      .from('categorias_reportes')
+      .select('*')
+      .eq('esta_activa', true)
+      .order('nombre', { ascending: true });
+
+    if (error) throw error;
+    return { data, error: null };
+  } catch (error: any) {
+    console.error('Error al obtener categorías:', error);
+    return { data: null, error: error.message };
+  }
+}
+
+/**
+ * Obtener noticias publicadas para el panel de usuario
+ */
+export async function getPublicNews() {
+  try {
+    const { data, error } = await supabase
+      .from('noticias')
+      .select('*, entidades(nombre)')
+      .eq('esta_publicada', true)
+      .order('fecha_creacion', { ascending: false });
+
+    if (error) throw error;
+    return { data, error: null };
+  } catch (error: any) {
+    console.error('Error al obtener noticias:', error);
+    return { data: null, error: error.message };
+  }
+}
+
+// ==========================================
+// FUNCIONES AUXILIARES
+// ==========================================
+
+/**
+ * Contar occurrencias de una propiedad en un array
+ */
+function countByProperty(arr: any[], property: string): Record<string, number> {
+  return arr.reduce((acc, item) => {
+    const key = item[property] || 'sin_datos';
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
 }

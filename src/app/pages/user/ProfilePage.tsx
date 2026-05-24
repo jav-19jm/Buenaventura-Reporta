@@ -5,11 +5,14 @@ import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import { ReportCard } from "../../components/ReportCard";
-import { ArrowLeft, User, Award, TrendingUp, MapPin, LogOut, Bell, FileText, ThumbsUp, ThumbsDown, Trash2 } from "lucide-react";
+import { ArrowLeft, User, Award, TrendingUp, MapPin, LogOut, Bell, FileText, ThumbsUp, ThumbsDown, Trash2, Camera } from "lucide-react";
 import { LogoutAnimation } from "../../components/animations/LogoutAnimation";
 import { useAuth } from "../../../hooks/useAuth";
 import { getUserReports, deleteReport } from "../../../lib/reports";
-import { signOut } from "../../../lib/auth";
+import { getUserBadgesWithDetails } from "../../../lib/badges";
+import { getUserNotifications, deleteNotification as deleteNotificationDB } from "../../../lib/notifications";
+import { signOut, uploadAvatar } from "../../../lib/auth";
+import { supabase } from "../../../app/supabase/supabase";
 import { toast } from "sonner";
 import { ReportsMap } from "../../components/ReportsMap";
 
@@ -19,7 +22,12 @@ export function ProfilePage() {
   const [showLogout, setShowLogout] = useState(false);
   const [activeTab, setActiveTab] = useState<"reports" | "notifications">("reports");
   const [myReports, setMyReports] = useState<any[]>([]);
+  const [userBadges, setUserBadges] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [freshProfile, setFreshProfile] = useState<any>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  const displayProfile = freshProfile || profile;
 
   // Redirigir si no está autenticado
   useEffect(() => {
@@ -28,62 +36,80 @@ export function ProfilePage() {
     }
   }, [isAuthenticated, authLoading, navigate]);
 
-  // Cargar reportes del usuario
+  // Cargar reportes y badges del usuario
   useEffect(() => {
-    if (isAuthenticated) {
-      loadUserReports();
+    if (isAuthenticated && user?.id) {
+      loadUserData();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user?.id]);
 
-  const loadUserReports = async () => {
+  const loadUserData = async () => {
     setLoading(true);
-    const { data, error } = await getUserReports();
-
-    if (error) {
-      console.error('Error al cargar reportes:', error);
+    
+    // Cargar reportes
+    const { data: reportsData, error: reportsError } = await getUserReports();
+    if (reportsError) {
+      console.error('Error al cargar reportes:', reportsError);
       toast.error('Error al cargar tus reportes');
-    } else if (data) {
-      setMyReports(data);
+    } else if (reportsData) {
+      setMyReports(reportsData);
+    }
+
+    // Cargar insignias
+    if (user?.id) {
+      const { data: badgesData, error: badgesError } = await getUserBadgesWithDetails(user.id);
+      if (badgesError) {
+        console.error('Error al cargar insignias:', badgesError);
+      } else if (badgesData) {
+        setUserBadges(badgesData);
+      }
+
+    // Cargar notificaciones
+      const { data: notifData, error: notifError } = await getUserNotifications(user.id);
+      if (notifError) {
+        console.error('Error al cargar notificaciones:', notifError);
+      } else if (notifData) {
+        setNotifications(notifData);
+      }
+
+      // Re-cargar perfil para tener reputación y votos actualizados
+      const { data: profileData } = await supabase
+        .from('perfiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      
+      if (profileData) {
+        setFreshProfile(profileData);
+      }
     }
 
     setLoading(false);
   };
 
-  const badges = [
-    { id: 1, name: "Primer Reporte", icon: "🎯", earned: true },
-    { id: 2, name: "10 Reportes", icon: "⭐", earned: true },
-    { id: 3, name: "Solucionador", icon: "✅", earned: true },
-    { id: 4, name: "50 Reportes", icon: "🏆", earned: false },
-    { id: 5, name: "Embajador", icon: "👑", earned: false },
-  ];
-
   // Calcular estadísticas
   const stats = [
     {
       label: "Reportes totales",
-      value: profile?.reports_created || 0,
+      value: displayProfile?.reportes_creados || 0,
       icon: MapPin,
       color: "text-green-600"
     },
     {
       label: "Solucionados",
-      value: myReports.filter(r => r.status === 'resuelto').length,
+      value: displayProfile?.reportes_resueltos || 0,
       icon: Award,
       color: "text-yellow-600"
     },
     {
       label: "Reputación",
-      value: profile?.reputation_score || 0,
+      value: displayProfile?.puntuacion_reputacion || 0,
       icon: TrendingUp,
       color: "text-green-600"
     },
   ];
 
-  const [notifications, setNotifications] = useState([
-    { id: "1", type: "success", title: "Reporte #1 solucionado", date: "Hace 1 hora" },
-    { id: "2", type: "info", title: "Reporte #3 en revisión", date: "Hace 3 horas" },
-    { id: "3", type: "warning", title: "Nuevo reporte cercano", date: "Hace 1 día" },
-  ]);
+  const [notifications, setNotifications] = useState<any[]>([]);
 
   const handleLogout = async () => {
     await signOut();
@@ -105,15 +131,41 @@ export function ProfilePage() {
       toast.error('Error al eliminar el reporte');
     } else {
       toast.success('Reporte eliminado');
-      loadUserReports();
+      loadUserData();
     }
   };
 
-  const handleDeleteNotification = (id: string) => {
-    setNotifications(notifications.filter(notif => notif.id !== id));
+  const handleDeleteNotification = async (id: string) => {
+    const { error } = await deleteNotificationDB(id);
+    if (error) {
+      toast.error('Error al eliminar notificación');
+    } else {
+      setNotifications(notifications.filter(notif => notif.id !== id));
+      toast.success('Notificación eliminada');
+    }
   };
 
-  if (authLoading || !profile) {
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user?.id) return;
+
+    setUploadingAvatar(true);
+    toast.info("Subiendo avatar...");
+    
+    const { error } = await uploadAvatar(file, user.id);
+    
+    if (error) {
+      toast.error("Error al subir avatar: " + error);
+    } else {
+      toast.success("Avatar actualizado correctamente");
+      loadUserData();
+    }
+    setUploadingAvatar(false);
+  };
+
+
+
+  if (authLoading || !displayProfile) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <p className="text-gray-600">Cargando perfil...</p>
@@ -161,18 +213,43 @@ export function ProfilePage() {
                 transition={{ duration: 0.4 }}
               >
                 <Card className="text-center">
-                  <motion.div
-                    whileHover={{ scale: 1.1, rotate: 5 }}
-                    className="w-24 h-24 bg-gradient-to-br from-yellow-500 to-green-600 rounded-full mx-auto mb-4 flex items-center justify-center"
-                  >
-                    <span className="text-3xl font-bold text-white">
-                      {profile.full_name || 'Usuario'.split(' ').map(n => n[0]).join('')}
-                    </span>
-                  </motion.div>
-                  <h2 className="text-xl font-semibold text-gray-900 mb-1">{profile.full_name || 'Usuario'}</h2>
-                  <p className="text-sm text-gray-600 mb-3">{user?.email || profile.email}</p>
-                  <Badge variant="info" className="mb-4">{profile.role === 'admin' ? 'Administrador' : profile.role === 'entity' ? 'Entidad' : 'Ciudadano Activo'}</Badge>
-                  <p className="text-xs text-gray-500">Miembro desde {new Date(profile.created_at).toLocaleDateString('es-CO', { month: 'long', year: 'numeric' })}</p>
+                  <div className="relative w-24 h-24 mx-auto mb-4 group cursor-pointer">
+                    <label className="w-full h-full cursor-pointer relative block">
+                      {displayProfile.url_avatar ? (
+                        <motion.img
+                          whileHover={{ scale: 1.05 }}
+                          src={displayProfile.url_avatar}
+                          alt="Avatar"
+                          className="w-full h-full object-cover rounded-full shadow-md"
+                        />
+                      ) : (
+                        <motion.div
+                          whileHover={{ scale: 1.05 }}
+                          className="w-full h-full bg-gradient-to-br from-yellow-500 to-green-600 rounded-full flex items-center justify-center shadow-md"
+                        >
+                          <span className="text-3xl font-bold text-white">
+                            {displayProfile.nombre_completo ? displayProfile.nombre_completo.split(' ').map((n: string) => n[0]).join('') : 'U'}
+                          </span>
+                        </motion.div>
+                      )}
+                      
+                      <div className="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <Camera className="w-8 h-8 text-white" />
+                      </div>
+                      
+                      <input 
+                        type="file" 
+                        accept="image/png, image/jpeg, image/jpg" 
+                        className="hidden" 
+                        onChange={handleAvatarChange}
+                        disabled={uploadingAvatar}
+                      />
+                    </label>
+                  </div>
+                  <h2 className="text-xl font-semibold text-gray-900 mb-1">{displayProfile.nombre_completo || 'Usuario'}</h2>
+                  <p className="text-sm text-gray-600 mb-3">{user?.email || displayProfile.email}</p>
+                  <Badge variant="info" className="mb-4">{displayProfile.rol === 'administrador' ? 'Administrador' : displayProfile.rol === 'entidad' ? 'Entidad' : 'Ciudadano Activo'}</Badge>
+                  <p className="text-xs text-gray-500">Miembro desde {new Date(displayProfile.fecha_creacion).toLocaleDateString('es-CO', { month: 'long', year: 'numeric' })}</p>
                 </Card>
               </motion.div>
 
@@ -230,7 +307,7 @@ export function ProfilePage() {
                         </div>
                         <span className="text-sm text-gray-700 font-medium">Votos Positivos</span>
                       </div>
-                      <span className="font-bold text-green-600 text-lg">{profile.positive_votes || 0}</span>
+                      <span className="font-bold text-green-600 text-lg">{displayProfile.votos_positivos || 0}</span>
                     </motion.div>
 
                     <motion.div
@@ -243,19 +320,19 @@ export function ProfilePage() {
                         </div>
                         <span className="text-sm text-gray-700 font-medium">Votos Negativos</span>
                       </div>
-                      <span className="font-bold text-red-600 text-lg">{profile.negative_votes || 0}</span>
+                      <span className="font-bold text-red-600 text-lg">{displayProfile.votos_negativos || 0}</span>
                     </motion.div>
 
                     {/* Reputation Bar */}
                     <div className="mt-3">
                       <div className="flex items-center justify-between text-xs text-gray-600 mb-2">
                         <span>Reputación Total</span>
-                        <span className="font-semibold">{profile.positive_votes || 0 - profile.negative_votes || 0} puntos</span>
+                        <span className="font-semibold">{displayProfile.puntuacion_reputacion || 0} puntos</span>
                       </div>
                       <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
                         <motion.div
                           initial={{ width: 0 }}
-                          animate={{ width: `${((profile.positive_votes || 0 - profile.negative_votes || 0) / 50) * 100}%` }}
+                          animate={{ width: `${Math.min(Math.max((displayProfile.puntuacion_reputacion || 0) / 50 * 100, 0), 100)}%` }}
                           transition={{ duration: 1, delay: 0.3 }}
                           className="h-full bg-gradient-to-r from-yellow-500 to-green-600"
                         />
@@ -274,26 +351,29 @@ export function ProfilePage() {
                 <Card>
                   <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
                     <Award className="w-5 h-5 text-yellow-600" />
-                    Insignias
+                    Insignias ({userBadges.length})
                   </h3>
                   <div className="grid grid-cols-3 gap-3">
-                    {badges.map((badge, index) => (
+                    {userBadges.map((badge, index) => (
                       <motion.div
                         key={badge.id}
                         initial={{ opacity: 0, scale: 0 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: index * 0.1 }}
-                        whileHover={{ scale: badge.earned ? 1.1 : 1 }}
-                        className={`text-center p-3 rounded-lg border-2 ${badge.earned
-                            ? "border-yellow-400 bg-yellow-50"
-                            : "border-gray-200 bg-gray-50 opacity-50"
-                          }`}
+                        whileHover={{ scale: 1.1 }}
+                        className="text-center p-3 rounded-lg border-2 border-yellow-400 bg-yellow-50"
+                        title={badge.requisito_texto}
                       >
-                        <div className="text-2xl mb-1">{badge.icon}</div>
-                        <p className="text-xs text-gray-700">{badge.name}</p>
+                        <div className="text-2xl mb-1">{badge.icono}</div>
+                        <p className="text-xs text-gray-700">{badge.nombre}</p>
                       </motion.div>
                     ))}
                   </div>
+                  {userBadges.length === 0 && (
+                    <p className="text-center text-sm text-gray-500 py-4">
+                      Continúa creando reportes para desbloquear insignias
+                    </p>
+                  )}
                 </Card>
               </motion.div>
 
@@ -403,11 +483,11 @@ export function ProfilePage() {
                             <div className="flex items-start justify-between">
                               <div>
                                 <h4 className="font-medium text-gray-900 mb-1">
-                                  {notification.title}
+                                  {notification.titulo}
                                 </h4>
-                                <p className="text-sm text-gray-600">{notification.date}</p>
+                                <p className="text-sm text-gray-600">{new Date(notification.fecha_creacion).toLocaleDateString('es-CO')}</p>
                               </div>
-                              <Badge variant="info">Nuevo</Badge>
+                              {!notification.esta_leida && <Badge variant="info">Nuevo</Badge>}
                             </div>
 
                             {/* Delete Button */}

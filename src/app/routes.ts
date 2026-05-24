@@ -12,11 +12,16 @@ import { EntityReportDetail } from "./pages/entity/EntityReportDetail";
 import { EntitySelection } from "./pages/entity/EntitySelection";
 import { EntityLogin } from "./pages/entity/EntityLogin";
 import { EntityDashboardCustom } from "./pages/entity/EntityDashboardCustom";
+import { PublicMapPage } from "./pages/PublicMapPage";
 
 export const router = createBrowserRouter([
   {
     path: "/",
     Component: LandingPage,
+  },
+  {
+    path: "/map",
+    Component: PublicMapPage,
   },
 
   {

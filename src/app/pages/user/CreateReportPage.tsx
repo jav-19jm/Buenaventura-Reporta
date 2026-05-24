@@ -2,27 +2,55 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { motion } from "motion/react";
 import { Button } from "../../components/ui/Button";
+import { Input } from "../../components/ui/Input";
 import { Textarea } from "../../components/ui/Textarea";
 import { IncidentTypeSelector } from "../../components/IncidentTypeSelector";
 import { MapPin, Camera, ArrowLeft, Upload } from "lucide-react";
-import { createReport, uploadReportImage } from "../../../lib/reports";
+import { createReport, uploadReportImage, getReportCategories } from "../../../lib/reports";
+import { getAllEntities } from "../../../lib/admin";
 import { useAuth } from "../../../hooks/useAuth";
 import { toast } from "sonner";
 import { LocationPickerMap } from "../../components/LocationPickerMap";
+import { useEffect } from "react";
+import { Building2 } from "lucide-react";
 
 export function CreateReportPage() {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const [selectedType, setSelectedType] = useState<string>();
+  const [selectedEntity, setSelectedEntity] = useState<string>("");
+  const [categories, setCategories] = useState<any[]>([]);
+  const [entities, setEntities] = useState<any[]>([]);
+  const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [imagePreview, setImagePreview] = useState<string>();
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
   const [location, setLocation] = useState({
     address: "Buenaventura, Colombia",
     lat: 3.8801,
     lng: -77.0311
   });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [catsRes, entsRes] = await Promise.all([
+          getReportCategories(),
+          getAllEntities()
+        ]);
+
+        if (catsRes.data) setCategories(catsRes.data);
+        if (entsRes.data) setEntities(entsRes.data);
+      } catch (error) {
+        console.error("Error fetching form data:", error);
+      } finally {
+        setFetching(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   const handleLocationSelect = (lat: number, lng: number) => {
     setLocation({
@@ -53,7 +81,7 @@ export function CreateReportPage() {
       return;
     }
 
-    if (!selectedType || !description) {
+    if (!selectedType || !title || !description) {
       toast.error("Por favor completa todos los campos requeridos");
       return;
     }
@@ -63,13 +91,14 @@ export function CreateReportPage() {
     try {
       // Crear reporte en Supabase
       const reportData = {
-        title: selectedType.charAt(0).toUpperCase() + selectedType.slice(1).replace('-', ' '),
-        description,
-        category: selectedType,
-        location_address: location.address,
-        latitude: location.lat,
-        longitude: location.lng,
-        priority: 'media' as const
+        titulo: title,
+        descripcion: description,
+        categoria: selectedType,
+        id_entidad: selectedEntity || null,
+        direccion_ubicacion: location.address,
+        latitud: location.lat.toString(),
+        longitud: location.lng.toString(),
+        prioridad: 'media' as const
       };
 
       const { data: report, error } = await createReport(reportData);
@@ -130,7 +159,7 @@ export function CreateReportPage() {
       {/* Form */}
       <div className="max-w-3xl mx-auto px-4 py-8">
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Incident Type */}
+          {/* Title */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -138,11 +167,77 @@ export function CreateReportPage() {
             className="bg-white rounded-lg shadow-sm p-6"
           >
             <h2 className="font-semibold text-gray-900 mb-4">
-              1. Tipo de incidencia <span className="text-red-500">*</span>
+              1. Título del reporte <span className="text-red-500">*</span>
+            </h2>
+            <Input
+              label="Ingresa un título descriptivo y conciso"
+              placeholder="ej: Luminaria dañada en Calle 5"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              maxLength={100}
+              required
+            />
+            <p className="text-xs text-gray-500 mt-2">{title.length}/100 caracteres</p>
+          </motion.div>
+
+          {/* Incident Type */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.05 }}
+            className="bg-white rounded-lg shadow-sm p-6"
+          >
+            <h2 className="font-semibold text-gray-900 mb-4">
+              2. Tipo de incidencia <span className="text-red-500">*</span>
             </h2>
             <IncidentTypeSelector
               selectedType={selectedType}
               onSelect={setSelectedType}
+              types={categories}
+            />
+          </motion.div>
+
+          {/* Entity Selection */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
+            className="bg-white rounded-lg shadow-sm p-6"
+          >
+            <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              3. ¿A qué entidad va dirigido? <span className="text-gray-400">(opcional)</span>
+            </h2>
+            <select
+              value={selectedEntity}
+              onChange={(e) => setSelectedEntity(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white transition-all"
+            >
+              <option value="">Selecciona una entidad (opcional)</option>
+              {entities.map(ent => (
+                <option key={ent.id} value={ent.id}>{ent.nombre}</option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-500 mt-2">
+              Si no sabes a qué entidad dirigirlo, déjalo en blanco y nosotros lo asignaremos.
+            </p>
+          </motion.div>
+
+          {/* Description */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.15 }}
+            className="bg-white rounded-lg shadow-sm p-6"
+          >
+            <h2 className="font-semibold text-gray-900 mb-4">
+              4. Descripción del problema <span className="text-red-500">*</span>
+            </h2>
+            <Textarea
+              placeholder="Describe el problema con el mayor detalle posible..."
+              rows={6}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              required
             />
           </motion.div>
 
@@ -150,11 +245,11 @@ export function CreateReportPage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.1 }}
+            transition={{ duration: 0.4, delay: 0.2 }}
             className="bg-white rounded-lg shadow-sm p-6"
           >
             <h2 className="font-semibold text-gray-900 mb-4">
-              2. Fotografía del problema <span className="text-gray-400">(opcional)</span>
+              5. Evidencia <span className="text-gray-400">(opcional formatos jpg y png)</span>
             </h2>
             <div className="space-y-4">
               {imagePreview ? (
@@ -190,31 +285,12 @@ export function CreateReportPage() {
                   <input
                     type="file"
                     className="hidden"
-                    accept="image/*"
+                    accept="image/png, image/jpeg, image/jpg"
                     onChange={handleImageUpload}
                   />
                 </label>
               )}
             </div>
-          </motion.div>
-
-          {/* Description */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.2 }}
-            className="bg-white rounded-lg shadow-sm p-6"
-          >
-            <h2 className="font-semibold text-gray-900 mb-4">
-              3. Descripción <span className="text-red-500">*</span>
-            </h2>
-            <Textarea
-              placeholder="Describe el problema con el mayor detalle posible..."
-              rows={6}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              required
-            />
           </motion.div>
 
           {/* Location */}
@@ -225,12 +301,12 @@ export function CreateReportPage() {
             className="bg-white rounded-lg shadow-sm p-6"
           >
             <h2 className="font-semibold text-gray-900 mb-4">
-              4. Ubicación <span className="text-red-500">*</span>
+              6. Ubicación <span className="text-red-500">*</span>
             </h2>
             <p className="text-sm text-gray-600 mb-4">
               Haz clic en el mapa para marcar la ubicación exacta de la incidencia.
             </p>
-            <LocationPickerMap 
+            <LocationPickerMap
               position={{ lat: location.lat, lng: location.lng }}
               onLocationSelect={handleLocationSelect}
             />
@@ -256,7 +332,7 @@ export function CreateReportPage() {
               type="submit"
               className="flex-1"
               size="lg"
-              disabled={!selectedType || !description || loading}
+              disabled={!selectedType || !title || !description || loading}
             >
               <Upload className="w-5 h-5 mr-2" />
               {loading ? "Enviando..." : "Enviar reporte"}

@@ -3,6 +3,9 @@ import { motion, AnimatePresence } from "motion/react";
 import { Bell, X, CheckCircle2, AlertCircle, Info, Trash2 } from "lucide-react";
 import { Card } from "./ui/Card";
 import { Badge } from "./ui/Badge";
+import { getUserNotifications, markNotificationAsRead as markAsReadDB, deleteNotification as deleteNotificationDB } from "../../lib/notifications";
+import { useAuth } from "../../hooks/useAuth";
+import { useEffect } from "react";
 
 interface Notification {
   id: string;
@@ -14,56 +17,55 @@ interface Notification {
 }
 
 export function NotificationBell() {
+  const { user, isAuthenticated } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: "1",
-      type: "success",
-      title: "Reporte solucionado",
-      message: "Tu reporte de luminaria dañada ha sido solucionado",
-      time: "Hace 10 min",
-      read: false,
-    },
-    {
-      id: "2",
-      type: "info",
-      title: "Actualización de estado",
-      message: "Tu reporte está en revisión por el departamento técnico",
-      time: "Hace 1 hora",
-      read: false,
-    },
-    {
-      id: "3",
-      type: "warning",
-      title: "Nuevo reporte en tu zona",
-      message: "Se reportó un semáforo dañado cerca de tu ubicación",
-      time: "Hace 2 horas",
-      read: true,
-    },
-  ]);
+  const [notifications, setNotifications] = useState<any[]>([]);
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  useEffect(() => {
+    if (isAuthenticated && user?.id) {
+      loadNotifications();
+    }
+  }, [isAuthenticated, user?.id]);
 
-  const markAsRead = (id: string) => {
-    setNotifications(notifications.map(n => 
-      n.id === id ? { ...n, read: true } : n
-    ));
+  const loadNotifications = async () => {
+    const { data } = await getUserNotifications(user!.id);
+    if (data) {
+      setNotifications(data);
+    }
   };
 
-  const deleteNotification = (id: string) => {
-    setNotifications(notifications.filter(n => n.id !== id));
+  const unreadCount = notifications.filter(n => !n.esta_leida).length;
+
+  const markAsRead = async (id: string) => {
+    const { error } = await markAsReadDB(id);
+    if (!error) {
+      setNotifications(notifications.map(n => 
+        n.id === id ? { ...n, esta_leida: true } : n
+      ));
+    }
   };
 
-  const iconMap = {
-    success: CheckCircle2,
-    warning: AlertCircle,
-    info: Info,
+  const deleteNotification = async (id: string) => {
+    const { error } = await deleteNotificationDB(id);
+    if (!error) {
+      setNotifications(notifications.filter(n => n.id !== id));
+    }
   };
 
-  const iconColors = {
-    success: "text-green-600",
-    warning: "text-yellow-600",
-    info: "text-green-600",
+  const iconMap: Record<string, any> = {
+    reporte_resuelto: CheckCircle2,
+    alerta_sistema: AlertCircle,
+    reporte_actualizado: Info,
+    nuevo_mensaje: Info,
+    mencion: Bell,
+  };
+
+  const iconColors: Record<string, string> = {
+    reporte_resuelto: "text-green-600",
+    alerta_sistema: "text-yellow-600",
+    reporte_actualizado: "text-blue-600",
+    nuevo_mensaje: "text-blue-600",
+    mencion: "text-purple-600",
   };
 
   return (
@@ -122,7 +124,7 @@ export function NotificationBell() {
                     </div>
                   ) : (
                     notifications.map((notification, index) => {
-                      const Icon = iconMap[notification.type];
+                      const Icon = iconMap[notification.tipo] || Bell;
                       return (
                         <motion.div
                           key={notification.id}
@@ -132,24 +134,24 @@ export function NotificationBell() {
                           transition={{ delay: index * 0.1 }}
                           onClick={() => markAsRead(notification.id)}
                           className={`p-3 rounded-lg border-2 cursor-pointer transition-all relative group ${
-                            notification.read
+                            notification.esta_leida
                               ? "border-gray-200 bg-gray-50"
                               : "border-yellow-200 bg-yellow-50"
                           }`}
                         >
                           <div className="flex gap-3">
-                            <Icon className={`w-5 h-5 flex-shrink-0 ${iconColors[notification.type]}`} />
+                            <Icon className={`w-5 h-5 flex-shrink-0 ${iconColors[notification.tipo] || "text-gray-600"}`} />
                             <div className="flex-1 min-w-0">
                               <div className="flex items-start justify-between mb-1">
                                 <h4 className="font-medium text-gray-900 text-sm">
-                                  {notification.title}
+                                  {notification.titulo}
                                 </h4>
-                                {!notification.read && (
+                                {!notification.esta_leida && (
                                   <div className="w-2 h-2 bg-yellow-600 rounded-full flex-shrink-0 ml-2" />
                                 )}
                               </div>
-                              <p className="text-xs text-gray-600 mb-1">{notification.message}</p>
-                              <p className="text-xs text-gray-500">{notification.time}</p>
+                              <p className="text-xs text-gray-600 mb-1">{notification.mensaje}</p>
+                              <p className="text-xs text-gray-500">{new Date(notification.fecha_creacion).toLocaleDateString('es-CO')}</p>
                             </div>
                           </div>
                           

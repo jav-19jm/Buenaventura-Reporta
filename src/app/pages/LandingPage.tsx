@@ -1,10 +1,11 @@
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { Button } from "../components/ui/Button";
 import { MapPin, Camera, Bell, CheckCircle2, Shield, Users, Facebook, Twitter, Instagram, Youtube, Building2, Menu, X, ShieldCheck } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { ReviewsCarousel } from "../components/ReviewsCarousel";
 import { useState, useEffect } from "react";
+import { useAuth } from "../../hooks/useAuth";
 
 const buenaventuraImages = [
   {
@@ -29,6 +30,15 @@ export function LandingPage() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showMenu, setShowMenu] = useState(false);
 
+  const { isAuthenticated, loading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && isAuthenticated) {
+      navigate("/user");
+    }
+  }, [isAuthenticated, loading, navigate]);
+
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentImageIndex((prev) => (prev + 1) % buenaventuraImages.length);
@@ -51,18 +61,6 @@ export function LandingPage() {
 
             {/* Desktop Menu */}
             <div className="hidden md:flex items-center gap-3">
-              <Link to="/admin">
-                <Button variant="outline" size="sm" className="border-green-600 text-green-600 hover:bg-green-50">
-                  <ShieldCheck className="w-4 h-4 mr-2" />
-                  Panel Admin
-                </Button>
-              </Link>
-              <Link to="/entity/select">
-                <Button variant="outline" size="sm" className="border-blue-600 text-blue-600 hover:bg-blue-50">
-                  <Building2 className="w-4 h-4 mr-2" />
-                  Acceso Entidades
-                </Button>
-              </Link>
               <Link to="/login">
                 <Button variant="ghost" size="sm">Iniciar sesión</Button>
               </Link>
@@ -98,18 +96,6 @@ export function LandingPage() {
                 className="md:hidden overflow-hidden"
               >
                 <div className="pt-4 pb-2 space-y-2">
-                  <Link to="/admin" onClick={() => setShowMenu(false)}>
-                    <Button variant="outline" size="sm" className="w-full justify-start border-green-600 text-green-600 hover:bg-green-50">
-                      <ShieldCheck className="w-4 h-4 mr-2" />
-                      Panel Admin
-                    </Button>
-                  </Link>
-                  <Link to="/entity/select" onClick={() => setShowMenu(false)}>
-                    <Button variant="outline" size="sm" className="w-full justify-start border-blue-600 text-blue-600 hover:bg-blue-50">
-                      <Building2 className="w-4 h-4 mr-2" />
-                      Acceso Entidades
-                    </Button>
-                  </Link>
                   <Link to="/login" onClick={() => setShowMenu(false)}>
                     <Button variant="ghost" size="sm" className="w-full justify-start">
                       Iniciar sesión
@@ -163,7 +149,7 @@ export function LandingPage() {
                 </h2>
                 <p className="text-xl md:text-2xl text-white/90 mb-8 drop-shadow-lg">Plataforma ciudadana para reportar incidencias urbanas y mejorar nuestra ciudad. Tu voz importa, tu reporte genera cambio.</p>
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <Link to="/user">
+                  <Link to="/login">
                     <Button
                       size="lg"
                       className="w-full sm:w-auto text-lg px-8 py-4 bg-gradient-to-r from-yellow-500 to-green-600 hover:from-yellow-600 hover:to-green-700 shadow-xl"
@@ -172,7 +158,7 @@ export function LandingPage() {
                       Reportar incidencia
                     </Button>
                   </Link>
-                  <Link to="/user">
+                  <Link to="/map">
                     <Button variant="secondary" size="lg" className="w-full sm:w-auto text-lg px-8 py-4 shadow-lg">
                       Ver mapa de reportes
                     </Button>
@@ -185,11 +171,10 @@ export function LandingPage() {
                     <button
                       key={index}
                       onClick={() => setCurrentImageIndex(index)}
-                      className={`h-1.5 rounded-full transition-all ${
-                        index === currentImageIndex 
-                          ? 'w-12 bg-yellow-400' 
-                          : 'w-8 bg-white/50 hover:bg-white/75'
-                      }`}
+                      className={`h-1.5 rounded-full transition-all ${index === currentImageIndex
+                        ? 'w-12 bg-yellow-400'
+                        : 'w-8 bg-white/50 hover:bg-white/75'
+                        }`}
                       aria-label={`Ver imagen ${index + 1}`}
                     />
                   ))}

@@ -6,28 +6,24 @@ import { Badge } from "../../components/ui/Badge";
 import { Card } from "../../components/ui/Card";
 import { MapPin, ArrowLeft, Calendar, CheckCircle2, Clock, Star, MessageCircle, Send, History, Building2 } from "lucide-react";
 import { ImageWithFallback } from "../../components/figma/ImageWithFallback";
-import { getReportById } from "../../../lib/reports";
+import { getReportById, getReportMessages, createReportMessage, updateReportMessage, deleteReportMessage } from "../../../lib/reports";
+import { useAuth } from "../../../hooks/useAuth";
+import { Edit2, Trash2 } from "lucide-react";
 import { ReportsMap } from "../../components/ReportsMap";
 import { toast } from "sonner";
-import type { Report } from "../../supabase/supabase";
+import type { Reporte } from "../../supabase/supabase";
 
 export function ReportDetailPage() {
   const { id } = useParams();
   const [rating, setRating] = useState(0);
-  const [report, setReport] = useState<Report | null>(null);
+  const [report, setReport] = useState<Reporte | null>(null);
   const [loading, setLoading] = useState(true);
   const [newMessage, setNewMessage] = useState("");
   
-  // Mensajes simulados (Mock) para el componente de comunicación
-  const [messages, setMessages] = useState([
-    {
-      id: "1",
-      sender: "entity" as const,
-      userName: "Sistema Automático",
-      message: "Tu reporte ha sido recibido y será revisado pronto por la entidad correspondiente.",
-      timestamp: new Date(Date.now() - 86400000).toLocaleString(),
-    }
-  ]);
+  const [messages, setMessages] = useState<any[]>([]);
+  const { user } = useAuth();
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState("");
 
   useEffect(() => {
     if (id) {
@@ -37,57 +33,141 @@ export function ReportDetailPage() {
 
   const loadReport = async () => {
     setLoading(true);
-    const { data, error } = await getReportById(id as string);
-    if (error) {
-      toast.error("Error al cargar el reporte");
-    } else if (data) {
-      setReport(data as unknown as Report);
-      
-      // Ajustar mensajes mock si el estado es en revisión
-      if (data.status === 'en-revision' || data.status === 'en-proceso') {
-        setMessages(prev => [
-          ...prev,
-          {
-            id: "2",
-            sender: "entity" as const,
-            userName: "Entidad Responsable",
-            message: "Hemos comenzado a revisar tu caso. Te mantendremos informado sobre cualquier avance.",
-            timestamp: new Date(data.updated_at || data.created_at).toLocaleString(),
-          }
-        ]);
+    try {
+      const { data, error } = await getReportById(id as string);
+      if (error) {
+        toast.error("Error al cargar el reporte");
+      } else if (data) {
+        setReport(data as unknown as Reporte);
+        
+        // Cargar mensajes reales
+        const { data: dbMessages } = await getReportMessages(id as string);
+        if (dbMessages) {
+          const formattedMessages = dbMessages.map((m: any) => {
+            let senderType = 'user';
+            let senderName = m.perfiles?.nombre_completo || 'Usuario';
+            
+            if (m.tipo_remitente === 'moderador') {
+              senderType = 'admin';
+              senderName = 'Administrador';
+            } else if (m.tipo_remitente === 'entidad') {
+              senderType = 'entity';
+              senderName = 'Entidad Responsable';
+            }
+
+            return {
+              id: m.id,
+              sender: senderType,
+              senderId: m.id_remitente,
+              userName: senderName,
+              message: m.mensaje,
+              timestamp: new Date(m.fecha_creacion).toLocaleString(),
+              createdAt: m.fecha_creacion,
+            };
+          });
+          
+          setMessages(formattedMessages);
+        }
       }
+    } catch (error) {
+      console.error("Error loading report details:", error);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim()) return;
-    setMessages([...messages, {
-      id: Date.now().toString(),
-      sender: "user" as const,
-      userName: "Tú",
-      message: newMessage,
-      timestamp: new Date().toLocaleString()
-    }]);
+    if (!newMessage.trim() || !id) return;
+    
+    const messageText = newMessage;
     setNewMessage("");
-    toast.success("Mensaje enviado a la entidad");
+
+    const { error } = await createReportMessage(id, messageText);
+    
+    if (error) {
+      toast.error("Error al enviar mensaje");
+      setNewMessage(messageText);
+    } else {
+      toast.success("Mensaje enviado exitosamente");
+      refreshMessages();
+    }
+  };
+
+  const refreshMessages = async () => {
+    if (!id) return;
+    const { data: dbMessages } = await getReportMessages(id);
+    if (dbMessages) {
+      const formattedMessages = dbMessages.map((m: any) => {
+        let senderType = 'user';
+        let senderName = m.perfiles?.nombre_completo || 'Usuario';
+        
+        if (m.tipo_remitente === 'moderador') {
+          senderType = 'admin';
+          senderName = 'Administrador';
+        } else if (m.tipo_remitente === 'entidad') {
+          senderType = 'entity';
+          senderName = 'Entidad Responsable';
+        }
+
+        return {
+          id: m.id,
+          sender: senderType,
+          senderId: m.id_remitente,
+          userName: senderName,
+          message: m.mensaje,
+          timestamp: new Date(m.fecha_creacion).toLocaleString(),
+          createdAt: m.fecha_creacion,
+        };
+      });
+      setMessages(formattedMessages);
+    }
+  };
+
+  const handleUpdateMessage = async (msgId: string) => {
+    if (!editContent.trim()) return;
+    const { error } = await updateReportMessage(msgId, editContent);
+    if (error) {
+      toast.error(error);
+    } else {
+      toast.success("Mensaje actualizado");
+      setEditingMessageId(null);
+      refreshMessages();
+    }
+  };
+
+  const handleDeleteMessage = async (msgId: string) => {
+    if (window.confirm("¿Estás seguro de eliminar este mensaje?")) {
+      const { error } = await deleteReportMessage(msgId);
+      if (error) {
+        toast.error(error);
+      } else {
+        toast.success("Mensaje eliminado");
+        refreshMessages();
+      }
+    }
+  };
+
+  const canEdit = (msg: any) => {
+    if (!user || msg.senderId !== user.id) return false;
+    const diff = Date.now() - new Date(msg.createdAt).getTime();
+    return diff < 5 * 60 * 1000;
   };
 
   const statusVariant = {
     pendiente: "warning" as const,
-    "en-revision": "info" as const,
-    "en-proceso": "info" as const,
+    en_revision: "info" as const,
+    en_proceso: "info" as const,
     resuelto: "success" as const,
-    rechazado: "error" as const,
+    cancelado: "error" as const,
   };
 
   const statusLabel = {
     pendiente: "Pendiente",
-    "en-revision": "En Revisión",
-    "en-proceso": "En Proceso",
+    en_revision: "En Revisión",
+    en_proceso: "En Proceso",
     resuelto: "Solucionado",
-    rechazado: "Rechazado",
+    cancelado: "Cancelado",
   };
 
   if (loading) {
@@ -111,13 +191,13 @@ export function ReportDetailPage() {
 
   // Generar historial (Timeline) básico
   const timeline = [
-    { date: new Date(report.created_at).toLocaleDateString(), time: new Date(report.created_at).toLocaleTimeString(), action: "Reporte creado", user: "Tú" },
+    { date: new Date(report.fecha_creacion).toLocaleDateString(), time: new Date(report.fecha_creacion).toLocaleTimeString(), action: "Reporte creado", user: "Tú" },
   ];
-  if (report.status !== 'pendiente') {
+  if (report.estado !== 'pendiente') {
     timeline.push({
-      date: report.updated_at ? new Date(report.updated_at).toLocaleDateString() : new Date(report.created_at).toLocaleDateString(),
-      time: report.updated_at ? new Date(report.updated_at).toLocaleTimeString() : new Date(report.created_at).toLocaleTimeString(),
-      action: `Estado actualizado a: ${statusLabel[report.status as keyof typeof statusLabel] || report.status}`,
+      date: report.fecha_actualizacion ? new Date(report.fecha_actualizacion).toLocaleDateString() : new Date(report.fecha_creacion).toLocaleDateString(),
+      time: report.fecha_actualizacion ? new Date(report.fecha_actualizacion).toLocaleTimeString() : new Date(report.fecha_creacion).toLocaleTimeString(),
+      action: `Estado actualizado a: ${statusLabel[report.estado as keyof typeof statusLabel] || report.estado}`,
       user: "Entidad Responsable"
     });
   }
@@ -157,11 +237,11 @@ export function ReportDetailPage() {
               <Card>
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-2">{report.title || report.category}</h2>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">{report.titulo || report.categoria}</h2>
                     <div className="flex flex-wrap gap-2">
-                      <Badge variant="outline" className="capitalize">{report.category}</Badge>
-                      <Badge variant={statusVariant[report.status as keyof typeof statusVariant] || "info"}>
-                        {statusLabel[report.status as keyof typeof statusLabel] || report.status}
+                      <Badge variant="outline" className="capitalize">{report.categoria}</Badge>
+                      <Badge variant={statusVariant[report.estado as keyof typeof statusVariant] || "info"}>
+                        {statusLabel[report.estado as keyof typeof statusLabel] || report.estado}
                       </Badge>
                     </div>
                   </div>
@@ -170,17 +250,17 @@ export function ReportDetailPage() {
                 <div className="space-y-4 mb-6">
                   <div className="flex items-center gap-3 text-gray-600">
                     <MapPin className="w-5 h-5" />
-                    <span>{report.location_address || report.category}</span>
+                    <span>{report.direccion_ubicacion || report.categoria}</span>
                   </div>
                   <div className="flex items-center gap-3 text-gray-600">
                     <Calendar className="w-5 h-5" />
-                    <span>{new Date(report.created_at).toLocaleDateString()}</span>
+                    <span>{new Date(report.fecha_creacion).toLocaleDateString()}</span>
                   </div>
                 </div>
 
                 <div className="border-t border-gray-200 pt-4">
                   <h3 className="font-semibold text-gray-900 mb-2">Descripción</h3>
-                  <p className="text-gray-700 leading-relaxed">{report.description}</p>
+                  <p className="text-gray-700 leading-relaxed">{report.descripcion}</p>
                 </div>
               </Card>
             </motion.div>
@@ -197,16 +277,79 @@ export function ReportDetailPage() {
                   {messages.map((msg) => (
                     <motion.div
                       key={msg.id}
-                      initial={{ opacity: 0, x: msg.sender === "user" ? 20 : -20 }}
+                      initial={{ opacity: 0, x: msg.senderId === user?.id ? 20 : -20 }}
                       animate={{ opacity: 1, x: 0 }}
-                      className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
+                      className={`flex ${msg.senderId === user?.id ? "justify-end" : "justify-start"}`}
                     >
-                      <div className={`max-w-[80%] rounded-xl p-4 shadow-sm ${msg.sender === "user" ? "bg-green-600 text-white" : "bg-gray-100 text-gray-800"}`}>
+                      <div className={`max-w-[80%] rounded-xl p-4 shadow-sm group relative ${
+                        msg.senderId === user?.id ? "bg-green-600 text-white" : 
+                        msg.sender === "admin" ? "bg-blue-50 border border-blue-100 text-blue-900" :
+                        msg.sender === "entity" ? "bg-orange-50 border border-orange-100 text-orange-900" :
+                        "bg-gray-100 text-gray-800"
+                      }`}>
                         <div className="flex items-center gap-2 mb-1">
-                          <span className={`text-sm font-semibold ${msg.sender === "user" ? "text-green-50" : "text-gray-900"}`}>{msg.userName}</span>
-                          <span className={`text-xs ${msg.sender === "user" ? "text-green-100" : "text-gray-500"}`}>{msg.timestamp}</span>
+                          <span className={`text-sm font-bold ${
+                            msg.senderId === user?.id ? "text-green-50" : 
+                            msg.sender === "admin" ? "text-blue-800" :
+                            msg.sender === "entity" ? "text-orange-800" :
+                            "text-gray-900"
+                          }`}>
+                            {msg.userName}
+                            {msg.sender === "admin" && " (Admin)"}
+                            {msg.sender === "entity" && " (Entidad)"}
+                          </span>
+                          <span className={`text-[10px] opacity-70`}>{msg.timestamp}</span>
+                          
+                          {/* Actions within 5 mins */}
+                          {canEdit(msg) && (
+                            <div className="hidden group-hover:flex items-center gap-1 ml-auto">
+                              <button 
+                                onClick={() => {
+                                  setEditingMessageId(msg.id);
+                                  setEditContent(msg.message);
+                                }}
+                                className="p-1 hover:bg-black/10 rounded transition-colors"
+                                title="Editar"
+                              >
+                                <Edit2 className="w-3 h-3" />
+                              </button>
+                              <button 
+                                onClick={() => handleDeleteMessage(msg.id)}
+                                className="p-1 hover:bg-red-500/20 rounded transition-colors"
+                                title="Eliminar"
+                              >
+                                <Trash2 className="w-3 h-3 text-red-400" />
+                              </button>
+                            </div>
+                          )}
                         </div>
-                        <p className="leading-relaxed">{msg.message}</p>
+
+                        {editingMessageId === msg.id ? (
+                          <div className="space-y-2 mt-2">
+                            <textarea
+                              value={editContent}
+                              onChange={(e) => setEditContent(e.target.value)}
+                              className="w-full p-2 text-sm text-gray-900 rounded border border-gray-300 focus:ring-2 focus:ring-green-500"
+                              rows={2}
+                            />
+                            <div className="flex justify-end gap-2">
+                              <button 
+                                onClick={() => setEditingMessageId(null)}
+                                className="text-xs px-2 py-1 bg-gray-200 text-gray-700 rounded"
+                              >
+                                Cancelar
+                              </button>
+                              <button 
+                                onClick={() => handleUpdateMessage(msg.id)}
+                                className="text-xs px-2 py-1 bg-green-700 text-white rounded"
+                              >
+                                Guardar
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="leading-relaxed whitespace-pre-wrap">{msg.message}</p>
+                        )}
                       </div>
                     </motion.div>
                   ))}
@@ -234,7 +377,7 @@ export function ReportDetailPage() {
           {/* Right Column - History and Map */}
           <div className="space-y-6">
             
-            {/* Entity Info (Mocked as if assigned) */}
+            {/* Entity Info */}
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
               <Card>
                 <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
@@ -242,13 +385,16 @@ export function ReportDetailPage() {
                   Entidad Asignada
                 </h3>
                 <div className="text-sm">
-                  {report.status === 'pendiente' ? (
-                    <p className="text-gray-500 italic">Buscando entidad correspondiente...</p>
-                  ) : (
+                  {report.entidades ? (
                     <>
-                      <p className="font-medium text-gray-900">Autoridad Competente</p>
-                      <p className="text-gray-500 mt-1">Se ha asignado una entidad para la resolución de este caso.</p>
+                      <p className="font-medium text-gray-900">{report.entidades.nombre}</p>
+                      <p className="text-gray-500 mt-1">Esta entidad está a cargo de la resolución de tu caso.</p>
+                      {report.entidades.email && (
+                        <p className="text-xs text-blue-600 mt-2">{report.entidades.email}</p>
+                      )}
                     </>
+                  ) : (
+                    <p className="text-gray-500 italic">Buscando entidad correspondiente...</p>
                   )}
                 </div>
               </Card>
@@ -291,15 +437,15 @@ export function ReportDetailPage() {
             </motion.div>
 
             {/* Evidence Image */}
-            {report.image_url && (
+            {report.url_imagen && (
               <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }}>
                 <Card className="p-0 overflow-hidden border border-gray-200">
                   <div className="p-4 border-b border-gray-200">
                     <h3 className="font-semibold text-gray-900">Evidencia</h3>
                   </div>
                   <ImageWithFallback
-                    src={report.image_url}
-                    alt={report.title}
+                    src={report.url_imagen}
+                    alt={report.titulo}
                     className="w-full h-48 object-cover"
                   />
                 </Card>
@@ -307,7 +453,7 @@ export function ReportDetailPage() {
             )}
 
             {/* Rating (only for solved reports) */}
-            {report.status === "resuelto" && (
+            {report.estado === "resuelto" && (
               <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.6 }}>
                 <Card>
                   <h3 className="font-semibold text-gray-900 mb-4">Califica la atención</h3>

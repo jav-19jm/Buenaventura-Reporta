@@ -1,5 +1,6 @@
 import { supabase } from '../app/supabase/supabase';
 import type { Reporte, EstadoReporte, PrioridadReporte } from '../app/supabase/supabase';
+import { checkAndGrantBadges } from './badges';
 
 // ==========================================
 // CRUD DE REPORTES CON SUPABASE (ESPAÑOL)
@@ -48,6 +49,25 @@ export async function createReport(reportData: {
       .single();
 
     if (error) throw error;
+
+    // Actualizar estadísticas del perfil
+    if (data) {
+      const { data: profile } = await supabase
+        .from('perfiles')
+        .select('reportes_creados')
+        .eq('id', user.id)
+        .single();
+      
+      if (profile) {
+        await supabase
+          .from('perfiles')
+          .update({ reportes_creados: (profile.reportes_creados || 0) + 1 })
+          .eq('id', user.id);
+      }
+      
+      // Verificar insignias automáticamente
+      await checkAndGrantBadges(user.id);
+    }
 
     console.log('✅ Reporte creado:', data);
     return { data, error: null };
@@ -298,20 +318,28 @@ export async function voteReport(reportId: string, tipoVoto: 'voto_positivo' | '
 
     // 4. Actualizar reputación del autor del reporte (en la tabla 'perfiles')
     if (reportData.id_usuario) {
-      const { data: profileData } = await supabase
-        .from('perfiles')
-        .select('puntuacion_reputacion')
-        .eq('id', reportData.id_usuario)
-        .single();
-
-      if (profileData) {
+      // Obtener todos los reportes del usuario para recalcular totales
+      const { data: allUserReports } = await supabase
+        .from('reportes')
+        .select('votos_positivos, votos_negativos')
+        .eq('id_usuario', reportData.id_usuario);
+      
+      if (allUserReports) {
+        const totalPos = allUserReports.reduce((sum, r) => sum + (r.votos_positivos || 0), 0);
+        const totalNeg = allUserReports.reduce((sum, r) => sum + (r.votos_negativos || 0), 0);
+        
         await supabase
           .from('perfiles')
           .update({
-            puntuacion_reputacion: (profileData.puntuacion_reputacion || 0) + reputationChange
+            votos_positivos: totalPos,
+            votos_negativos: totalNeg,
+            puntuacion_reputacion: totalPos - totalNeg
           })
           .eq('id', reportData.id_usuario);
       }
+
+      // 5. Verificar insignias por reputación
+      await checkAndGrantBadges(reportData.id_usuario);
     }
 
     console.log('✅ Voto y reputación actualizados:', tipoVoto);

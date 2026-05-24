@@ -103,56 +103,60 @@ export async function checkAndGrantBadges(userId: string) {
       return { error: 'Usuario no encontrado' };
     }
 
-    // Obtener badges del usuario
+    // Obtener badges que ya tiene el usuario
     const { data: userBadges } = await getUserBadges(userId);
-    const userBadgeIds = userBadges?.map(b => b.id_insignia) || [];
+    const userBadgeNames = userBadges?.map(b => b.insignias.nombre) || [];
 
-    // Obtener todas las insignias
+    // Obtener todas las insignias disponibles en el sistema
     const { data: allBadges } = await getAllBadges();
 
     if (!allBadges) {
-      return { error: 'No se pudieron obtener insignias' };
+      return { error: 'No se pudieron obtener insignias del sistema' };
     }
 
     const badgesToGrant = [];
 
-    // Verificar condiciones para cada insignia
+    // Lógica de asignación por méritos
+    
     // 1. Primer Reporte
-    if (user.reportes_creados >= 1 && !userBadgeIds.includes(allBadges[0]?.id)) {
-      const badgeId = allBadges.find(b => b.nombre === 'Primer Reporte')?.id;
-      if (badgeId) badgesToGrant.push(badgeId);
+    if (user.reportes_creados >= 1 && !userBadgeNames.includes('Primer Reporte')) {
+      const badge = allBadges.find(b => b.nombre === 'Primer Reporte');
+      if (badge) badgesToGrant.push(badge.id);
     }
 
     // 2. 10 Reportes
-    if (user.reportes_creados >= 10 && !userBadgeIds.includes(allBadges[1]?.id)) {
-      const badgeId = allBadges.find(b => b.nombre === '10 Reportes')?.id;
-      if (badgeId) badgesToGrant.push(badgeId);
+    if (user.reportes_creados >= 10 && !userBadgeNames.includes('10 Reportes')) {
+      const badge = allBadges.find(b => b.nombre === '10 Reportes');
+      if (badge) badgesToGrant.push(badge.id);
     }
 
-    // 3. Solucionador
-    if (user.reportes_resueltos >= 1 && !userBadgeIds.includes(allBadges[2]?.id)) {
-      const badgeId = allBadges.find(b => b.nombre === 'Solucionador')?.id;
-      if (badgeId) badgesToGrant.push(badgeId);
+    // 3. 50 Reportes
+    if (user.reportes_creados >= 50 && !userBadgeNames.includes('50 Reportes')) {
+      const badge = allBadges.find(b => b.nombre === '50 Reportes');
+      if (badge) badgesToGrant.push(badge.id);
     }
 
-    // 4. 50 Reportes
-    if (user.reportes_creados >= 50 && !userBadgeIds.includes(allBadges[3]?.id)) {
-      const badgeId = allBadges.find(b => b.nombre === '50 Reportes')?.id;
-      if (badgeId) badgesToGrant.push(badgeId);
+    // 4. Solucionador (Al menos 1 reporte resuelto)
+    if (user.reportes_resueltos >= 1 && !userBadgeNames.includes('Solucionador')) {
+      const badge = allBadges.find(b => b.nombre === 'Solucionador');
+      if (badge) badgesToGrant.push(badge.id);
     }
 
-    // 5. Embajador
-    if (user.puntuacion_reputacion > 1000 && !userBadgeIds.includes(allBadges[4]?.id)) {
-      const badgeId = allBadges.find(b => b.nombre === 'Embajador')?.id;
-      if (badgeId) badgesToGrant.push(badgeId);
+    // 5. Embajador (Reputación alta)
+    if (user.puntuacion_reputacion >= 100 && !userBadgeNames.includes('Embajador')) {
+      const badge = allBadges.find(b => b.nombre === 'Embajador');
+      if (badge) badgesToGrant.push(badge.id);
     }
 
-    // Otorgar insignias
+    // Otorgar las insignias ganadas
     for (const badgeId of badgesToGrant) {
       await grantBadgeToUser(userId, badgeId);
     }
 
-    console.log(`✅ Se otorgaron ${badgesToGrant.length} insignias`);
+    if (badgesToGrant.length > 0) {
+      console.log(`✅ Se otorgaron ${badgesToGrant.length} nuevas insignias a ${user.nombre_completo}`);
+    }
+    
     return { data: badgesToGrant, error: null };
   } catch (error: any) {
     console.error('Error al verificar y otorgar insignias:', error);

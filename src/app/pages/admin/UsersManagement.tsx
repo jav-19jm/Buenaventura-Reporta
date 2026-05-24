@@ -58,7 +58,7 @@ export function UsersManagement() {
       return;
     }
 
-    const { error } = await updateUserStatus(selectedUser.id, 'inactivo');
+    const { error } = await updateUserStatus(selectedUser.id, 'inactivo', blockReason);
     if (error) {
       toast.error("Error al bloquear usuario");
       return;
@@ -79,7 +79,7 @@ export function UsersManagement() {
       return;
     }
 
-    const { error } = await updateUserStatus(selectedUser.id, 'suspendido');
+    const { error } = await updateUserStatus(selectedUser.id, 'suspendido', blockReason);
     if (error) {
       toast.error("Error al suspender usuario");
       return;
@@ -138,12 +138,12 @@ export function UsersManagement() {
     toast.success("Permisos de administrador revocados");
   };
 
-  const openDetailModal = (user: typeof mockUsers[0]) => {
+  const openDetailModal = (user: any) => {
     setSelectedUser(user);
     setShowDetailModal(true);
   };
 
-  const openBlockModal = (user: typeof mockUsers[0]) => {
+  const openBlockModal = (user: any) => {
     setSelectedUser(user);
     setShowBlockModal(true);
   };
@@ -281,7 +281,7 @@ export function UsersManagement() {
                             (user.puntuacion_reputacion || 0) >= 50 ? 'bg-yellow-500' :
                               'bg-red-500'
                             }`}
-                          style={{ width: `${Math.min(user.puntuacion_reputacion || 0, 100)}%` }}
+                          style={{ width: `${Math.min(Math.max(user.puntuacion_reputacion || 0, 0), 100)}%` }}
                         ></div>
                       </div>
                       <span className="text-sm font-medium text-gray-700">{user.puntuacion_reputacion || 0}</span>
@@ -397,7 +397,7 @@ export function UsersManagement() {
                     <User className="w-10 h-10 text-white" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-2xl font-bold text-gray-900">{selectedUser.name}</h3>
+                    <h3 className="text-2xl font-bold text-gray-900">{selectedUser.nombre_completo || 'Usuario'}</h3>
                     <p className="text-gray-600 flex items-center gap-2 mt-1">
                       <Mail className="w-4 h-4" />
                       {selectedUser.email}
@@ -409,7 +409,7 @@ export function UsersManagement() {
                 <div className="grid grid-cols-2 gap-4">
                   <Card>
                     <p className="text-sm text-gray-600 mb-1">Reportes Creados</p>
-                    <p className="text-2xl font-bold text-gray-900">{selectedUser.reportsCount}</p>
+                    <p className="text-2xl font-bold text-gray-900">{selectedUser.reportes_creados || 0}</p>
                   </Card>
 
                   <Card>
@@ -417,14 +417,14 @@ export function UsersManagement() {
                     <div className="flex items-center gap-2">
                       <div className="flex-1 bg-gray-200 rounded-full h-3">
                         <div
-                          className={`h-3 rounded-full ${selectedUser.reputation >= 80 ? 'bg-green-500' :
-                            selectedUser.reputation >= 50 ? 'bg-yellow-500' :
+                          className={`h-3 rounded-full ${(selectedUser.puntuacion_reputacion || 0) >= 80 ? 'bg-green-500' :
+                            (selectedUser.puntuacion_reputacion || 0) >= 50 ? 'bg-yellow-500' :
                               'bg-red-500'
                             }`}
-                          style={{ width: `${selectedUser.reputation}%` }}
+                          style={{ width: `${Math.min(Math.max(selectedUser.puntuacion_reputacion || 0, 0), 100)}%` }}
                         ></div>
                       </div>
-                      <span className="text-xl font-bold text-gray-900">{selectedUser.reputation}%</span>
+                      <span className="text-xl font-bold text-gray-900">{selectedUser.puntuacion_reputacion || 0}</span>
                     </div>
                   </Card>
                 </div>
@@ -434,13 +434,7 @@ export function UsersManagement() {
                   <div className="flex items-center gap-3 text-sm">
                     <Calendar className="w-4 h-4 text-gray-400" />
                     <span className="text-gray-600">Fecha de registro:</span>
-                    <span className="font-medium text-gray-900">{selectedUser.joinDate}</span>
-                  </div>
-
-                  <div className="flex items-center gap-3 text-sm">
-                    <Calendar className="w-4 h-4 text-gray-400" />
-                    <span className="text-gray-600">Última actividad:</span>
-                    <span className="font-medium text-gray-900">{selectedUser.lastActivity}</span>
+                    <span className="font-medium text-gray-900">{new Date(selectedUser.fecha_creacion).toLocaleDateString()}</span>
                   </div>
 
                   <div className="flex items-center gap-3 text-sm">
@@ -448,28 +442,28 @@ export function UsersManagement() {
                     <span className="text-gray-600">Estado:</span>
                     <Badge
                       variant={
-                        selectedUser.status === "activo" ? "success" :
-                          selectedUser.status === "suspendido" ? "warning" :
+                        selectedUser.estado === "activo" ? "success" :
+                          selectedUser.estado === "suspendido" ? "warning" :
                             "danger"
                       }
                     >
-                      {selectedUser.status === "activo" ? "Activo" :
-                        selectedUser.status === "suspendido" ? "Suspendido" :
+                      {selectedUser.estado === "activo" ? "Activo" :
+                        selectedUser.estado === "suspendido" ? "Suspendido" :
                           "Bloqueado"}
                     </Badge>
                   </div>
                 </div>
 
                 {/* Blocked Reason */}
-                {selectedUser.blockedReason && (
+                {selectedUser.motivo_bloqueo && (
                   <Card className="bg-red-50 border-red-200">
                     <div className="flex items-start gap-3">
                       <AlertTriangle className="w-5 h-5 text-red-600 mt-1" />
                       <div>
                         <p className="font-semibold text-red-900 mb-1">
-                          Motivo de {selectedUser.status === "bloqueado" ? "bloqueo" : "suspensión"}
+                          Motivo de {selectedUser.estado === "bloqueado" ? "bloqueo" : "suspensión"}
                         </p>
-                        <p className="text-sm text-red-700">{selectedUser.blockedReason}</p>
+                        <p className="text-sm text-red-700">{selectedUser.motivo_bloqueo}</p>
                       </div>
                     </div>
                   </Card>
@@ -483,7 +477,7 @@ export function UsersManagement() {
                   >
                     Cerrar
                   </Button>
-                  {selectedUser.status === "activo" && (
+                  {selectedUser.estado === "activo" && (
                     <Button
                       variant="danger"
                       onClick={() => {
@@ -495,7 +489,7 @@ export function UsersManagement() {
                       Bloquear / Suspender
                     </Button>
                   )}
-                  {(selectedUser.status === "bloqueado" || selectedUser.status === "suspendido") && (
+                  {(selectedUser.estado === "inactivo" || selectedUser.estado === "suspendido") && (
                     <Button
                       variant="primary"
                       onClick={() => handleUnblockUser(selectedUser.id)}
@@ -550,7 +544,7 @@ export function UsersManagement() {
 
               <div className="p-6 space-y-4">
                 <p className="text-gray-700">
-                  Estás a punto de moderar al usuario <strong>{selectedUser.name}</strong>
+                  Estás a punto de moderar al usuario <strong>{selectedUser.nombre_completo}</strong>
                 </p>
 
                 <Textarea

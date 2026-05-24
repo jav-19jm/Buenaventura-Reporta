@@ -33,6 +33,7 @@ export function useAuth() {
       setUser(session?.user ?? null);
 
       if (session?.user) {
+        setLoading(true);
         fetchProfile(session.user.id);
       } else {
         setProfile(null);
@@ -54,7 +55,26 @@ export function useAuth() {
         .single();
 
       if (error) throw error;
-      setProfile(data);
+
+      // Verificar si el usuario está bloqueado o suspendido
+      if (data.estado !== 'activo') {
+        const { toast } = await import('sonner');
+        const motive = data.motivo_bloqueo || 'No se especificó un motivo.';
+        const statusLabel = data.estado === 'suspendido' ? 'suspendida' : 'bloqueada';
+        
+        toast.error(`Cuenta ${statusLabel}`, {
+          description: `${motive}. Si crees que es un error, contacta a los administradores.`,
+          duration: 6000,
+        });
+
+        // Cerrar sesión automáticamente
+        await supabase.auth.signOut();
+        setUser(null);
+        setSession(null);
+        setProfile(null);
+      } else {
+        setProfile(data);
+      }
     } catch (error) {
       console.error('Error al cargar perfil:', error);
       setProfile(null);

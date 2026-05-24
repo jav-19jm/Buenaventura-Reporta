@@ -81,9 +81,6 @@ export function UserDashboard() {
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
-      {/* Weather Widget */}
-      <WeatherWidget />
-
       {/* Header */}
       <header className="bg-white shadow-sm z-10">
         <div className="px-4 py-3 flex items-center justify-between">
@@ -249,9 +246,9 @@ export function UserDashboard() {
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         {/* Map Area */}
         <div className="flex-1 relative bg-gradient-to-br from-yellow-50 via-green-50 to-yellow-100">
-          <ReportsMap 
-            reports={mapReports} 
-            onVote={() => fetchData(false)} 
+          <ReportsMap
+            reports={mapReports}
+            onVote={() => fetchData(false)}
           />
 
           {/* Floating Map Filter */}
@@ -284,16 +281,10 @@ export function UserDashboard() {
             </motion.div>
           </div>
 
-          {/* Emergency Button */}
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            animate={{ scale: [1, 1.05, 1] }}
-            transition={{ duration: 2, repeat: Infinity }}
-            className="absolute bottom-24 md:bottom-6 right-20 md:right-24 w-14 h-14 bg-red-600 rounded-full shadow-xl flex items-center justify-center hover:bg-red-700 transition-colors"
-          >
-            <AlertCircle className="w-7 h-7 text-white" />
-          </motion.button>
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[5]">
+            {/* Weather Widget */}
+            <WeatherWidget />
+          </div>
 
           {/* Floating Action Button */}
           <Link to="/report/new">

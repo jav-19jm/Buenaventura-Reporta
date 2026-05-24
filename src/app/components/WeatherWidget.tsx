@@ -51,7 +51,7 @@ export function WeatherWidget() {
 
   if (loading) {
     return (
-      <div className="fixed top-20 right-4 z-40">
+      <div className="relative z-10">
         <div className="bg-white px-4 py-2 rounded-full shadow-lg border-2 border-gray-100 flex items-center gap-2">
           <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
           <span className="text-sm font-medium text-gray-500">Cargando clima...</span>
@@ -66,7 +66,7 @@ export function WeatherWidget() {
   const WeatherIcon = config.icon;
 
   return (
-    <div className="fixed top-20 right-4 z-40">
+    <div className="relative z-10">
       <motion.div
         initial={false}
         whileHover={{ scale: 1.05 }}

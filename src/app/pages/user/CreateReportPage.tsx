@@ -205,7 +205,6 @@ export function CreateReportPage() {
             className="bg-white rounded-lg shadow-sm p-6"
           >
             <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <Building2 className="w-5 h-5 text-blue-600" />
               3. ¿A qué entidad va dirigido? <span className="text-gray-400">(opcional)</span>
             </h2>
             <select

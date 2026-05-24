@@ -23,13 +23,16 @@ export async function getAllUsers() {
 }
 
 /**
- * Actualizar estado de un usuario
+ * Actualizar estado de un usuario (activo, inactivo, suspendido)
  */
-export async function updateUserStatus(userId: string, estado: 'activo' | 'inactivo' | 'suspendido') {
+export async function updateUserStatus(userId: string, estado: 'activo' | 'inactivo' | 'suspendido', motivo?: string) {
   try {
     const { data, error } = await supabase
       .from('perfiles')
-      .update({ estado })
+      .update({ 
+        estado, 
+        motivo_bloqueo: motivo || null 
+      })
       .eq('id', userId)
       .select()
       .single();

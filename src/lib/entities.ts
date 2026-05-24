@@ -1,5 +1,6 @@
 import { supabase } from "../app/supabase/supabase";
 import type { Entidad, Reporte } from "../app/supabase/supabase";
+import { checkAndGrantBadges } from "./badges";
 
 /**
  * Obtiene información de una entidad por ID
@@ -115,7 +116,29 @@ export async function updateReportStatus(reportId: string, estado: string) {
       .from("reportes")
       .update({ estado, fecha_actualizacion: new Date().toISOString() })
       .eq("id", reportId)
-      .select();
+      .select()
+      .single();
+
+    if (!error && data && data.id_usuario) {
+      // Si se resolvió, incrementar contador en el perfil del usuario
+      if (estado === "resuelto") {
+        const { data: profile } = await supabase
+          .from("perfiles")
+          .select("reportes_resueltos")
+          .eq("id", data.id_usuario)
+          .single();
+        
+        if (profile) {
+          await supabase
+            .from("perfiles")
+            .update({ reportes_resueltos: (profile.reportes_resueltos || 0) + 1 })
+            .eq("id", data.id_usuario);
+        }
+      }
+      
+      // Verificar insignias automáticamente
+      await checkAndGrantBadges(data.id_usuario);
+    }
 
     return { data, error };
   } catch (error) {

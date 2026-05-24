@@ -35,7 +35,7 @@ export function IncidentTypeSelector({ selectedType, onSelect, types }: Incident
   // Si no hay tipos dinámicos, usar los por defecto
   const displayTypes = types && types.length > 0 
     ? types.map(t => ({
-        id: t.id || t.nombre.toLowerCase().replace(/ /g, '-'),
+        id: t.nombre,
         label: t.nombre,
         icon: iconMap[t.icono] || HelpCircle,
         color: t.color || "text-blue-600"

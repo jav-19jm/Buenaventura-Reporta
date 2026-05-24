@@ -27,6 +27,8 @@ export function ProfilePage() {
   const [freshProfile, setFreshProfile] = useState<any>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
+  const displayProfile = freshProfile || profile;
+
   // Redirigir si no está autenticado
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -89,19 +91,19 @@ export function ProfilePage() {
   const stats = [
     {
       label: "Reportes totales",
-      value: profile?.reportes_creados || 0,
+      value: displayProfile?.reportes_creados || 0,
       icon: MapPin,
       color: "text-green-600"
     },
     {
       label: "Solucionados",
-      value: profile?.reportes_resueltos || 0,
+      value: displayProfile?.reportes_resueltos || 0,
       icon: Award,
       color: "text-yellow-600"
     },
     {
       label: "Reputación",
-      value: profile?.puntuacion_reputacion || 0,
+      value: displayProfile?.puntuacion_reputacion || 0,
       icon: TrendingUp,
       color: "text-green-600"
     },
@@ -161,7 +163,7 @@ export function ProfilePage() {
     setUploadingAvatar(false);
   };
 
-  const displayProfile = freshProfile || profile;
+
 
   if (authLoading || !displayProfile) {
     return (
@@ -325,12 +327,12 @@ export function ProfilePage() {
                     <div className="mt-3">
                       <div className="flex items-center justify-between text-xs text-gray-600 mb-2">
                         <span>Reputación Total</span>
-                        <span className="font-semibold">{(displayProfile.votos_positivos || 0) - (displayProfile.votos_negativos || 0)} puntos</span>
+                        <span className="font-semibold">{displayProfile.puntuacion_reputacion || 0} puntos</span>
                       </div>
                       <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
                         <motion.div
                           initial={{ width: 0 }}
-                          animate={{ width: `${Math.min(((displayProfile.votos_positivos || 0) - (displayProfile.votos_negativos || 0)) / 50 * 100, 100)}%` }}
+                          animate={{ width: `${Math.min(Math.max((displayProfile.puntuacion_reputacion || 0) / 50 * 100, 0), 100)}%` }}
                           transition={{ duration: 1, delay: 0.3 }}
                           className="h-full bg-gradient-to-r from-yellow-500 to-green-600"
                         />

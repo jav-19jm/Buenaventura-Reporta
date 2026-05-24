@@ -6,7 +6,7 @@ import { Badge } from "../../components/ui/Badge";
 import { Card } from "../../components/ui/Card";
 import { MapPin, ArrowLeft, Calendar, CheckCircle2, Clock, Star, MessageCircle, Send, History, Building2 } from "lucide-react";
 import { ImageWithFallback } from "../../components/figma/ImageWithFallback";
-import { getReportById } from "../../../lib/reports";
+import { getReportById, getReportMessages, createReportMessage } from "../../../lib/reports";
 import { ReportsMap } from "../../components/ReportsMap";
 import { toast } from "sonner";
 import type { Reporte } from "../../supabase/supabase";
@@ -19,15 +19,7 @@ export function ReportDetailPage() {
   const [newMessage, setNewMessage] = useState("");
   
   // Mensajes simulados (Mock) para el componente de comunicación
-  const [messages, setMessages] = useState([
-    {
-      id: "1",
-      sender: "entity" as const,
-      userName: "Sistema Automático",
-      message: "Tu reporte ha sido recibido y será revisado pronto por la entidad correspondiente.",
-      timestamp: new Date(Date.now() - 86400000).toLocaleString(),
-    }
-  ]);
+  const [messages, setMessages] = useState<any[]>([]);
 
   useEffect(() => {
     if (id) {
@@ -37,41 +29,61 @@ export function ReportDetailPage() {
 
   const loadReport = async () => {
     setLoading(true);
-    const { data, error } = await getReportById(id as string);
-    if (error) {
-      toast.error("Error al cargar el reporte");
-    } else if (data) {
-      setReport(data as unknown as Reporte);
-      
-      // Ajustar mensajes mock si el estado es en revisión
-      if (data.estado === 'en_revision' || data.estado === 'en_proceso') {
-        setMessages(prev => [
-          ...prev,
-          {
-            id: "2",
-            sender: "entity" as const,
-            userName: "Entidad Responsable",
-            message: "Hemos comenzado a revisar tu caso. Te mantendremos informado sobre cualquier avance.",
-            timestamp: new Date(data.fecha_actualizacion || data.fecha_creacion).toLocaleString(),
-          }
-        ]);
+    try {
+      const { data, error } = await getReportById(id as string);
+      if (error) {
+        toast.error("Error al cargar el reporte");
+      } else if (data) {
+        setReport(data as unknown as Reporte);
+        
+        // Cargar mensajes reales
+        const { data: dbMessages } = await getReportMessages(id as string);
+        if (dbMessages) {
+          const formattedMessages = dbMessages.map((m: any) => ({
+            id: m.id,
+            sender: m.tipo_remitente === 'usuario' ? 'user' : 'entity',
+            userName: m.tipo_remitente === 'usuario' ? (m.perfiles?.nombre_completo || 'Tú') : 'Entidad Responsable',
+            message: m.mensaje,
+            timestamp: new Date(m.fecha_creacion).toLocaleString(),
+          }));
+          
+          setMessages(formattedMessages);
+        }
       }
+    } catch (error) {
+      console.error("Error loading report details:", error);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim()) return;
-    setMessages([...messages, {
-      id: Date.now().toString(),
-      sender: "user" as const,
-      userName: "Tú",
-      message: newMessage,
-      timestamp: new Date().toLocaleString()
-    }]);
+    if (!newMessage.trim() || !id) return;
+    
+    const messageText = newMessage;
     setNewMessage("");
-    toast.success("Mensaje enviado a la entidad");
+
+    const { data, error } = await createReportMessage(id, messageText);
+    
+    if (error) {
+      toast.error("Error al enviar mensaje");
+      setNewMessage(messageText); // Restaurar si falla
+    } else {
+      toast.success("Mensaje enviado exitosamente");
+      // Recargar mensajes
+      const { data: dbMessages } = await getReportMessages(id);
+      if (dbMessages) {
+        const formattedMessages = dbMessages.map((m: any) => ({
+          id: m.id,
+          sender: m.tipo_remitente === 'usuario' ? 'user' : 'entity',
+          userName: m.tipo_remitente === 'usuario' ? (m.perfiles?.nombre_completo || 'Tú') : 'Entidad Responsable',
+          message: m.mensaje,
+          timestamp: new Date(m.fecha_creacion).toLocaleString(),
+        }));
+        setMessages(formattedMessages);
+      }
+    }
   };
 
   const statusVariant = {

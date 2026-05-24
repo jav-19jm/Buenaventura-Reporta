@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { useAuth } from "../../../hooks/useAuth";
-import { getEntityReports, getEntityStats, getEntityById, updateReportStatus, updateEntityDetails, uploadEntityLogo, getAllEntities } from "../../../lib/entities";
+import { getEntityReports, getEntityStats, getEntityById, updateReportStatus, updateEntityDetails, uploadEntityLogo, getAllEntities, getEntityActivity, logEntityActivity } from "../../../lib/entities";
 import { toast } from "sonner";
 import { signOut } from "../../../lib/auth";
 
@@ -35,6 +35,7 @@ export function EntityDashboard() {
   const [entityData, setEntityData] = useState<any>(null);
   const [reports, setReports] = useState<any[]>([]);
   const [stats, setStats] = useState<any>(null);
+  const [activityLogs, setActivityLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -94,11 +95,22 @@ export function EntityDashboard() {
         setReports(reportsData);
       }
 
-      // 4. Obtener estadísticas
+      // 4. Obtener estadísticas y actividad
       if (currentEntityId) {
         const { data: statsData } = await getEntityStats(currentEntityId);
         if (statsData) {
           setStats(statsData);
+        }
+        
+        // 5. Registrar login (solo una vez por sesión) y cargar actividad
+        if (!sessionStorage.getItem('entity_logged_in_recorded')) {
+          await logEntityActivity(currentEntityId, 'auth', 'Inicio de sesión exitoso', 'Se accedió al panel institucional');
+          sessionStorage.setItem('entity_logged_in_recorded', 'true');
+        }
+        
+        const { data: activityData } = await getEntityActivity(currentEntityId);
+        if (activityData) {
+          setActivityLogs(activityData);
         }
       }
 
@@ -591,24 +603,27 @@ export function EntityDashboard() {
                 </h3>
               </div>
               <div className="space-y-4">
-                {[
-                  { titulo: "Inicio de sesión exitoso", desc: "Se accedió al panel institucional", fecha: new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString(), tipo: "auth", icon: LogOut },
-                  { titulo: "Actualización de Reporte", desc: "El reporte 'Bache en la vía' cambió a estado 'En Proceso'", fecha: "Ayer, 14:30", tipo: "update", icon: CheckCircle2 },
-                  { titulo: "Nuevo reporte asignado", desc: "El sistema asignó automáticamente el reporte 'Fuga de agua'", fecha: "Ayer, 09:15", tipo: "new", icon: AlertCircle }
-                ].map((log, i) => (
-                  <div key={i} className="flex items-start gap-4 p-4 rounded-xl border border-gray-100 hover:bg-gray-50 transition-colors">
-                    <div className={`p-2 rounded-lg ${log.tipo === 'auth' ? 'bg-blue-100 text-blue-600' : log.tipo === 'update' ? 'bg-green-100 text-green-600' : 'bg-yellow-100 text-yellow-600'}`}>
-                      <log.icon className="w-5 h-5" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900">{log.titulo}</h4>
-                      <p className="text-sm text-gray-600 mt-1">{log.desc}</p>
-                    </div>
-                    <span className="text-xs font-medium text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-                      {log.fecha}
-                    </span>
-                  </div>
-                ))}
+                {activityLogs.length === 0 ? (
+                  <p className="text-gray-500 text-center py-8">No hay registros de actividad recientes.</p>
+                ) : (
+                  activityLogs.map((log) => {
+                    const Icon = log.tipo_accion === 'auth' ? LogOut : log.tipo_accion === 'update' ? CheckCircle2 : AlertCircle;
+                    return (
+                      <div key={log.id} className="flex items-start gap-4 p-4 rounded-xl border border-gray-100 hover:bg-gray-50 transition-colors">
+                        <div className={`p-2 rounded-lg ${log.tipo_accion === 'auth' ? 'bg-blue-100 text-blue-600' : log.tipo_accion === 'update' ? 'bg-green-100 text-green-600' : 'bg-yellow-100 text-yellow-600'}`}>
+                          <Icon className="w-5 h-5" />
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-gray-900">{log.titulo}</h4>
+                          <p className="text-sm text-gray-600 mt-1">{log.descripcion}</p>
+                        </div>
+                        <span className="text-xs font-medium text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                          {new Date(log.fecha_creacion).toLocaleString()}
+                        </span>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </Card>
           </motion.div>

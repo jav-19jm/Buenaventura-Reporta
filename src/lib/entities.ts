@@ -112,41 +112,50 @@ export async function getAllEntities() {
  */
 export async function updateReportStatus(reportId: string, estado: string) {
   try {
+    // 1. Obtener ID de usuario antes de actualizar (para la reputación)
+    const { data: reportBefore } = await supabase
+      .from("reportes")
+      .select("id_usuario")
+      .eq("id", reportId)
+      .single();
+
+    // 2. Actualizar estado
     const { data, error } = await supabase
       .from("reportes")
       .update({ 
         estado, 
         fecha_actualizacion: new Date().toISOString(),
-        visible: estado === 'resuelto' ? false : true
+        visible: (estado === 'resuelto' || estado === 'cancelado') ? false : true
       })
       .eq("id", reportId)
       .select()
       .single();
 
-    if (!error && data && data.id_usuario) {
-      // Si se resolvió, incrementar contador en el perfil del usuario
-      if (estado === "resuelto") {
-        const { data: profile } = await supabase
+    if (error) throw error;
+
+    // 3. Si se resolvió, incrementar contador en el perfil del usuario
+    if (estado === "resuelto" && reportBefore?.id_usuario) {
+      const { data: profile } = await supabase
+        .from("perfiles")
+        .select("reportes_resueltos")
+        .eq("id", reportBefore.id_usuario)
+        .single();
+      
+      if (profile) {
+        await supabase
           .from("perfiles")
-          .select("reportes_resueltos")
-          .eq("id", data.id_usuario)
-          .single();
-        
-        if (profile) {
-          await supabase
-            .from("perfiles")
-            .update({ reportes_resueltos: (profile.reportes_resueltos || 0) + 1 })
-            .eq("id", data.id_usuario);
-        }
+          .update({ reportes_resueltos: (profile.reportes_resueltos || 0) + 1 })
+          .eq("id", reportBefore.id_usuario);
       }
       
       // Verificar insignias automáticamente
-      await checkAndGrantBadges(data.id_usuario);
+      await checkAndGrantBadges(reportBefore.id_usuario);
     }
 
-    return { data, error };
-  } catch (error) {
-    return { data: null, error };
+    return { data: data || null, error: null };
+  } catch (error: any) {
+    console.error('Error en updateReportStatus:', error);
+    return { data: null, error: error.message };
   }
 }
 /**
@@ -197,5 +206,42 @@ export async function uploadEntityLogo(entityId: string, file: File) {
   } catch (error: any) {
     console.error('Error al subir logo:', error);
     return { url: null, error: error.message };
+  }
+}
+
+/**
+ * Obtiene el registro de auditoría de una entidad
+ */
+export async function getEntityActivity(entityId: string) {
+  try {
+    const { data, error } = await supabase
+      .from("actividad_entidades")
+      .select("*")
+      .eq("id_entidad", entityId)
+      .order("fecha_creacion", { ascending: false })
+      .limit(50);
+
+    return { data, error };
+  } catch (error) {
+    return { data: null, error };
+  }
+}
+
+/**
+ * Registra una acción manualmente en la auditoría
+ */
+export async function logEntityActivity(entityId: string, tipoAccion: string, titulo: string, descripcion: string) {
+  try {
+    const { error } = await supabase
+      .from("actividad_entidades")
+      .insert({
+        id_entidad: entityId,
+        tipo_accion: tipoAccion,
+        titulo,
+        descripcion
+      });
+    return { error };
+  } catch (error) {
+    return { error };
   }
 }

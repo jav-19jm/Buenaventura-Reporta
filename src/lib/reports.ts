@@ -226,7 +226,7 @@ export async function updateReportStatus(reportId: string, estado: EstadoReporte
       .update({
         estado,
         fecha_actualizacion: new Date().toISOString(),
-        visible: estado === 'resuelto' ? false : true
+        visible: (estado === 'resuelto' || estado === 'cancelado') ? false : true
       })
       .eq('id', reportId)
       .select()

@@ -28,7 +28,7 @@ export async function getEntityReports(entityId: string, category?: string) {
       .from("reportes")
       .select(`
         *,
-        perfil:id_usuario(nombre_completo, email)
+        perfiles:id_usuario(nombre_completo, email)
       `);
 
     if (category) {
@@ -147,5 +147,55 @@ export async function updateReportStatus(reportId: string, estado: string) {
     return { data, error };
   } catch (error) {
     return { data: null, error };
+  }
+}
+/**
+ * Actualiza los detalles de una entidad (logo, sitio web, etc.)
+ */
+export async function updateEntityDetails(entityId: string, updates: Partial<Entidad>) {
+  try {
+    const { data, error } = await supabase
+      .from("entidades")
+      .update({
+        ...updates,
+        fecha_actualizacion: new Date().toISOString()
+      })
+      .eq("id", entityId)
+      .select()
+      .single();
+
+    return { data, error };
+  } catch (error) {
+    return { data: null, error };
+  }
+}
+
+/**
+ * Sube el logo de la entidad al bucket 'logos'
+ */
+export async function uploadEntityLogo(entityId: string, file: File) {
+  try {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${entityId}-${Date.now()}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('logos')
+      .upload(filePath, file);
+
+    if (uploadError) throw uploadError;
+
+    // Obtener URL pública
+    const { data } = supabase.storage
+      .from('logos')
+      .getPublicUrl(filePath);
+
+    // Actualizar la entidad con la URL del logo
+    await updateEntityDetails(entityId, { logo_url: data.publicUrl });
+
+    return { url: data.publicUrl, error: null };
+  } catch (error: any) {
+    console.error('Error al subir logo:', error);
+    return { url: null, error: error.message };
   }
 }

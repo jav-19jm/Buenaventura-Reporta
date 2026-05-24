@@ -111,11 +111,54 @@ export function EntitiesManagement() {
     }
 
     if (editingEntity) {
-      const { error } = await updateEntity(editingEntity.id, formData);
+      const { password, ...entityUpdates } = formData;
+      const { error } = await updateEntity(editingEntity.id, entityUpdates);
+      
       if (error) {
         toast.error("Error al actualizar entidad: " + error);
         return;
       }
+
+      // 1. Actualizar perfil vinculado
+      const { error: profileError } = await supabase
+        .from('perfiles')
+        .update({
+          nombre_completo: formData.nombre,
+          email: formData.email,
+        })
+        .eq('id_entidad', editingEntity.id);
+
+      if (profileError) console.error("Error updating profile:", profileError);
+
+      // 2. Si se proporcionó una nueva contraseña, actualizarla en Auth
+      if (formData.password && formData.password.length >= 6) {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || SUPABASE_CONFIG.url;
+        const supabaseServiceKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+        
+        if (supabaseServiceKey) {
+          const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
+            auth: { autoRefreshToken: false, persistSession: false }
+          });
+          
+          // Buscar el ID del usuario vinculado a esta entidad
+          const { data: profile } = await supabase
+            .from('perfiles')
+            .select('id')
+            .eq('id_entidad', editingEntity.id)
+            .single();
+          
+          if (profile?.id) {
+            const { error: authUpdateError } = await adminClient.auth.admin.updateUserById(profile.id, {
+              password: formData.password,
+              email: formData.email,
+              user_metadata: { nombre_completo: formData.nombre }
+            });
+            if (authUpdateError) toast.error("Error al actualizar contraseña: " + authUpdateError.message);
+            else toast.success("Contraseña institucional actualizada");
+          }
+        }
+      }
+
       toast.success("Entidad actualizada correctamente");
     } else {
       // Validar contraseña para nueva entidad
@@ -521,15 +564,17 @@ export function EntitiesManagement() {
                   <Card className="bg-blue-50 border-blue-100 mt-4">
                     <h4 className="text-sm font-semibold text-blue-900 mb-2">Credenciales de Acceso</h4>
                     <p className="text-xs text-blue-700 mb-4">
-                      Se creará automáticamente una cuenta de usuario para esta entidad con el correo proporcionado arriba.
+                      {editingEntity 
+                        ? "Deja la contraseña en blanco si no deseas cambiarla." 
+                        : "Se creará automáticamente una cuenta de usuario para esta entidad con el correo proporcionado arriba."}
                     </p>
                     <Input
-                      label="Contraseña Temporal *"
+                      label={editingEntity ? "Nueva Contraseña (opcional)" : "Contraseña Temporal *"}
                       type="password"
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                       placeholder="Mínimo 6 caracteres"
-                      required
+                      required={!editingEntity}
                     />
                   </Card>
                 )}

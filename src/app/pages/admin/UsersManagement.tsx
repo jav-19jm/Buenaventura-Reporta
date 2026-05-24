@@ -42,14 +42,15 @@ export function UsersManagement() {
       user.email.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesStatus = statusFilter === "all" || user.estado === statusFilter;
+    const isCitizen = user.rol === 'ciudadano' || !user.rol; // Asumir ciudadano por defecto
 
-    return matchesSearch && matchesStatus;
+    return matchesSearch && matchesStatus && isCitizen;
   });
 
   const statusCounts = {
-    activo: users.filter(u => u.estado === "activo").length,
-    inactivo: users.filter(u => u.estado === "inactivo").length,
-    suspendido: users.filter(u => u.estado === "suspendido").length,
+    activo: users.filter(u => u.estado === "activo" && (u.rol === 'ciudadano' || !u.rol)).length,
+    inactivo: users.filter(u => u.estado === "inactivo" && (u.rol === 'ciudadano' || !u.rol)).length,
+    suspendido: users.filter(u => u.estado === "suspendido" && (u.rol === 'ciudadano' || !u.rol)).length,
   };
 
   const handleBlockUser = async () => {

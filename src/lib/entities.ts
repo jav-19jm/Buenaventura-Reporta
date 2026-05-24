@@ -114,7 +114,11 @@ export async function updateReportStatus(reportId: string, estado: string) {
   try {
     const { data, error } = await supabase
       .from("reportes")
-      .update({ estado, fecha_actualizacion: new Date().toISOString() })
+      .update({ 
+        estado, 
+        fecha_actualizacion: new Date().toISOString(),
+        visible: estado === 'resuelto' ? false : true
+      })
       .eq("id", reportId)
       .select()
       .single();

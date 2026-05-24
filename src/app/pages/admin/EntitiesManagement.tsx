@@ -128,22 +128,49 @@ export function EntitiesManagement() {
       try {
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || SUPABASE_CONFIG.url;
         const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || SUPABASE_CONFIG.anonKey;
+        const supabaseServiceKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
         
-        // Creamos un cliente temporal sin persistencia para no cerrar la sesión del admin
-        const tempClient = createClient(supabaseUrl, supabaseAnonKey, {
-          auth: { persistSession: false }
-        });
+        let authData: any;
+        let authError: any;
 
-        const { data: authData, error: authError } = await tempClient.auth.signUp({
-          email: formData.email,
-          password: formData.password,
-          options: {
-            data: {
+        if (supabaseServiceKey) {
+          // Si tenemos la Service Role Key, usamos el API de Admin para crear el usuario ya confirmado
+          const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
+            auth: { autoRefreshToken: false, persistSession: false }
+          });
+
+          const { data, error } = await adminClient.auth.admin.createUser({
+            email: formData.email,
+            password: formData.password,
+            email_confirm: true, // Esto evita que se mande el correo y permite entrar sin verificación
+            user_metadata: {
               nombre_completo: formData.nombre,
-              rol: 'entidad'
+              rol: 'entidad',
+              id_entidad: null // Se vinculará después
             }
-          }
-        });
+          });
+          authData = data;
+          authError = error;
+        } else {
+          // Fallback a signUp normal (requiere confirmación por correo si está habilitado en Supabase)
+          const tempClient = createClient(supabaseUrl, supabaseAnonKey, {
+            auth: { persistSession: false }
+          });
+
+          const { data, error } = await tempClient.auth.signUp({
+            email: formData.email,
+            password: formData.password,
+            options: {
+              data: {
+                nombre_completo: formData.nombre,
+                rol: 'entidad',
+                id_entidad: null // Se vinculará después
+              }
+            }
+          });
+          authData = data;
+          authError = error;
+        }
 
         if (authError) throw authError;
 
@@ -153,7 +180,10 @@ export function EntitiesManagement() {
         
         if (entityError) throw new Error(entityError);
 
-        // 3. Crear perfil vinculado a la entidad
+        // 3. Esperar un momento para que los disparadores de DB se ejecuten (si existen)
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // 4. Crear o actualizar perfil vinculado a la entidad
         const { error: profileError } = await supabase
           .from('perfiles')
           .upsert({
@@ -164,6 +194,16 @@ export function EntitiesManagement() {
             id_entidad: entityDataCreated.id,
             estado: 'activo'
           });
+
+        // 5. Actualizar metadata del usuario con el ID de la entidad
+        if (supabaseServiceKey && authData.user?.id) {
+          const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
+            auth: { autoRefreshToken: false, persistSession: false }
+          });
+          await adminClient.auth.admin.updateUserById(authData.user.id, {
+            user_metadata: { id_entidad: entityDataCreated.id }
+          });
+        }
 
         if (profileError) console.error("Error creating profile:", profileError);
 

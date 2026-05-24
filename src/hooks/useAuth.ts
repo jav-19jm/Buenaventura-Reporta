@@ -89,8 +89,8 @@ export function useAuth() {
     session,
     loading,
     isAuthenticated: !!user,
-    isAdmin: profile?.rol === 'administrador',
-    isEntity: profile?.rol === 'entidad',
-    isCitizen: profile?.rol === 'ciudadano',
+    isAdmin: profile?.rol === 'administrador' || user?.user_metadata?.rol === 'administrador',
+    isEntity: profile?.rol === 'entidad' || user?.user_metadata?.rol === 'entidad',
+    isCitizen: profile?.rol === 'ciudadano' && user?.user_metadata?.rol !== 'entidad' && user?.user_metadata?.rol !== 'administrador',
   };
 }

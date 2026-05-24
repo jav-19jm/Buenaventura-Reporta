@@ -98,6 +98,7 @@ export async function getPublicReports() {
           color
         )
       `)
+      .eq('visible', true)
       .order('fecha_creacion', { ascending: false });
 
     if (error) throw error;
@@ -106,6 +107,38 @@ export async function getPublicReports() {
     return { data, error: null };
   } catch (error: any) {
     console.error('Error al obtener reportes:', error);
+    return { data: null, error: error.message };
+  }
+}
+
+/**
+ * Obtener todos los reportes (incluyendo invisibles) para administración
+ */
+export async function getAdminReports() {
+  try {
+    const { data, error } = await supabase
+      .from('reportes')
+      .select(`
+        *,
+        perfiles:id_usuario (
+          id,
+          nombre_completo,
+          url_avatar
+        ),
+        entidades:id_entidad (
+          id,
+          nombre,
+          slug,
+          color
+        )
+      `)
+      .order('fecha_creacion', { ascending: false });
+
+    if (error) throw error;
+
+    return { data, error: null };
+  } catch (error: any) {
+    console.error('Error al obtener reportes administrativos:', error);
     return { data: null, error: error.message };
   }
 }
@@ -192,7 +225,8 @@ export async function updateReportStatus(reportId: string, estado: EstadoReporte
       .from('reportes')
       .update({
         estado,
-        fecha_actualizacion: new Date().toISOString()
+        fecha_actualizacion: new Date().toISOString(),
+        visible: estado === 'resuelto' ? false : true
       })
       .eq('id', reportId)
       .select()
@@ -221,7 +255,7 @@ export async function deleteReport(reportId: string) {
 
     const { error } = await supabase
       .from('reportes')
-      .delete()
+      .update({ visible: false })
       .eq('id', reportId)
       .eq('id_usuario', user.id);
 
@@ -500,7 +534,8 @@ export async function getReportMessages(reporteId: string) {
         *,
         perfiles:id_remitente (
           nombre_completo,
-          url_avatar
+          url_avatar,
+          rol
         )
       `)
       .eq('id_reporte', reporteId)
@@ -545,6 +580,79 @@ export async function createReportMessage(reporteId: string, mensaje: string) {
   } catch (error: any) {
     console.error('Error al crear mensaje:', error);
     return { data: null, error: error.message };
+  }
+}
+
+/**
+ * Actualizar mensaje (solo dentro de los primeros 5 minutos)
+ */
+export async function updateReportMessage(mensajeId: string, nuevoMensaje: string) {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: 'Usuario no autenticado' };
+
+    // Verificar tiempo (5 min = 300000 ms)
+    const { data: existingMsg, error: fetchError } = await supabase
+      .from('mensajes')
+      .select('fecha_creacion, id_remitente')
+      .eq('id', mensajeId)
+      .single();
+
+    if (fetchError || !existingMsg) throw new Error('Mensaje no encontrado');
+    if (existingMsg.id_remitente !== user.id) throw new Error('No tienes permiso para editar este mensaje');
+
+    const diff = Date.now() - new Date(existingMsg.fecha_creacion).getTime();
+    if (diff > 5 * 60 * 1000) {
+      return { error: 'El tiempo límite de 5 minutos para editar ha expirado' };
+    }
+
+    const { data, error } = await supabase
+      .from('mensajes')
+      .update({ mensaje: nuevoMensaje })
+      .eq('id', mensajeId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return { data, error: null };
+  } catch (error: any) {
+    console.error('Error al actualizar mensaje:', error);
+    return { error: error.message };
+  }
+}
+
+/**
+ * Eliminar mensaje (solo dentro de los primeros 5 minutos)
+ */
+export async function deleteReportMessage(mensajeId: string) {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: 'Usuario no autenticado' };
+
+    const { data: existingMsg, error: fetchError } = await supabase
+      .from('mensajes')
+      .select('fecha_creacion, id_remitente')
+      .eq('id', mensajeId)
+      .single();
+
+    if (fetchError || !existingMsg) throw new Error('Mensaje no encontrado');
+    if (existingMsg.id_remitente !== user.id) throw new Error('No tienes permiso para eliminar este mensaje');
+
+    const diff = Date.now() - new Date(existingMsg.fecha_creacion).getTime();
+    if (diff > 5 * 60 * 1000) {
+      return { error: 'El tiempo límite de 5 minutos para eliminar ha expirado' };
+    }
+
+    const { error } = await supabase
+      .from('mensajes')
+      .delete()
+      .eq('id', mensajeId);
+
+    if (error) throw error;
+    return { error: null };
+  } catch (error: any) {
+    console.error('Error al eliminar mensaje:', error);
+    return { error: error.message };
   }
 }
 

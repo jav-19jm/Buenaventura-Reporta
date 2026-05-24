@@ -25,7 +25,7 @@ import { signOut } from "../../../lib/auth";
 
 export function EntityDashboard() {
   const navigate = useNavigate();
-  const { user, profile, isAuthenticated, loading: authLoading } = useAuth();
+  const { user, profile, isAuthenticated, isEntity, loading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<"dashboard" | "reports" | "activity">("dashboard");
   const [entityData, setEntityData] = useState<any>(null);
   const [reports, setReports] = useState<any[]>([]);
@@ -33,11 +33,14 @@ export function EntityDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      navigate("/login");
+    if (!authLoading) {
+      if (!isAuthenticated) {
+        navigate("/login");
+      } else if (!isEntity) {
+        navigate("/user");
+      }
     }
-
-  }, [isAuthenticated, authLoading, navigate]);
+  }, [isAuthenticated, isEntity, authLoading, navigate]);
 
   // Cargar datos de la entidad
   useEffect(() => {
@@ -143,9 +146,9 @@ export function EntityDashboard() {
       label: "Total Asignados",
       value: stats?.total || 0,
       icon: TrendingUp,
-      color: "bg-blue-100 text-blue-600",
-      bgGradient: "from-blue-50 to-blue-100",
-      borderColor: "border-blue-200"
+      color: "bg-entity-light text-entity-primary",
+      bgGradient: "bg-entity-gradient",
+      borderColor: "border-entity-light"
     },
     {
       label: "Pendientes",
@@ -193,27 +196,46 @@ export function EntityDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Estilos Dinámicos según el color de la entidad */}
+      <style>
+        {`
+          :root {
+            --entity-primary: ${entityData?.color || '#2563eb'};
+            --entity-primary-hover: ${entityData?.color ? entityData.color + 'dd' : '#1d4ed8'};
+            --entity-bg-light: ${entityData?.color ? entityData.color + '15' : '#eff6ff'};
+            --entity-border-light: ${entityData?.color ? entityData.color + '30' : '#dbeafe'};
+            --entity-bg-gradient: linear-gradient(135deg, ${entityData?.color || '#2563eb'}10, ${entityData?.color || '#2563eb'}25);
+          }
+          .bg-entity-primary { background-color: var(--entity-primary); }
+          .text-entity-primary { color: var(--entity-primary); }
+          .border-entity-primary { border-color: var(--entity-primary); }
+          .hover\\:bg-entity-primary-hover:hover { background-color: var(--entity-primary-hover); }
+          .bg-entity-light { background-color: var(--entity-bg-light); }
+          .border-entity-light { border-color: var(--entity-border-light); }
+          .bg-entity-gradient { background: var(--entity-bg-gradient); }
+        `}
+      </style>
+
       {/* Header - Estilo institucional profesional */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
         <div className="px-6 py-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-4">
               <div 
-                className="w-12 h-12 rounded-lg flex items-center justify-center text-white shadow-lg"
-                style={{ background: entityData?.color ? `linear-gradient(135deg, ${entityData.color}, ${entityData.color}dd)` : 'linear-gradient(135deg, #2563eb, #1d4ed8)' }}
+                className="w-12 h-12 rounded-lg flex items-center justify-center text-white shadow-lg transition-transform hover:scale-105"
+                style={{ background: `linear-gradient(135deg, var(--entity-primary), var(--entity-primary-hover))` }}
               >
                 <Building2 className="w-6 h-6" />
               </div>
 
               <div>
                 <h1 className="text-xl font-bold text-gray-900">{entityData?.nombre || profile?.nombre_completo || 'Cargando...'}</h1>
-
                 <p className="text-sm text-gray-500">Panel de Gestión Institucional</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
               <Link to="/user">
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" className="border-entity-primary text-entity-primary hover:bg-entity-light">
                   Ver Mapa
                 </Button>
               </Link>
@@ -235,11 +257,25 @@ export function EntityDashboard() {
 
           {/* Navigation Tabs */}
           <div className="flex gap-2 border-t border-gray-200 pt-4">
-            <button className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg font-medium border border-blue-200">
+            <button 
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium border transition-all ${
+                activeTab === 'dashboard' 
+                ? 'bg-entity-light text-entity-primary border-entity-light' 
+                : 'text-gray-600 hover:bg-gray-100 border-transparent'
+              }`}
+              onClick={() => setActiveTab('dashboard')}
+            >
               <BarChart3 className="w-4 h-4" />
               Dashboard
             </button>
-            <button className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-medium transition-colors">
+            <button 
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium border transition-all ${
+                activeTab === 'activity' 
+                ? 'bg-entity-light text-entity-primary border-entity-light' 
+                : 'text-gray-600 hover:bg-gray-100 border-transparent'
+              }`}
+              onClick={() => setActiveTab('activity')}
+            >
               <Activity className="w-4 h-4" />
               Actividad
             </button>
@@ -261,7 +297,7 @@ export function EntityDashboard() {
                 transition={{ delay: index * 0.1 }}
                 whileHover={{ y: -5, transition: { duration: 0.2 } }}
               >
-                <Card className={`bg-gradient-to-br ${stat.bgGradient} ${stat.borderColor} border-2`}>
+        <Card className={`bg-gradient-to-br ${stat.bgGradient} ${stat.borderColor} border-2 shadow-sm hover:shadow-md transition-shadow`}>
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-gray-700 mb-1">{stat.label}</p>
@@ -287,7 +323,7 @@ export function EntityDashboard() {
           >
             <Card>
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <Activity className="w-5 h-5 text-blue-600" />
+                <Activity className="w-5 h-5 text-entity-primary" />
                 Actividad de la Semana
               </h3>
               <ResponsiveContainer width="100%" height={250}>
@@ -296,7 +332,7 @@ export function EntityDashboard() {
                   <XAxis dataKey="day" />
                   <YAxis />
                   <Tooltip />
-                  <Bar dataKey="reportes" fill="#3b82f6" radius={[8, 8, 0, 0]} />
+                  <Bar dataKey="reportes" fill="var(--entity-primary)" radius={[8, 8, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </Card>
@@ -310,7 +346,7 @@ export function EntityDashboard() {
           >
             <Card>
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-blue-600" />
+                <BarChart3 className="w-5 h-5 text-entity-primary" />
                 Distribución por Estado
               </h3>
               <ResponsiveContainer width="100%" height={250}>

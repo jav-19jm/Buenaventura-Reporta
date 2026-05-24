@@ -8,7 +8,7 @@ import { Textarea } from "../../components/ui/Textarea";
 import { ImageWithFallback } from "../../components/figma/ImageWithFallback";
 import { Search, Plus, Edit, Trash2, X, Eye, Calendar, Tag, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
-import { getAllNews, createNews, updateNews, deleteNews, togglePublishNews, getAllEntities } from "../../../lib/admin";
+import { getAllNews, createNews, updateNews, deleteNews, togglePublishNews, getAllEntities, uploadNewsImage } from "../../../lib/admin";
 
 const categories = [
   "infraestructura",
@@ -31,6 +31,8 @@ export function NewsManagement() {
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [editingNews, setEditingNews] = useState<any | null>(null);
   const [previewNews, setPreviewNews] = useState<any | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     titulo: "",
@@ -87,6 +89,8 @@ export function NewsManagement() {
       esta_publicada: true,
       id_entidad: ""
     });
+    setImageFile(null);
+    setImagePreview(null);
     setShowFormModal(true);
   };
 
@@ -100,7 +104,21 @@ export function NewsManagement() {
       esta_publicada: newsItem.esta_publicada,
       id_entidad: newsItem.id_entidad || ""
     });
+    setImageFile(null);
+    setImagePreview(newsItem.url_imagen || null);
     setShowFormModal(true);
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSubmitForm = async (e: React.FormEvent) => {
@@ -116,25 +134,40 @@ export function NewsManagement() {
       id_entidad: formData.id_entidad === "" ? null : formData.id_entidad
     };
 
+    let savedNewsId = null;
+
     if (editingNews) {
-      const { error } = await updateNews(editingNews.id, newsToSubmit);
+      const { data, error } = await updateNews(editingNews.id, newsToSubmit);
       if (error) {
         toast.error("Error al actualizar: " + error);
         return;
       }
+      savedNewsId = editingNews.id;
       toast.success("Noticia actualizada correctamente");
     } else {
-      const { error } = await createNews(newsToSubmit);
+      const { data, error } = await createNews(newsToSubmit);
       if (error) {
         toast.error("Error al crear: " + error);
         return;
       }
+      savedNewsId = data?.id;
       toast.success("Noticia creada correctamente");
+    }
+
+    if (imageFile && savedNewsId) {
+      toast.info("Subiendo imagen...");
+      const { error: uploadError } = await uploadNewsImage(imageFile, savedNewsId);
+      if (uploadError) {
+        console.error("Error al subir imagen:", uploadError);
+        toast.error("Hubo un problema subiendo la imagen");
+      }
     }
 
     fetchData();
     setShowFormModal(false);
     setEditingNews(null);
+    setImageFile(null);
+    setImagePreview(null);
   };
 
   const handleDeleteNews = async (newsId: string) => {
@@ -392,26 +425,42 @@ export function NewsManagement() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    URL de Imagen
+                    Imagen de Noticia (Opcional)
                   </label>
-                  <div className="relative">
-                    <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input
-                      type="url"
-                      value={formData.url_imagen}
-                      onChange={(e) => setFormData({ ...formData, url_imagen: e.target.value })}
-                      placeholder="https://ejemplo.com/imagen.jpg"
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    />
-                  </div>
-                  {formData.url_imagen && (
-                    <div className="mt-3 aspect-video rounded-lg overflow-hidden bg-gray-100">
+                  
+                  {imagePreview ? (
+                    <div className="relative aspect-video rounded-lg overflow-hidden bg-gray-100 mb-3">
                       <ImageWithFallback
-                        src={formData.url_imagen}
+                        src={imagePreview}
                         alt="Preview"
                         className="w-full h-full object-cover"
                       />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setImagePreview(null);
+                          setImageFile(null);
+                          setFormData({ ...formData, url_imagen: "" });
+                        }}
+                        className="absolute top-2 right-2 p-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
                     </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-green-500 transition-colors">
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                        <ImageIcon className="w-8 h-8 text-gray-400 mb-2" />
+                        <p className="text-sm text-gray-600">Click para subir imagen o arrastra aquí</p>
+                        <p className="text-xs text-gray-500">PNG, JPG hasta 5MB</p>
+                      </div>
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/png, image/jpeg, image/jpg"
+                        onChange={handleImageUpload}
+                      />
+                    </label>
                   )}
                 </div>
 

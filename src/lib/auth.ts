@@ -152,6 +152,44 @@ export async function updateUserProfile(userId: string, updates: Partial<Perfil>
 }
 
 /**
+ * Subir avatar de perfil a Supabase Storage
+ */
+export async function uploadAvatar(file: File, userId: string) {
+  try {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${userId}-${Date.now()}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(filePath, file);
+
+    if (uploadError) throw uploadError;
+
+    // Obtener URL pública
+    const { data } = supabase.storage
+      .from('avatars')
+      .getPublicUrl(filePath);
+
+    // Actualizar el perfil con la URL del avatar
+    const { error: updateError } = await supabase
+      .from('perfiles')
+      .update({ url_avatar: data.publicUrl })
+      .eq('id', userId);
+
+    if (updateError) {
+      console.error('Error al asociar el avatar al perfil:', updateError);
+    }
+
+    console.log('✅ Avatar subido:', data.publicUrl);
+    return { url: data.publicUrl, error: null };
+  } catch (error: any) {
+    console.error('Error al subir avatar:', error);
+    return { url: null, error: error.message };
+  }
+}
+
+/**
  * Escuchar cambios en la autenticación
  */
 export function onAuthStateChange(callback: (event: string, session: any) => void) {

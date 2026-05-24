@@ -238,6 +238,44 @@ export async function togglePublishNews(id: string, esta_publicada: boolean) {
 }
 
 /**
+ * Subir imagen de noticia a Supabase Storage
+ */
+export async function uploadNewsImage(file: File, newsId: string) {
+  try {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${newsId}-${Date.now()}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('news')
+      .upload(filePath, file);
+
+    if (uploadError) throw uploadError;
+
+    // Obtener URL pública
+    const { data } = supabase.storage
+      .from('news')
+      .getPublicUrl(filePath);
+
+    // Actualizar la noticia con la URL de la imagen
+    const { error: updateError } = await supabase
+      .from('noticias')
+      .update({ url_imagen: data.publicUrl })
+      .eq('id', newsId);
+
+    if (updateError) {
+      console.error('Error al asociar la imagen a la noticia:', updateError);
+    }
+
+    console.log('✅ Imagen de noticia subida:', data.publicUrl);
+    return { url: data.publicUrl, error: null };
+  } catch (error: any) {
+    console.error('Error al subir imagen de noticia:', error);
+    return { url: null, error: error.message };
+  }
+}
+
+/**
  * Asignar reporte a una entidad
  */
 export async function assignReportEntity(reportId: string, id_entidad: string) {

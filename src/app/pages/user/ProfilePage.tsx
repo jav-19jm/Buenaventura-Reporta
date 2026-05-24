@@ -5,13 +5,14 @@ import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import { ReportCard } from "../../components/ReportCard";
-import { ArrowLeft, User, Award, TrendingUp, MapPin, LogOut, Bell, FileText, ThumbsUp, ThumbsDown, Trash2 } from "lucide-react";
+import { ArrowLeft, User, Award, TrendingUp, MapPin, LogOut, Bell, FileText, ThumbsUp, ThumbsDown, Trash2, Camera } from "lucide-react";
 import { LogoutAnimation } from "../../components/animations/LogoutAnimation";
 import { useAuth } from "../../../hooks/useAuth";
 import { getUserReports, deleteReport } from "../../../lib/reports";
 import { getUserBadgesWithDetails } from "../../../lib/badges";
 import { getUserNotifications, deleteNotification as deleteNotificationDB } from "../../../lib/notifications";
-import { signOut } from "../../../lib/auth";
+import { signOut, uploadAvatar } from "../../../lib/auth";
+import { supabase } from "../../../app/supabase/supabase";
 import { toast } from "sonner";
 import { ReportsMap } from "../../components/ReportsMap";
 
@@ -24,6 +25,7 @@ export function ProfilePage() {
   const [userBadges, setUserBadges] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [freshProfile, setFreshProfile] = useState<any>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   // Redirigir si no está autenticado
   useEffect(() => {
@@ -141,6 +143,24 @@ export function ProfilePage() {
     }
   };
 
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user?.id) return;
+
+    setUploadingAvatar(true);
+    toast.info("Subiendo avatar...");
+    
+    const { error } = await uploadAvatar(file, user.id);
+    
+    if (error) {
+      toast.error("Error al subir avatar: " + error);
+    } else {
+      toast.success("Avatar actualizado correctamente");
+      loadUserData();
+    }
+    setUploadingAvatar(false);
+  };
+
   const displayProfile = freshProfile || profile;
 
   if (authLoading || !displayProfile) {
@@ -191,14 +211,39 @@ export function ProfilePage() {
                 transition={{ duration: 0.4 }}
               >
                 <Card className="text-center">
-                  <motion.div
-                    whileHover={{ scale: 1.1, rotate: 5 }}
-                    className="w-24 h-24 bg-gradient-to-br from-yellow-500 to-green-600 rounded-full mx-auto mb-4 flex items-center justify-center"
-                  >
-                    <span className="text-3xl font-bold text-white">
-                      {profile.nombre_completo ? profile.nombre_completo.split(' ').map((n: string) => n[0]).join('') : 'U'}
-                    </span>
-                  </motion.div>
+                  <div className="relative w-24 h-24 mx-auto mb-4 group cursor-pointer">
+                    <label className="w-full h-full cursor-pointer relative block">
+                      {displayProfile.url_avatar ? (
+                        <motion.img
+                          whileHover={{ scale: 1.05 }}
+                          src={displayProfile.url_avatar}
+                          alt="Avatar"
+                          className="w-full h-full object-cover rounded-full shadow-md"
+                        />
+                      ) : (
+                        <motion.div
+                          whileHover={{ scale: 1.05 }}
+                          className="w-full h-full bg-gradient-to-br from-yellow-500 to-green-600 rounded-full flex items-center justify-center shadow-md"
+                        >
+                          <span className="text-3xl font-bold text-white">
+                            {displayProfile.nombre_completo ? displayProfile.nombre_completo.split(' ').map((n: string) => n[0]).join('') : 'U'}
+                          </span>
+                        </motion.div>
+                      )}
+                      
+                      <div className="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <Camera className="w-8 h-8 text-white" />
+                      </div>
+                      
+                      <input 
+                        type="file" 
+                        accept="image/png, image/jpeg, image/jpg" 
+                        className="hidden" 
+                        onChange={handleAvatarChange}
+                        disabled={uploadingAvatar}
+                      />
+                    </label>
+                  </div>
                   <h2 className="text-xl font-semibold text-gray-900 mb-1">{displayProfile.nombre_completo || 'Usuario'}</h2>
                   <p className="text-sm text-gray-600 mb-3">{user?.email || displayProfile.email}</p>
                   <Badge variant="info" className="mb-4">{displayProfile.rol === 'administrador' ? 'Administrador' : displayProfile.rol === 'entidad' ? 'Entidad' : 'Ciudadano Activo'}</Badge>

@@ -40,7 +40,7 @@ export function CreateReportPage() {
           getReportCategories(),
           getAllEntities()
         ]);
-        
+
         if (catsRes.data) setCategories(catsRes.data);
         if (entsRes.data) setEntities(entsRes.data);
       } catch (error) {
@@ -159,7 +159,7 @@ export function CreateReportPage() {
       {/* Form */}
       <div className="max-w-3xl mx-auto px-4 py-8">
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Incident Type */}
+          {/* Title */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -167,7 +167,28 @@ export function CreateReportPage() {
             className="bg-white rounded-lg shadow-sm p-6"
           >
             <h2 className="font-semibold text-gray-900 mb-4">
-              1. Tipo de incidencia <span className="text-red-500">*</span>
+              1. Título del reporte <span className="text-red-500">*</span>
+            </h2>
+            <Input
+              label="Ingresa un título descriptivo y conciso"
+              placeholder="ej: Luminaria dañada en Calle 5"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              maxLength={100}
+              required
+            />
+            <p className="text-xs text-gray-500 mt-2">{title.length}/100 caracteres</p>
+          </motion.div>
+
+          {/* Incident Type */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.05 }}
+            className="bg-white rounded-lg shadow-sm p-6"
+          >
+            <h2 className="font-semibold text-gray-900 mb-4">
+              2. Tipo de incidencia <span className="text-red-500">*</span>
             </h2>
             <IncidentTypeSelector
               selectedType={selectedType}
@@ -180,12 +201,12 @@ export function CreateReportPage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.02 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
             className="bg-white rounded-lg shadow-sm p-6"
           >
             <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
               <Building2 className="w-5 h-5 text-blue-600" />
-              1.5 ¿A qué entidad va dirigido? <span className="text-gray-400">(opcional)</span>
+              3. ¿A qué entidad va dirigido? <span className="text-gray-400">(opcional)</span>
             </h2>
             <select
               value={selectedEntity}
@@ -202,36 +223,34 @@ export function CreateReportPage() {
             </p>
           </motion.div>
 
-          {/* Title */}
+          {/* Description */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.05 }}
+            transition={{ duration: 0.4, delay: 0.15 }}
             className="bg-white rounded-lg shadow-sm p-6"
           >
             <h2 className="font-semibold text-gray-900 mb-4">
-              2. Título del reporte <span className="text-red-500">*</span>
+              4. Descripción del problema <span className="text-red-500">*</span>
             </h2>
-            <Input
-              label="Ingresa un título descriptivo y conciso"
-              placeholder="ej: Luminaria dañada en Calle 5"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              maxLength={100}
+            <Textarea
+              placeholder="Describe el problema con el mayor detalle posible..."
+              rows={6}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
               required
             />
-            <p className="text-xs text-gray-500 mt-2">{title.length}/100 caracteres</p>
           </motion.div>
 
           {/* Photo Upload */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.1 }}
+            transition={{ duration: 0.4, delay: 0.2 }}
             className="bg-white rounded-lg shadow-sm p-6"
           >
             <h2 className="font-semibold text-gray-900 mb-4">
-              3. Fotografía del problema <span className="text-gray-400">(opcional)</span>
+              5. Evidencia <span className="text-gray-400">(opcional formatos jpg y png)</span>
             </h2>
             <div className="space-y-4">
               {imagePreview ? (
@@ -267,31 +286,12 @@ export function CreateReportPage() {
                   <input
                     type="file"
                     className="hidden"
-                    accept="image/*"
+                    accept="image/png, image/jpeg, image/jpg"
                     onChange={handleImageUpload}
                   />
                 </label>
               )}
             </div>
-          </motion.div>
-
-          {/* Description */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.2 }}
-            className="bg-white rounded-lg shadow-sm p-6"
-          >
-            <h2 className="font-semibold text-gray-900 mb-4">
-              4. Descripción <span className="text-red-500">*</span>
-            </h2>
-            <Textarea
-              placeholder="Describe el problema con el mayor detalle posible..."
-              rows={6}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              required
-            />
           </motion.div>
 
           {/* Location */}
@@ -302,12 +302,12 @@ export function CreateReportPage() {
             className="bg-white rounded-lg shadow-sm p-6"
           >
             <h2 className="font-semibold text-gray-900 mb-4">
-              5. Ubicación <span className="text-red-500">*</span>
+              6. Ubicación <span className="text-red-500">*</span>
             </h2>
             <p className="text-sm text-gray-600 mb-4">
               Haz clic en el mapa para marcar la ubicación exacta de la incidencia.
             </p>
-            <LocationPickerMap 
+            <LocationPickerMap
               position={{ lat: location.lat, lng: location.lng }}
               onLocationSelect={handleLocationSelect}
             />

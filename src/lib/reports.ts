@@ -363,7 +363,17 @@ export async function uploadReportImage(file: File, reportId: string) {
       .from('report-images')
       .getPublicUrl(filePath);
 
-    console.log('✅ Imagen subida:', data.publicUrl);
+    // Actualizar el reporte con la URL de la imagen
+    const { error: updateError } = await supabase
+      .from('reportes')
+      .update({ url_imagen: data.publicUrl })
+      .eq('id', reportId);
+
+    if (updateError) {
+      console.error('Error al asociar la imagen al reporte:', updateError);
+    }
+
+    console.log('✅ Imagen subida y enlazada:', data.publicUrl);
     return { url: data.publicUrl, error: null };
   } catch (error: any) {
     console.error('Error al subir imagen:', error);

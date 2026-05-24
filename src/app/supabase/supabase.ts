@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { SUPABASE_CONFIG } from '../config/supabase.config';
+import { SUPABASE_CONFIG } from '../../environment/supabase.config';
 
 // Intentar obtener de variables de entorno primero, luego usar config hardcoded
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || SUPABASE_CONFIG.url;

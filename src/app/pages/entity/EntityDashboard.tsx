@@ -196,7 +196,7 @@ export function EntityDashboard() {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <Link to="/map">
+              <Link to="/user">
                 <Button variant="outline" size="sm">
                   Ver Mapa
                 </Button>

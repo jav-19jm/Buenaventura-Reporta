@@ -1,7 +1,7 @@
 import { Link } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { Button } from "../components/ui/Button";
-import { MapPin, Camera, Bell, CheckCircle2, Shield, Users, Facebook, Twitter, Instagram, Youtube, Building2 } from "lucide-react";
+import { MapPin, Camera, Bell, CheckCircle2, Shield, Users, Facebook, Twitter, Instagram, Youtube, Building2, Menu, X, ShieldCheck } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { ReviewsCarousel } from "../components/ReviewsCarousel";
 import { useState, useEffect } from "react";
@@ -27,6 +27,7 @@ const buenaventuraImages = [
 
 export function LandingPage() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [showMenu, setShowMenu] = useState(false);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -42,12 +43,20 @@ export function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center">
+              <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-green-600 rounded-lg flex items-center justify-center shadow-md">
                 <MapPin className="w-6 h-6 text-white" />
               </div>
               <h1 className="text-xl font-bold text-gray-900">Buenaventura Reporta</h1>
             </div>
-            <div className="flex items-center gap-3">
+
+            {/* Desktop Menu */}
+            <div className="hidden md:flex items-center gap-3">
+              <Link to="/admin">
+                <Button variant="outline" size="sm" className="border-green-600 text-green-600 hover:bg-green-50">
+                  <ShieldCheck className="w-4 h-4 mr-2" />
+                  Panel Admin
+                </Button>
+              </Link>
               <Link to="/entity/select">
                 <Button variant="outline" size="sm" className="border-blue-600 text-blue-600 hover:bg-blue-50">
                   <Building2 className="w-4 h-4 mr-2" />
@@ -58,10 +67,63 @@ export function LandingPage() {
                 <Button variant="ghost" size="sm">Iniciar sesión</Button>
               </Link>
               <Link to="/register">
-                <Button variant="outline" size="sm">Registrarse</Button>
+                <Button size="sm" className="bg-gradient-to-r from-yellow-500 to-green-600 hover:from-yellow-600 hover:to-green-700">
+                  Registrarse
+                </Button>
               </Link>
             </div>
+
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setShowMenu(!showMenu)}
+              className="md:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              aria-label="Menú"
+            >
+              {showMenu ? (
+                <X className="w-6 h-6 text-gray-700" />
+              ) : (
+                <Menu className="w-6 h-6 text-gray-700" />
+              )}
+            </button>
           </div>
+
+          {/* Mobile Menu Dropdown */}
+          <AnimatePresence>
+            {showMenu && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                className="md:hidden overflow-hidden"
+              >
+                <div className="pt-4 pb-2 space-y-2">
+                  <Link to="/admin" onClick={() => setShowMenu(false)}>
+                    <Button variant="outline" size="sm" className="w-full justify-start border-green-600 text-green-600 hover:bg-green-50">
+                      <ShieldCheck className="w-4 h-4 mr-2" />
+                      Panel Admin
+                    </Button>
+                  </Link>
+                  <Link to="/entity/select" onClick={() => setShowMenu(false)}>
+                    <Button variant="outline" size="sm" className="w-full justify-start border-blue-600 text-blue-600 hover:bg-blue-50">
+                      <Building2 className="w-4 h-4 mr-2" />
+                      Acceso Entidades
+                    </Button>
+                  </Link>
+                  <Link to="/login" onClick={() => setShowMenu(false)}>
+                    <Button variant="ghost" size="sm" className="w-full justify-start">
+                      Iniciar sesión
+                    </Button>
+                  </Link>
+                  <Link to="/register" onClick={() => setShowMenu(false)}>
+                    <Button size="sm" className="w-full bg-gradient-to-r from-yellow-500 to-green-600 hover:from-yellow-600 hover:to-green-700">
+                      Registrarse
+                    </Button>
+                  </Link>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </header>
 
@@ -99,19 +161,19 @@ export function LandingPage() {
                 <h2 className="text-5xl md:text-7xl font-bold text-white mb-6 drop-shadow-lg">
                   Juntos construimos una mejor <span className="text-yellow-400">Buenaventura</span>
                 </h2>
-                <p className="text-xl md:text-2xl text-white/90 mb-8 drop-shadow-lg">
-                  Plataforma ciudadana para reportar incidencias urbanas y mejorar nuestra ciudad. 
-                  Tu voz importa, tu reporte genera cambio.
-                </p>
+                <p className="text-xl md:text-2xl text-white/90 mb-8 drop-shadow-lg">Plataforma ciudadana para reportar incidencias urbanas y mejorar nuestra ciudad. Tu voz importa, tu reporte genera cambio.</p>
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <Link to="/map">
-                    <Button size="lg" className="w-full sm:w-auto text-lg px-8 py-4">
+                  <Link to="/user">
+                    <Button
+                      size="lg"
+                      className="w-full sm:w-auto text-lg px-8 py-4 bg-gradient-to-r from-yellow-500 to-green-600 hover:from-yellow-600 hover:to-green-700 shadow-xl"
+                    >
                       <Camera className="w-6 h-6 mr-2" />
                       Reportar incidencia
                     </Button>
                   </Link>
-                  <Link to="/map">
-                    <Button variant="secondary" size="lg" className="w-full sm:w-auto text-lg px-8 py-4">
+                  <Link to="/user">
+                    <Button variant="secondary" size="lg" className="w-full sm:w-auto text-lg px-8 py-4 shadow-lg">
                       Ver mapa de reportes
                     </Button>
                   </Link>
@@ -312,7 +374,7 @@ export function LandingPage() {
               <ul className="space-y-2 text-sm text-gray-400">
                 <li><Link to="/login" className="hover:text-white transition-colors">Iniciar sesión</Link></li>
                 <li><Link to="/register" className="hover:text-white transition-colors">Registrarse</Link></li>
-                <li><Link to="/map" className="hover:text-white transition-colors">Ver reportes</Link></li>
+                <li><Link to="/user" className="hover:text-white transition-colors">Ver reportes</Link></li>
                 <li><a href="#" className="hover:text-white transition-colors">Ayuda</a></li>
               </ul>
             </div>

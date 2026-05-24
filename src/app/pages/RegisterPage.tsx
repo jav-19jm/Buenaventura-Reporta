@@ -56,7 +56,7 @@ export function RegisterPage() {
 
   const handleWelcomeComplete = () => {
     setTimeout(() => {
-      navigate("/map");
+      navigate("/user");
     }, 500);
   };
 

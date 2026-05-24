@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase } from '../app/supabase/supabase';
 
 /**
  * Probar conexión a Supabase

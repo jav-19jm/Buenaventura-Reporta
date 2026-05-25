@@ -5,7 +5,6 @@ import { supabase } from '../app/supabase/supabase';
  * Esta función verifica que la conexión funcione correctamente
  */
 export async function testSupabaseConnection() {
-  console.log('🔍 Probando conexión a Supabase...');
 
   try {
     // Probar conexión simple
@@ -20,9 +19,7 @@ export async function testSupabaseConnection() {
       return { success: false, error: error.message };
     }
 
-    console.log('✅ Conexión a Supabase exitosa!');
     if (data && data.length > 0) {
-      console.log('📊 Datos de prueba:', data[0]);
     }
     return { success: true, data };
   } catch (error: any) {

@@ -286,7 +286,6 @@ export async function uploadNewsImage(file: File, newsId: string) {
       console.error('Error al asociar la imagen a la noticia:', updateError);
     }
 
-    console.log('✅ Imagen de noticia subida:', data.publicUrl);
     return { url: data.publicUrl, error: null };
   } catch (error: any) {
     console.error('Error al subir imagen de noticia:', error);
@@ -322,10 +321,10 @@ export async function assignReportEntity(reportId: string, id_entidad: string) {
 
       // 2. Notificar a los usuarios de la entidad via Email
       const { data: entityData } = await supabase.from('entidades').select('email').eq('id', id_entidad).single();
-      
+
       if (entityData?.email) {
         const { data: usersByEmail } = await supabase.from('perfiles').select('id').ilike('email', entityData.email);
-        
+
         if (usersByEmail && usersByEmail.length > 0) {
           for (const u of usersByEmail) {
             await createNotification({

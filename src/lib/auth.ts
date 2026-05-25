@@ -34,7 +34,7 @@ export async function signUp(email: string, password: string, fullName: string) 
             rol: 'ciudadano',
           }
         ], { onConflict: 'id' });
-        
+
       if (profileError) {
         console.warn('Nota: El perfil ya existe o no se pudo crear:', profileError.message);
       }
@@ -180,8 +180,6 @@ export async function uploadAvatar(file: File, userId: string) {
     if (updateError) {
       console.error('Error al asociar el avatar al perfil:', updateError);
     }
-
-    console.log('✅ Avatar subido:', data.publicUrl);
     return { url: data.publicUrl, error: null };
   } catch (error: any) {
     console.error('Error al subir avatar:', error);

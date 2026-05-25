@@ -1,28 +1,32 @@
 import { Link, useNavigate } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { Button } from "../components/ui/Button";
-import { MapPin, Camera, Bell, CheckCircle2, Shield, Users, Facebook, Twitter, Instagram, Youtube, Building2, Menu, X, ShieldCheck } from "lucide-react";
+import { MapPin, Camera, Bell, CheckCircle2, Shield, Users, Facebook, Twitter, Instagram, Youtube, Menu, X, } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { ReviewsCarousel } from "../components/ReviewsCarousel";
 import { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
+import BuenaventuraImg from "../../assets/Buenaventura.webp";
+import ParqueNaturalImg from "../../assets/ParqueNatural.webp";
+import ParqueDronImg from "../../assets/ParqueDron.webp";
+import ParqueTuraImg from "../../assets/ParqueTura.webp";
 
 const buenaventuraImages = [
   {
-    url: "https://images.unsplash.com/photo-1635519810080-c6da52d4bf75?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxidWVuYXZlbnR1cmElMjBjb2xvbWJpYSUyMGJlYWNofGVufDF8fHx8MTc3MzYwNjQwOHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-    title: "Playas de Buenaventura"
+    url: BuenaventuraImg,
+    title: "Buenaventura"
   },
   {
-    url: "https://images.unsplash.com/photo-1709952843965-823ccb545615?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb2xvbWJpYSUyMGNvYXN0YWwlMjBjaXR5JTIwc3Vuc2V0fGVufDF8fHx8MTc3MzYwNjQwOXww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-    title: "Atardecer en la Costa"
+    url: ParqueNaturalImg,
+    title: "Parque Natural"
   },
   {
-    url: "https://images.unsplash.com/photo-1764202980476-5425629eddbc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb2xvbWJpYSUyMGNvYXN0YWwlMjB3YXRlcmZyb250fGVufDF8fHx8MTc3MzYwNjQxMnww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-    title: "Zona Costera"
+    url: ParqueDronImg,
+    title: "Parque Dron"
   },
   {
-    url: "https://images.unsplash.com/photo-1640706722267-609637faa004?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx0cm9waWNhbCUyMGNpdHklMjBjb2xvbWJpYXxlbnwxfHx8fDE3NzM2MDY0MTJ8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-    title: "Ciudad Tropical"
+    url: ParqueTuraImg,
+    title: "Parque Tura"
   }
 ];
 
@@ -255,7 +259,7 @@ export function LandingPage() {
               transition={{ duration: 0.6 }}
             >
               <ImageWithFallback
-                src="https://images.unsplash.com/photo-1674484356491-45139dcc0fe3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjaXRpemVuJTIwY29tbXVuaXR5JTIwaGVscGluZyUyMHVyYmFufGVufDF8fHx8MTc3MzMzNTEwN3ww&ixlib=rb-4.1.0&q=80&w=1080"
+                src="https://www.buenaventura.gov.co/media/img/20230915_adelantan_limpieza_de_playa.jpeg"
                 alt="Comunidad colaborando"
                 className="rounded-2xl shadow-xl w-full"
               />

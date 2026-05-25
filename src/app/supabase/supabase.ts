@@ -5,10 +5,6 @@ import { SUPABASE_CONFIG } from '../../environment/supabase.config';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || SUPABASE_CONFIG.url;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || SUPABASE_CONFIG.anonKey;
 
-console.log('🔌 Configurando Supabase...');
-console.log('📍 URL:', supabaseUrl);
-console.log('🔑 Key configurada:', supabaseAnonKey ? '✅' : '❌');
-
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Tipos de base de datos (EN ESPAÑOL)
@@ -16,7 +12,7 @@ export type RolUsuario = 'ciudadano' | 'entidad' | 'moderador' | 'administrador'
 export type EstadoUsuario = 'activo' | 'inactivo' | 'suspendido';
 export type EstadoReporte = 'pendiente' | 'en_revision' | 'en_proceso' | 'resuelto' | 'cancelado';
 export type PrioridadReporte = 'baja' | 'media' | 'alta' | 'critica';
-export type TipoEntidad = 
+export type TipoEntidad =
   | 'servicios-publicos'
   | 'seguridad'
   | 'salud'

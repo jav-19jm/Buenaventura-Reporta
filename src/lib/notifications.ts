@@ -84,7 +84,6 @@ export async function createNotification(notification: {
       .single();
 
     if (error) throw error;
-    console.log(`✅ Notificación creada para el usuario ${notification.id_usuario}: ${notification.titulo}`);
     return { data: data as Notificacion, error: null };
   } catch (error: any) {
     console.error('Error al crear notificación:', error);

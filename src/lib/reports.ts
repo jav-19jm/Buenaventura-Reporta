@@ -58,19 +58,18 @@ export async function createReport(reportData: {
         .select('reportes_creados')
         .eq('id', user.id)
         .single();
-      
+
       if (profile) {
         await supabase
           .from('perfiles')
           .update({ reportes_creados: (profile.reportes_creados || 0) + 1 })
           .eq('id', user.id);
       }
-      
+
       // Verificar insignias automáticamente
       await checkAndGrantBadges(user.id);
     }
 
-    console.log('✅ Reporte creado:', data);
     return { data, error: null };
   } catch (error: any) {
     console.error('Error al crear reporte:', error);
@@ -104,7 +103,6 @@ export async function getPublicReports() {
 
     if (error) throw error;
 
-    console.log('✅ Reportes cargados:', data?.length);
     return { data, error: null };
   } catch (error: any) {
     console.error('Error al obtener reportes:', error);
@@ -171,7 +169,6 @@ export async function getUserReports() {
 
     if (error) throw error;
 
-    console.log('✅ Mis reportes:', data?.length);
     return { data, error: null };
   } catch (error: any) {
     console.error('Error al obtener reportes del usuario:', error);
@@ -237,8 +234,6 @@ export async function updateReportStatus(reportId: string, estado: EstadoReporte
 
     if (error) throw error;
 
-    console.log('✅ Estado actualizado:', estado);
-
     // NOTIFICACIÓN AL USUARIO
     if (data?.id_usuario) {
       await createNotification({
@@ -276,7 +271,6 @@ export async function deleteReport(reportId: string) {
 
     if (error) throw error;
 
-    console.log('✅ Reporte eliminado');
     return { error: null };
   } catch (error: any) {
     console.error('Error al eliminar reporte:', error);
@@ -313,12 +307,12 @@ export async function voteReport(reportId: string, tipoVoto: 'voto_positivo' | '
       .single();
 
     let reputationChange = 0;
-    
+
     if (existingVote) {
       if (existingVote.tipo_voto === tipoVoto) {
         return { error: 'Ya has votado lo mismo en este reporte' };
       }
-      
+
       // Cambió de opinión (ej: de positivo a negativo)
       reputationChange = tipoVoto === 'voto_positivo' ? 2 : -2;
 
@@ -372,11 +366,11 @@ export async function voteReport(reportId: string, tipoVoto: 'voto_positivo' | '
         .from('reportes')
         .select('votos_positivos, votos_negativos')
         .eq('id_usuario', reportData.id_usuario);
-      
+
       if (allUserReports) {
         const totalPos = allUserReports.reduce((sum, r) => sum + (r.votos_positivos || 0), 0);
         const totalNeg = allUserReports.reduce((sum, r) => sum + (r.votos_negativos || 0), 0);
-        
+
         await supabase
           .from('perfiles')
           .update({
@@ -390,8 +384,6 @@ export async function voteReport(reportId: string, tipoVoto: 'voto_positivo' | '
       // 5. Verificar insignias por reputación
       await checkAndGrantBadges(reportData.id_usuario);
     }
-
-    console.log('✅ Voto y reputación actualizados:', tipoVoto);
 
     // NOTIFICACIÓN DE VOTO
     if (reportData.id_usuario && reportData.id_usuario !== user.id) {
@@ -462,7 +454,6 @@ export async function uploadReportImage(file: File, reportId: string) {
       console.error('Error al asociar la imagen al reporte:', updateError);
     }
 
-    console.log('✅ Imagen subida y enlazada:', data.publicUrl);
     return { url: data.publicUrl, error: null };
   } catch (error: any) {
     console.error('Error al subir imagen:', error);
@@ -647,11 +638,11 @@ export async function createReportMessage(reporteId: string, mensaje: string, ti
       if (report.id_entidad && finalTipo !== 'entidad') {
         // 1. Obtener el email de la entidad
         const { data: entityData } = await supabase.from('entidades').select('email').eq('id', report.id_entidad).single();
-        
+
         if (entityData?.email) {
           // 2. Buscar usuarios cuyo email coincida con el de la entidad (insensible a mayúsculas)
           const { data: usersByEmail } = await supabase.from('perfiles').select('id').ilike('email', entityData.email);
-          
+
           if (usersByEmail && usersByEmail.length > 0) {
             for (const u of usersByEmail) {
               if (u.id !== user.id) {

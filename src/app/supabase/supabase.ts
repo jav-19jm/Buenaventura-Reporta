@@ -82,6 +82,7 @@ export interface Reporte {
   votos_positivos: number;
   votos_negativos: number;
   visto: boolean;
+  visible: boolean;
   fecha_creacion: string;
   fecha_actualizacion: string;
   entidades?: Entidad;
@@ -92,7 +93,7 @@ export interface Mensaje {
   id: string;
   id_reporte: string;
   id_remitente: string | null;
-  tipo_remitente: 'usuario' | 'entidad';
+  tipo_remitente: 'usuario' | 'entidad' | 'moderador';
   mensaje: string;
   fecha_creacion: string;
 }

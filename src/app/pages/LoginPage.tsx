@@ -18,13 +18,20 @@ export function LoginPage() {
     email: "",
     password: "",
   });
-  const { isAuthenticated, profile, loading: authLoading } = useAuth();
+  const { isAuthenticated, profile, session, loading: authLoading } = useAuth();
 
   useEffect(() => {
     if (!authLoading && isAuthenticated && profile) {
-      if (profile.rol === 'administrador') {
+      // Priorizar el rol del perfil, pero verificar metadata como respaldo
+      const currentRole = profile.rol;
+      const metadataRole = session?.user?.user_metadata?.rol;
+      
+      const isEntity = currentRole === 'entidad' || metadataRole === 'entidad';
+      const isAdmin = currentRole === 'administrador' || metadataRole === 'administrador';
+
+      if (isAdmin) {
         navigate("/admin");
-      } else if (profile.rol === 'entidad') {
+      } else if (isEntity) {
         navigate("/entity/dashboard");
       } else {
         navigate("/user");
@@ -72,10 +79,12 @@ export function LoginPage() {
         .eq('id', user.id)
         .single();
 
+      const metadataRole = user.user_metadata?.rol;
+      
       setTimeout(() => {
-        if (profile?.rol === 'administrador') {
+        if (profile?.rol === 'administrador' || metadataRole === 'administrador') {
           navigate("/admin");
-        } else if (profile?.rol === 'entidad') {
+        } else if (profile?.rol === 'entidad' || metadataRole === 'entidad') {
           navigate("/entity/dashboard");
         } else {
           navigate("/user");

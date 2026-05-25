@@ -6,7 +6,9 @@ import { Badge } from "../../components/ui/Badge";
 import { Card } from "../../components/ui/Card";
 import { MapPin, ArrowLeft, Calendar, CheckCircle2, Clock, Star, MessageCircle, Send, History, Building2 } from "lucide-react";
 import { ImageWithFallback } from "../../components/figma/ImageWithFallback";
-import { getReportById, getReportMessages, createReportMessage } from "../../../lib/reports";
+import { getReportById, getReportMessages, createReportMessage, updateReportMessage, deleteReportMessage } from "../../../lib/reports";
+import { useAuth } from "../../../hooks/useAuth";
+import { Edit2, Trash2 } from "lucide-react";
 import { ReportsMap } from "../../components/ReportsMap";
 import { toast } from "sonner";
 import type { Reporte } from "../../supabase/supabase";
@@ -18,8 +20,10 @@ export function ReportDetailPage() {
   const [loading, setLoading] = useState(true);
   const [newMessage, setNewMessage] = useState("");
   
-  // Mensajes simulados (Mock) para el componente de comunicación
   const [messages, setMessages] = useState<any[]>([]);
+  const { user } = useAuth();
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState("");
 
   useEffect(() => {
     if (id) {
@@ -39,13 +43,28 @@ export function ReportDetailPage() {
         // Cargar mensajes reales
         const { data: dbMessages } = await getReportMessages(id as string);
         if (dbMessages) {
-          const formattedMessages = dbMessages.map((m: any) => ({
-            id: m.id,
-            sender: m.tipo_remitente === 'usuario' ? 'user' : 'entity',
-            userName: m.tipo_remitente === 'usuario' ? (m.perfiles?.nombre_completo || 'Tú') : 'Entidad Responsable',
-            message: m.mensaje,
-            timestamp: new Date(m.fecha_creacion).toLocaleString(),
-          }));
+          const formattedMessages = dbMessages.map((m: any) => {
+            let senderType = 'user';
+            let senderName = m.perfiles?.nombre_completo || 'Usuario';
+            
+            if (m.tipo_remitente === 'moderador') {
+              senderType = 'admin';
+              senderName = 'Administrador';
+            } else if (m.tipo_remitente === 'entidad') {
+              senderType = 'entity';
+              senderName = 'Entidad Responsable';
+            }
+
+            return {
+              id: m.id,
+              sender: senderType,
+              senderId: m.id_remitente,
+              userName: senderName,
+              message: m.mensaje,
+              timestamp: new Date(m.fecha_creacion).toLocaleString(),
+              createdAt: m.fecha_creacion,
+            };
+          });
           
           setMessages(formattedMessages);
         }
@@ -64,26 +83,75 @@ export function ReportDetailPage() {
     const messageText = newMessage;
     setNewMessage("");
 
-    const { data, error } = await createReportMessage(id, messageText);
+    const { error } = await createReportMessage(id, messageText);
     
     if (error) {
       toast.error("Error al enviar mensaje");
-      setNewMessage(messageText); // Restaurar si falla
+      setNewMessage(messageText);
     } else {
       toast.success("Mensaje enviado exitosamente");
-      // Recargar mensajes
-      const { data: dbMessages } = await getReportMessages(id);
-      if (dbMessages) {
-        const formattedMessages = dbMessages.map((m: any) => ({
+      refreshMessages();
+    }
+  };
+
+  const refreshMessages = async () => {
+    if (!id) return;
+    const { data: dbMessages } = await getReportMessages(id);
+    if (dbMessages) {
+      const formattedMessages = dbMessages.map((m: any) => {
+        let senderType = 'user';
+        let senderName = m.perfiles?.nombre_completo || 'Usuario';
+        
+        if (m.tipo_remitente === 'moderador') {
+          senderType = 'admin';
+          senderName = 'Administrador';
+        } else if (m.tipo_remitente === 'entidad') {
+          senderType = 'entity';
+          senderName = 'Entidad Responsable';
+        }
+
+        return {
           id: m.id,
-          sender: m.tipo_remitente === 'usuario' ? 'user' : 'entity',
-          userName: m.tipo_remitente === 'usuario' ? (m.perfiles?.nombre_completo || 'Tú') : 'Entidad Responsable',
+          sender: senderType,
+          senderId: m.id_remitente,
+          userName: senderName,
           message: m.mensaje,
           timestamp: new Date(m.fecha_creacion).toLocaleString(),
-        }));
-        setMessages(formattedMessages);
+          createdAt: m.fecha_creacion,
+        };
+      });
+      setMessages(formattedMessages);
+    }
+  };
+
+  const handleUpdateMessage = async (msgId: string) => {
+    if (!editContent.trim()) return;
+    const { error } = await updateReportMessage(msgId, editContent);
+    if (error) {
+      toast.error(error);
+    } else {
+      toast.success("Mensaje actualizado");
+      setEditingMessageId(null);
+      refreshMessages();
+    }
+  };
+
+  const handleDeleteMessage = async (msgId: string) => {
+    if (window.confirm("¿Estás seguro de eliminar este mensaje?")) {
+      const { error } = await deleteReportMessage(msgId);
+      if (error) {
+        toast.error(error);
+      } else {
+        toast.success("Mensaje eliminado");
+        refreshMessages();
       }
     }
+  };
+
+  const canEdit = (msg: any) => {
+    if (!user || msg.senderId !== user.id) return false;
+    const diff = Date.now() - new Date(msg.createdAt).getTime();
+    return diff < 5 * 60 * 1000;
   };
 
   const statusVariant = {
@@ -209,16 +277,79 @@ export function ReportDetailPage() {
                   {messages.map((msg) => (
                     <motion.div
                       key={msg.id}
-                      initial={{ opacity: 0, x: msg.sender === "user" ? 20 : -20 }}
+                      initial={{ opacity: 0, x: msg.senderId === user?.id ? 20 : -20 }}
                       animate={{ opacity: 1, x: 0 }}
-                      className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
+                      className={`flex ${msg.senderId === user?.id ? "justify-end" : "justify-start"}`}
                     >
-                      <div className={`max-w-[80%] rounded-xl p-4 shadow-sm ${msg.sender === "user" ? "bg-green-600 text-white" : "bg-gray-100 text-gray-800"}`}>
+                      <div className={`max-w-[80%] rounded-xl p-4 shadow-sm group relative ${
+                        msg.senderId === user?.id ? "bg-green-600 text-white" : 
+                        msg.sender === "admin" ? "bg-blue-50 border border-blue-100 text-blue-900" :
+                        msg.sender === "entity" ? "bg-orange-50 border border-orange-100 text-orange-900" :
+                        "bg-gray-100 text-gray-800"
+                      }`}>
                         <div className="flex items-center gap-2 mb-1">
-                          <span className={`text-sm font-semibold ${msg.sender === "user" ? "text-green-50" : "text-gray-900"}`}>{msg.userName}</span>
-                          <span className={`text-xs ${msg.sender === "user" ? "text-green-100" : "text-gray-500"}`}>{msg.timestamp}</span>
+                          <span className={`text-sm font-bold ${
+                            msg.senderId === user?.id ? "text-green-50" : 
+                            msg.sender === "admin" ? "text-blue-800" :
+                            msg.sender === "entity" ? "text-orange-800" :
+                            "text-gray-900"
+                          }`}>
+                            {msg.userName}
+                            {msg.sender === "admin" && " (Admin)"}
+                            {msg.sender === "entity" && " (Entidad)"}
+                          </span>
+                          <span className={`text-[10px] opacity-70`}>{msg.timestamp}</span>
+                          
+                          {/* Actions within 5 mins */}
+                          {canEdit(msg) && (
+                            <div className="hidden group-hover:flex items-center gap-1 ml-auto">
+                              <button 
+                                onClick={() => {
+                                  setEditingMessageId(msg.id);
+                                  setEditContent(msg.message);
+                                }}
+                                className="p-1 hover:bg-black/10 rounded transition-colors"
+                                title="Editar"
+                              >
+                                <Edit2 className="w-3 h-3" />
+                              </button>
+                              <button 
+                                onClick={() => handleDeleteMessage(msg.id)}
+                                className="p-1 hover:bg-red-500/20 rounded transition-colors"
+                                title="Eliminar"
+                              >
+                                <Trash2 className="w-3 h-3 text-red-400" />
+                              </button>
+                            </div>
+                          )}
                         </div>
-                        <p className="leading-relaxed">{msg.message}</p>
+
+                        {editingMessageId === msg.id ? (
+                          <div className="space-y-2 mt-2">
+                            <textarea
+                              value={editContent}
+                              onChange={(e) => setEditContent(e.target.value)}
+                              className="w-full p-2 text-sm text-gray-900 rounded border border-gray-300 focus:ring-2 focus:ring-green-500"
+                              rows={2}
+                            />
+                            <div className="flex justify-end gap-2">
+                              <button 
+                                onClick={() => setEditingMessageId(null)}
+                                className="text-xs px-2 py-1 bg-gray-200 text-gray-700 rounded"
+                              >
+                                Cancelar
+                              </button>
+                              <button 
+                                onClick={() => handleUpdateMessage(msg.id)}
+                                className="text-xs px-2 py-1 bg-green-700 text-white rounded"
+                              >
+                                Guardar
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="leading-relaxed whitespace-pre-wrap">{msg.message}</p>
+                        )}
                       </div>
                     </motion.div>
                   ))}

@@ -8,8 +8,9 @@ import { Textarea } from "../../components/ui/Textarea";
 import { Search, Filter, Eye, Edit, Trash2, X, MapPin, User, Calendar, MessageSquare, History, Building2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { getPublicReports, updateReportStatus, getReportMessages } from "../../../lib/reports";
+import { getAdminReports, updateReportStatus, getReportMessages, updateReportMessage, deleteReportMessage } from "../../../lib/reports";
 import { assignReportEntity, deleteReportAdmin, addAdminComment, getAllEntities } from "../../../lib/admin";
+import { useAuth } from "../../../hooks/useAuth";
 
 
 type ReportStatus = "pendiente" | "en_revision" | "en_proceso" | "resuelto" | "cancelado";
@@ -25,6 +26,9 @@ export function ReportsManagement() {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [reportMessages, setReportMessages] = useState<any[]>([]);
+  const { user } = useAuth();
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState("");
 
   const categories = ["alumbrado", "basura", "transporte", "agua", "vias", "seguridad", "salud"];
 
@@ -35,7 +39,7 @@ export function ReportsManagement() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const { data: reportsData, error: reportsError } = await getPublicReports();
+      const { data: reportsData, error: reportsError } = await getAdminReports();
       const { data: entitiesData, error: entitiesError } = await getAllEntities();
       
       if (reportsError) throw new Error(reportsError);
@@ -454,16 +458,76 @@ export function ReportsManagement() {
                   {reportMessages.length > 0 ? (
                     <div className="space-y-4 mb-4">
                       {reportMessages.map((msg, idx) => (
-                        <div key={idx} className={`p-3 rounded-lg ${msg.tipo_remitente === 'usuario' ? 'bg-blue-50 ml-4' : 'bg-gray-50 mr-4'}`}>
+                        <div key={idx} className={`p-3 rounded-lg group relative ${
+                          msg.tipo_remitente === 'usuario' ? 'bg-blue-50 ml-4' : 
+                          msg.tipo_remitente === 'moderador' ? 'bg-green-50 mr-4' : 'bg-gray-50 mr-4'
+                        }`}>
                           <div className="flex justify-between items-center mb-1">
-                            <span className="text-xs font-bold text-gray-700">
-                              {msg.perfiles?.nombre_completo || 'Sistema'} ({msg.tipo_remitente})
-                            </span>
-                            <span className="text-[10px] text-gray-500">
-                              {new Date(msg.fecha_creacion).toLocaleString()}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold text-gray-700">
+                                {msg.perfiles?.nombre_completo || 'Usuario'}
+                                {msg.tipo_remitente === 'moderador' && " (Admin)"}
+                                {msg.tipo_remitente === 'entidad' && " (Entidad)"}
+                              </span>
+                              <span className="text-[10px] text-gray-500">
+                                {new Date(msg.fecha_creacion).toLocaleString()}
+                              </span>
+                            </div>
+                            
+                            {/* Edit/Delete for Admin's own messages within 5 mins */}
+                            {msg.id_remitente === user?.id && (Date.now() - new Date(msg.fecha_creacion).getTime() < 5 * 60 * 1000) && (
+                              <div className="hidden group-hover:flex items-center gap-2">
+                                <button 
+                                  onClick={() => {
+                                    setEditingMessageId(msg.id);
+                                    setEditContent(msg.mensaje);
+                                  }}
+                                  className="p-1 hover:bg-gray-200 rounded"
+                                >
+                                  <Edit className="w-3 h-3 text-gray-600" />
+                                </button>
+                                <button 
+                                  onClick={async () => {
+                                    if(window.confirm("¿Eliminar mensaje?")) {
+                                      await deleteReportMessage(msg.id);
+                                      const { data } = await getReportMessages(selectedReport.id);
+                                      if (data) setReportMessages(data);
+                                    }
+                                  }}
+                                  className="p-1 hover:bg-red-100 rounded"
+                                >
+                                  <Trash2 className="w-3 h-3 text-red-600" />
+                                </button>
+                              </div>
+                            )}
                           </div>
-                          <p className="text-sm text-gray-700">{msg.mensaje}</p>
+
+                          {editingMessageId === msg.id ? (
+                            <div className="space-y-2 mt-2">
+                              <textarea
+                                value={editContent}
+                                onChange={(e) => setEditContent(e.target.value)}
+                                className="w-full p-2 text-xs rounded border border-gray-300"
+                                rows={2}
+                              />
+                              <div className="flex justify-end gap-2">
+                                <button onClick={() => setEditingMessageId(null)} className="text-[10px] px-2 py-1 bg-gray-200 rounded">Cancelar</button>
+                                <button 
+                                  onClick={async () => {
+                                    await updateReportMessage(msg.id, editContent);
+                                    setEditingMessageId(null);
+                                    const { data } = await getReportMessages(selectedReport.id);
+                                    if (data) setReportMessages(data);
+                                  }} 
+                                  className="text-[10px] px-2 py-1 bg-green-600 text-white rounded"
+                                >
+                                  Guardar
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="text-sm text-gray-700 whitespace-pre-wrap">{msg.mensaje}</p>
+                          )}
                         </div>
                       ))}
                     </div>

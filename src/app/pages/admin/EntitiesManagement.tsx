@@ -111,11 +111,54 @@ export function EntitiesManagement() {
     }
 
     if (editingEntity) {
-      const { error } = await updateEntity(editingEntity.id, formData);
+      const { password, ...entityUpdates } = formData;
+      const { error } = await updateEntity(editingEntity.id, entityUpdates);
+      
       if (error) {
         toast.error("Error al actualizar entidad: " + error);
         return;
       }
+
+      // 1. Actualizar perfil vinculado
+      const { error: profileError } = await supabase
+        .from('perfiles')
+        .update({
+          nombre_completo: formData.nombre,
+          email: formData.email,
+        })
+        .eq('id_entidad', editingEntity.id);
+
+      if (profileError) console.error("Error updating profile:", profileError);
+
+      // 2. Si se proporcionó una nueva contraseña, actualizarla en Auth
+      if (formData.password && formData.password.length >= 6) {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || SUPABASE_CONFIG.url;
+        const supabaseServiceKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+        
+        if (supabaseServiceKey) {
+          const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
+            auth: { autoRefreshToken: false, persistSession: false }
+          });
+          
+          // Buscar el ID del usuario vinculado a esta entidad
+          const { data: profile } = await supabase
+            .from('perfiles')
+            .select('id')
+            .eq('id_entidad', editingEntity.id)
+            .single();
+          
+          if (profile?.id) {
+            const { error: authUpdateError } = await adminClient.auth.admin.updateUserById(profile.id, {
+              password: formData.password,
+              email: formData.email,
+              user_metadata: { nombre_completo: formData.nombre }
+            });
+            if (authUpdateError) toast.error("Error al actualizar contraseña: " + authUpdateError.message);
+            else toast.success("Contraseña institucional actualizada");
+          }
+        }
+      }
+
       toast.success("Entidad actualizada correctamente");
     } else {
       // Validar contraseña para nueva entidad
@@ -128,22 +171,49 @@ export function EntitiesManagement() {
       try {
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || SUPABASE_CONFIG.url;
         const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || SUPABASE_CONFIG.anonKey;
+        const supabaseServiceKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
         
-        // Creamos un cliente temporal sin persistencia para no cerrar la sesión del admin
-        const tempClient = createClient(supabaseUrl, supabaseAnonKey, {
-          auth: { persistSession: false }
-        });
+        let authData: any;
+        let authError: any;
 
-        const { data: authData, error: authError } = await tempClient.auth.signUp({
-          email: formData.email,
-          password: formData.password,
-          options: {
-            data: {
+        if (supabaseServiceKey) {
+          // Si tenemos la Service Role Key, usamos el API de Admin para crear el usuario ya confirmado
+          const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
+            auth: { autoRefreshToken: false, persistSession: false }
+          });
+
+          const { data, error } = await adminClient.auth.admin.createUser({
+            email: formData.email,
+            password: formData.password,
+            email_confirm: true, // Esto evita que se mande el correo y permite entrar sin verificación
+            user_metadata: {
               nombre_completo: formData.nombre,
-              rol: 'entidad'
+              rol: 'entidad',
+              id_entidad: null // Se vinculará después
             }
-          }
-        });
+          });
+          authData = data;
+          authError = error;
+        } else {
+          // Fallback a signUp normal (requiere confirmación por correo si está habilitado en Supabase)
+          const tempClient = createClient(supabaseUrl, supabaseAnonKey, {
+            auth: { persistSession: false }
+          });
+
+          const { data, error } = await tempClient.auth.signUp({
+            email: formData.email,
+            password: formData.password,
+            options: {
+              data: {
+                nombre_completo: formData.nombre,
+                rol: 'entidad',
+                id_entidad: null // Se vinculará después
+              }
+            }
+          });
+          authData = data;
+          authError = error;
+        }
 
         if (authError) throw authError;
 
@@ -153,7 +223,10 @@ export function EntitiesManagement() {
         
         if (entityError) throw new Error(entityError);
 
-        // 3. Crear perfil vinculado a la entidad
+        // 3. Esperar un momento para que los disparadores de DB se ejecuten (si existen)
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // 4. Crear o actualizar perfil vinculado a la entidad
         const { error: profileError } = await supabase
           .from('perfiles')
           .upsert({
@@ -164,6 +237,16 @@ export function EntitiesManagement() {
             id_entidad: entityDataCreated.id,
             estado: 'activo'
           });
+
+        // 5. Actualizar metadata del usuario con el ID de la entidad
+        if (supabaseServiceKey && authData.user?.id) {
+          const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
+            auth: { autoRefreshToken: false, persistSession: false }
+          });
+          await adminClient.auth.admin.updateUserById(authData.user.id, {
+            user_metadata: { id_entidad: entityDataCreated.id }
+          });
+        }
 
         if (profileError) console.error("Error creating profile:", profileError);
 
@@ -481,15 +564,17 @@ export function EntitiesManagement() {
                   <Card className="bg-blue-50 border-blue-100 mt-4">
                     <h4 className="text-sm font-semibold text-blue-900 mb-2">Credenciales de Acceso</h4>
                     <p className="text-xs text-blue-700 mb-4">
-                      Se creará automáticamente una cuenta de usuario para esta entidad con el correo proporcionado arriba.
+                      {editingEntity 
+                        ? "Deja la contraseña en blanco si no deseas cambiarla." 
+                        : "Se creará automáticamente una cuenta de usuario para esta entidad con el correo proporcionado arriba."}
                     </p>
                     <Input
-                      label="Contraseña Temporal *"
+                      label={editingEntity ? "Nueva Contraseña (opcional)" : "Contraseña Temporal *"}
                       type="password"
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                       placeholder="Mínimo 6 caracteres"
-                      required
+                      required={!editingEntity}
                     />
                   </Card>
                 )}

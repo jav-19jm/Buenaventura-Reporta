@@ -305,7 +305,7 @@ export async function deleteReportAdmin(reportId: string) {
   try {
     const { error } = await supabase
       .from('reportes')
-      .delete()
+      .update({ visible: false })
       .eq('id', reportId);
 
     if (error) throw error;

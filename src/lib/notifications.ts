@@ -59,3 +59,34 @@ export async function markNotificationAsRead(notificationId: string) {
     return { error: error.message };
   }
 }
+
+/**
+ * Crear una nueva notificación
+ */
+export async function createNotification(notification: {
+  id_usuario: string;
+  id_reporte?: string | null;
+  tipo: Notificacion['tipo'];
+  titulo: string;
+  mensaje: string;
+}) {
+  try {
+    const { data, error } = await supabase
+      .from('notificaciones')
+      .insert([
+        {
+          ...notification,
+          esta_leida: false,
+          fecha_creacion: new Date().toISOString(),
+        },
+      ])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return { data: data as Notificacion, error: null };
+  } catch (error: any) {
+    console.error('Error al crear notificación:', error);
+    return { data: null, error: error.message };
+  }
+}

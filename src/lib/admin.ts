@@ -1,4 +1,5 @@
 import { supabase } from '../app/supabase/supabase';
+import { createNotification } from './notifications';
 
 // ==========================================
 // SERVICIOS DE ADMINISTRACIÓN
@@ -170,6 +171,20 @@ export async function createNews(news: any) {
       .single();
 
     if (error) throw error;
+
+    // NOTIFICACIÓN DE NOTICIA (a todos los ciudadanos)
+    const { data: citizens } = await supabase.from('perfiles').select('id').eq('rol', 'ciudadano');
+    if (citizens) {
+      for (const citizen of citizens) {
+        await createNotification({
+          id_usuario: citizen.id,
+          tipo: 'alerta_sistema',
+          titulo: 'Nueva noticia en la ciudad',
+          mensaje: news.titulo
+        });
+      }
+    }
+
     return { data, error: null };
   } catch (error: any) {
     console.error('Error al crear noticia:', error);
@@ -287,10 +302,42 @@ export async function assignReportEntity(reportId: string, id_entidad: string) {
       .from('reportes')
       .update({ id_entidad })
       .eq('id', reportId)
-      .select()
+      .select('*, perfiles:id_usuario(id), entidades:id_entidad(nombre)')
       .single();
 
     if (error) throw error;
+
+    if (data) {
+      // 1. Notificar al ciudadano
+      if (data.id_usuario) {
+        await createNotification({
+          id_usuario: data.id_usuario,
+          id_reporte: reportId,
+          tipo: 'reporte_actualizado',
+          titulo: 'Reporte asignado',
+          mensaje: `Tu reporte "${data.titulo}" ha sido asignado a: ${data.entidades?.nombre || 'una entidad institucional'}.`
+        });
+      }
+
+      // 2. Notificar a los usuarios de la entidad
+      const { data: entityUsers } = await supabase
+        .from('perfiles')
+        .select('id')
+        .eq('id_entidad', id_entidad);
+      
+      if (entityUsers) {
+        for (const eu of entityUsers) {
+          await createNotification({
+            id_usuario: eu.id,
+            id_reporte: reportId,
+            tipo: 'reporte_actualizado',
+            titulo: 'Nuevo reporte asignado',
+            mensaje: `Se ha asignado un nuevo reporte a tu entidad: ${data.titulo}`
+          });
+        }
+      }
+    }
+
     return { data, error: null };
   } catch (error: any) {
     console.error('Error al asignar entidad:', error);
@@ -335,6 +382,40 @@ export async function addAdminComment(reportId: string, mensaje: string) {
       .single();
 
     if (error) throw error;
+
+    // NOTIFICACIÓN (Reutilizando la lógica de reports.ts)
+    const { data: report } = await supabase.from('reportes').select('id, titulo, id_usuario, id_entidad').eq('id', reportId).single();
+    if (report) {
+      // 1. Notificar al ciudadano
+      if (report.id_usuario && report.id_usuario !== user?.id) {
+        await createNotification({
+          id_usuario: report.id_usuario,
+          id_reporte: reportId,
+          tipo: 'nuevo_mensaje',
+          titulo: 'Mensaje de administración',
+          mensaje: `Un administrador ha comentado en tu reporte: ${report.titulo}`
+        });
+      }
+
+      // 2. Notificar a la entidad (si está asignada)
+      if (report.id_entidad) {
+        const { data: entityUsers } = await supabase.from('perfiles').select('id').eq('id_entidad', report.id_entidad);
+        if (entityUsers) {
+          for (const eu of entityUsers) {
+            if (eu.id !== user?.id) {
+              await createNotification({
+                id_usuario: eu.id,
+                id_reporte: reportId,
+                tipo: 'nuevo_mensaje',
+                titulo: 'Instrucción de administración',
+                mensaje: `El administrador ha dejado un comentario en el reporte: ${report.titulo}`
+              });
+            }
+          }
+        }
+      }
+    }
+
     return { data, error: null };
   } catch (error: any) {
     console.error('Error al agregar comentario:', error);
@@ -419,6 +500,20 @@ export async function createService(service: any) {
       .single();
 
     if (error) throw error;
+
+    // NOTIFICACIÓN DE SERVICIO (a todos los ciudadanos)
+    const { data: citizens } = await supabase.from('perfiles').select('id').eq('rol', 'ciudadano');
+    if (citizens) {
+      for (const citizen of citizens) {
+        await createNotification({
+          id_usuario: citizen.id,
+          tipo: 'alerta_sistema',
+          titulo: 'Nuevo servicio disponible',
+          mensaje: `Se ha registrado un nuevo punto de servicio: ${service.nombre}`
+        });
+      }
+    }
+
     return { data, error: null };
   } catch (error: any) {
     console.error('Error al crear servicio:', error);

@@ -6,6 +6,7 @@ import { Badge } from "./ui/Badge";
 import { getUserNotifications, markNotificationAsRead as markAsReadDB, deleteNotification as deleteNotificationDB } from "../../lib/notifications";
 import { useAuth } from "../../hooks/useAuth";
 import { useEffect } from "react";
+import { supabase } from "../supabase/supabase";
 
 interface Notification {
   id: string;
@@ -24,6 +25,34 @@ export function NotificationBell() {
   useEffect(() => {
     if (isAuthenticated && user?.id) {
       loadNotifications();
+
+      // Suscribirse a cambios en tiempo real
+      const channel = supabase
+        .channel(`notificaciones_usuario_${user.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'notificaciones',
+            filter: `id_usuario=eq.${user.id}`,
+          },
+          (payload) => {
+            console.log('🔔 Nueva notificación recibida:', payload.new);
+            setNotifications((prev) => [payload.new, ...prev]);
+            
+            // Sonido opcional
+            try {
+              const audio = new Audio('/notification.mp3');
+              audio.play().catch(e => console.log('Audio play failed', e));
+            } catch (e) {}
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [isAuthenticated, user?.id]);
 

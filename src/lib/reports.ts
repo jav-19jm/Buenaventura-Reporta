@@ -1,6 +1,7 @@
 import { supabase } from '../app/supabase/supabase';
 import type { Reporte, EstadoReporte, PrioridadReporte } from '../app/supabase/supabase';
 import { checkAndGrantBadges } from './badges';
+import { createNotification } from './notifications';
 
 // ==========================================
 // CRUD DE REPORTES CON SUPABASE (ESPAÑOL)
@@ -235,6 +236,18 @@ export async function updateReportStatus(reportId: string, estado: EstadoReporte
     if (error) throw error;
 
     console.log('✅ Estado actualizado:', estado);
+
+    // NOTIFICACIÓN AL USUARIO
+    if (data?.id_usuario) {
+      await createNotification({
+        id_usuario: data.id_usuario,
+        id_reporte: reportId,
+        tipo: estado === 'resuelto' ? 'reporte_resuelto' : 'reporte_actualizado',
+        titulo: `Tu reporte ha sido actualizado`,
+        mensaje: `El estado de tu reporte "${data.titulo}" ha cambiado a: ${estado.replace('_', ' ')}.`
+      });
+    }
+
     return { data, error: null };
   } catch (error: any) {
     console.error('Error al actualizar estado:', error);
@@ -377,6 +390,18 @@ export async function voteReport(reportId: string, tipoVoto: 'voto_positivo' | '
     }
 
     console.log('✅ Voto y reputación actualizados:', tipoVoto);
+
+    // NOTIFICACIÓN DE VOTO
+    if (reportData.id_usuario && reportData.id_usuario !== user.id) {
+      await createNotification({
+        id_usuario: reportData.id_usuario,
+        id_reporte: reportId,
+        tipo: 'mencion',
+        titulo: 'Nuevo voto en tu reporte',
+        mensaje: `Alguien ha dado un ${tipoVoto === 'voto_positivo' ? 'voto positivo' : 'voto negativo'} a tu reporte.`
+      });
+    }
+
     return { error: null };
   } catch (error: any) {
     console.error('Error al votar:', error);
@@ -575,6 +600,78 @@ export async function createReportMessage(reporteId: string, mensaje: string) {
       .single();
 
     if (error) throw error;
+
+    // NOTIFICACIÓN DE MENSAJE
+    const { data: report } = await getReportById(reporteId);
+    if (report) {
+      const isCreator = user.id === report.id_usuario;
+      
+      // 1. Notificar a los Admins (siempre deben saber)
+      const { data: adminUsers } = await supabase.from('perfiles').select('id').eq('rol', 'administrador');
+      if (adminUsers) {
+        for (const admin of adminUsers) {
+          if (admin.id !== user.id) { // No notificarse a sí mismo
+            await createNotification({
+              id_usuario: admin.id,
+              id_reporte: reporteId,
+              tipo: 'nuevo_mensaje',
+              titulo: 'Actividad en reporte',
+              mensaje: `Nuevo mensaje de ${isCreator ? 'ciudadano' : 'entidad/admin'} en: ${report.titulo}`
+            });
+          }
+        }
+      }
+
+      if (isCreator) {
+        // El ciudadano escribió: Notificar a la entidad responsable
+        if (report.id_entidad) {
+          const { data: entityUsers } = await supabase.from('perfiles').select('id').eq('id_entidad', report.id_entidad);
+          if (entityUsers) {
+            for (const eu of entityUsers) {
+              await createNotification({
+                id_usuario: eu.id,
+                id_reporte: reporteId,
+                tipo: 'nuevo_mensaje',
+                titulo: 'Mensaje del ciudadano',
+                mensaje: `El ciudadano ha respondido en el reporte: ${report.titulo}`
+              });
+            }
+          }
+        }
+      } else {
+        // Entidad o Admin escribió: Notificar al ciudadano
+        if (report.id_usuario && report.id_usuario !== user.id) {
+          await createNotification({
+            id_usuario: report.id_usuario,
+            id_reporte: reporteId,
+            tipo: 'nuevo_mensaje',
+            titulo: 'Respuesta institucional',
+            mensaje: `Has recibido una respuesta oficial en tu reporte: ${report.titulo}`
+          });
+        }
+        
+        // Si fue un Admin quien escribió, notificar también a la Entidad (si está asignada)
+        if (report.id_entidad) {
+          const { data: profile } = await supabase.from('perfiles').select('rol').eq('id', user.id).single();
+          if (profile?.rol === 'administrador') {
+            const { data: entityUsers } = await supabase.from('perfiles').select('id').eq('id_entidad', report.id_entidad);
+            if (entityUsers) {
+              for (const eu of entityUsers) {
+                if (eu.id !== user.id) {
+                  await createNotification({
+                    id_usuario: eu.id,
+                    id_reporte: reporteId,
+                    tipo: 'nuevo_mensaje',
+                    titulo: 'Mensaje de administración',
+                    mensaje: `El administrador ha dejado un comentario en un reporte asignado: ${report.titulo}`
+                  });
+                }
+              }
+            }
+          }
+        }
+      }
+    }
 
     return { data, error: null };
   } catch (error: any) {

@@ -27,6 +27,7 @@ import { useAuth } from "../../../hooks/useAuth";
 import { getEntityReports, getEntityStats, getEntityById, updateReportStatus, updateEntityDetails, uploadEntityLogo, getAllEntities, getEntityActivity, logEntityActivity } from "../../../lib/entities";
 import { toast } from "sonner";
 import { signOut } from "../../../lib/auth";
+import { NotificationBell } from "../../components/NotificationBell";
 
 export function EntityDashboard() {
   const navigate = useNavigate();
@@ -318,6 +319,7 @@ export function EntityDashboard() {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              <NotificationBell />
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}

@@ -13,6 +13,9 @@ import { EntitySelection } from "./pages/entity/EntitySelection";
 import { EntityLogin } from "./pages/entity/EntityLogin";
 import { EntityDashboardCustom } from "./pages/entity/EntityDashboardCustom";
 import { PublicMapPage } from "./pages/PublicMapPage";
+import { NewsPage } from "./pages/user/NewsPage";
+import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
+import { UpdatePasswordPage } from "./pages/UpdatePasswordPage";
 
 export const router = createBrowserRouter([
   {
@@ -32,6 +35,14 @@ export const router = createBrowserRouter([
     path: "/register",
     Component: RegisterPage,
   },
+  {
+    path: "/forgot-password",
+    Component: ForgotPasswordPage,
+  },
+  {
+    path: "/reset-password",
+    Component: UpdatePasswordPage,
+  },
 
   {
     path: "/user",
@@ -48,6 +59,10 @@ export const router = createBrowserRouter([
   {
     path: "/profile",
     Component: ProfilePage,
+  },
+  {
+    path: "/user/news",
+    Component: NewsPage,
   },
   {
     path: "/admin",

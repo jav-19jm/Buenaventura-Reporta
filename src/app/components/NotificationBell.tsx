@@ -22,6 +22,18 @@ export function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
 
+  const playNotificationSound = () => {
+    try {
+      const audio = new Audio('/notification.mp3');
+      audio.volume = 0.6;
+      audio.play().catch(() => {
+        // Silencioso si el navegador bloquea
+      });
+    } catch (error) {
+      // Error silencioso en producción
+    }
+  };
+
   useEffect(() => {
     if (isAuthenticated && user?.id) {
       loadNotifications();
@@ -40,6 +52,9 @@ export function NotificationBell() {
           (payload) => {
             setNotifications((prev) => [payload.new, ...prev]);
             
+            // Reproducir sonido de notificación
+            playNotificationSound();
+
             // Mostrar toast informativo
             toast.info(payload.new.titulo, {
               description: payload.new.mensaje,
@@ -139,7 +154,7 @@ export function NotificationBell() {
                     onClick={() => setIsOpen(false)}
                     className="p-1 hover:bg-gray-100 rounded"
                   >
-                    <X className="w-4 h-4" />
+                    <X className="w-4 h-4 text-gray-400" />
                   </button>
                 </div>
 

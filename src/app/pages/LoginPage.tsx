@@ -159,12 +159,12 @@ export function LoginPage() {
               />
 
               <div className="flex items-center justify-end">
-                <button
-                  type="button"
+                <Link
+                  to="/forgot-password"
                   className="text-sm text-green-600 hover:text-green-700 font-medium"
                 >
                   ¿Olvidaste tu contraseña?
-                </button>
+                </Link>
               </div>
 
               <Button type="submit" className="w-full" size="lg" disabled={loading}>

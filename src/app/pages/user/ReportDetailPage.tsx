@@ -4,7 +4,7 @@ import { motion } from "motion/react";
 import { Button } from "../../components/ui/Button";
 import { Badge } from "../../components/ui/Badge";
 import { Card } from "../../components/ui/Card";
-import { MapPin, ArrowLeft, Calendar, CheckCircle2, Clock, Star, MessageCircle, Send, History, Building2 } from "lucide-react";
+import { MapPin, ArrowLeft, Calendar, CheckCircle2, Clock, Star, MessageCircle, Send, History, Building2, Phone, Globe } from "lucide-react";
 import { ImageWithFallback } from "../../components/figma/ImageWithFallback";
 import { getReportById, getReportMessages, createReportMessage, updateReportMessage, deleteReportMessage } from "../../../lib/reports";
 import { useAuth } from "../../../hooks/useAuth";
@@ -375,20 +375,47 @@ export function ReportDetailPage() {
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
               <Card>
                 <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <Building2 className="w-5 h-5 text-blue-600" />
-                  Entidad Asignada
+                  <Building2 className="w-5 h-5 text-green-600" />
+                  Entidad Responsable
                 </h3>
-                <div className="text-sm">
+                <div className="text-sm space-y-4">
                   {report.entidades ? (
                     <>
-                      <p className="font-medium text-gray-900">{report.entidades.nombre}</p>
-                      <p className="text-gray-500 mt-1">Esta entidad está a cargo de la resolución de tu caso.</p>
-                      {report.entidades.email && (
-                        <p className="text-xs text-blue-600 mt-2">{report.entidades.email}</p>
-                      )}
+                      <div>
+                        <p className="font-bold text-gray-900 text-base">{report.entidades.nombre}</p>
+                        {report.entidades.descripcion && (
+                          <p className="text-gray-600 mt-1 leading-relaxed">{report.entidades.descripcion}</p>
+                        )}
+                      </div>
+                      
+                      <div className="pt-3 border-t border-gray-100 space-y-2">
+                        {report.entidades.email && (
+                          <div className="flex items-center gap-2 text-gray-600">
+                            <Send className="w-4 h-4 text-blue-500" />
+                            <a href={`mailto:${report.entidades.email}`} className="hover:underline">{report.entidades.email}</a>
+                          </div>
+                        )}
+                        {report.entidades.telefono && (
+                          <div className="flex items-center gap-2 text-gray-600">
+                            <Phone className="w-4 h-4 text-green-500" />
+                            <a href={`tel:${report.entidades.telefono}`} className="hover:underline">{report.entidades.telefono}</a>
+                          </div>
+                        )}
+                        {report.entidades.sitio_web && (
+                          <div className="flex items-center gap-2 text-gray-600">
+                            <Globe className="w-4 h-4 text-purple-500" />
+                            <a href={report.entidades.sitio_web.startsWith('http') ? report.entidades.sitio_web : `https://${report.entidades.sitio_web}`} target="_blank" rel="noopener noreferrer" className="hover:underline text-blue-600">
+                              Visitar sitio web
+                            </a>
+                          </div>
+                        )}
+                      </div>
                     </>
                   ) : (
-                    <p className="text-gray-500 italic">Buscando entidad correspondiente...</p>
+                    <div className="flex flex-col items-center py-4 text-center">
+                      <Clock className="w-8 h-8 text-gray-300 mb-2 animate-pulse" />
+                      <p className="text-gray-500 italic">Buscando entidad correspondiente...</p>
+                    </div>
                   )}
                 </div>
               </Card>

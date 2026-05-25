@@ -202,7 +202,9 @@ export async function getReportById(reportId: string) {
           slug,
           color,
           email,
-          telefono
+          telefono,
+          descripcion,
+          sitio_web
         )
       `)
       .eq('id', reportId)

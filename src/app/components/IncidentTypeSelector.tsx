@@ -1,19 +1,40 @@
-import { Lightbulb, Trash2, TrafficCone, Droplet, Flame, AlertTriangle, HelpCircle, HardHat, Shield, Activity, Leaf } from "lucide-react";
+import { Lightbulb, Trash2, TrafficCone, Droplet, Flame, AlertTriangle, HelpCircle, HardHat, Shield, Activity, Leaf, MapPin, Building2 } from "lucide-react";
 import { cn } from "../lib/utils";
-
-// Mapa de iconos disponibles para las categorías de la DB
 const iconMap: Record<string, any> = {
+  // Lucide names & PascalCase (lowercased)
   "lightbulb": Lightbulb,
   "trash": Trash2,
+  "trash2": Trash2,
+  "trash-2": Trash2,
+  "trafficcone": TrafficCone,
   "traffic-cone": TrafficCone,
   "droplet": Droplet,
   "flame": Flame,
+  "alerttriangle": AlertTriangle,
   "alert-triangle": AlertTriangle,
+  "hardhat": HardHat,
   "hard-hat": HardHat,
   "shield": Shield,
   "activity": Activity,
   "leaf": Leaf,
-  "help-circle": HelpCircle
+  "help-circle": HelpCircle,
+  "helpcircle": HelpCircle,
+  "wrench": HardHat,
+  "map-pin": MapPin,
+  "mappin": MapPin,
+  "building": Building2,
+  "building2": Building2,
+
+  // Spanish names (fallback)
+  "luminaria": Lightbulb,
+  "basura": Trash2,
+  "vias": TrafficCone,
+  "agua": Droplet,
+  "incendio": Flame,
+  "seguridad": Shield,
+  "salud": Activity,
+  "parques": Leaf,
+  "otros": HelpCircle
 };
 
 export const defaultIncidentTypes = [
@@ -33,13 +54,22 @@ interface IncidentTypeSelectorProps {
 
 export function IncidentTypeSelector({ selectedType, onSelect, types }: IncidentTypeSelectorProps) {
   // Si no hay tipos dinámicos, usar los por defecto
-  const displayTypes = types && types.length > 0 
-    ? types.map(t => ({
+  const displayTypes = types && types.length > 0
+    ? types.map(t => {
+      const iconoKey = (t.icono || "").toLowerCase().trim();
+      const icon = iconMap[iconoKey];
+
+      if (!icon) {
+        console.warn(`⚠️ [IncidentSelector] Icono no encontrado para la llave: "${t.icono}" (normalizado: "${iconoKey}")`);
+      }
+
+      return {
         id: t.nombre,
         label: t.nombre,
-        icon: iconMap[t.icono] || HelpCircle,
+        icon: icon || HelpCircle,
         color: t.color || "text-blue-600"
-      }))
+      };
+    })
     : defaultIncidentTypes;
 
   return (
@@ -47,7 +77,7 @@ export function IncidentTypeSelector({ selectedType, onSelect, types }: Incident
       {displayTypes.map((type) => {
         const Icon = type.icon;
         const isSelected = selectedType === type.id;
-        
+
         return (
           <button
             key={type.id}
@@ -56,14 +86,14 @@ export function IncidentTypeSelector({ selectedType, onSelect, types }: Incident
             className={cn(
               "flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all",
               isSelected
-                ? "border-blue-600 bg-blue-50"
+                ? "border-green-600 bg-green-50 shadow-md"
                 : "border-gray-200 hover:border-gray-300 bg-white"
             )}
           >
-            <Icon className={cn("w-8 h-8 mb-2", isSelected ? "text-blue-600" : type.color)} />
+            <Icon className={cn("w-8 h-8 mb-2", isSelected ? "text-green-600" : type.color)} />
             <span className={cn(
               "text-sm text-center",
-              isSelected ? "text-blue-900 font-medium" : "text-gray-700"
+              isSelected ? "text-green-900 font-bold" : "text-gray-700"
             )}>
               {type.label}
             </span>

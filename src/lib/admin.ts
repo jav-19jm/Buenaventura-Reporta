@@ -1,4 +1,6 @@
 import { supabase } from '../app/supabase/supabase';
+import { createNotification } from './notifications';
+import { createReportMessage } from './reports';
 
 // ==========================================
 // SERVICIOS DE ADMINISTRACIÓN
@@ -29,9 +31,9 @@ export async function updateUserStatus(userId: string, estado: 'activo' | 'inact
   try {
     const { data, error } = await supabase
       .from('perfiles')
-      .update({ 
-        estado, 
-        motivo_bloqueo: motivo || null 
+      .update({
+        estado,
+        motivo_bloqueo: motivo || null
       })
       .eq('id', userId)
       .select()
@@ -170,6 +172,20 @@ export async function createNews(news: any) {
       .single();
 
     if (error) throw error;
+
+    // NOTIFICACIÓN DE NOTICIA (a todos los ciudadanos)
+    const { data: citizens } = await supabase.from('perfiles').select('id').eq('rol', 'ciudadano');
+    if (citizens) {
+      for (const citizen of citizens) {
+        await createNotification({
+          id_usuario: citizen.id,
+          tipo: 'alerta_sistema',
+          titulo: 'Nueva noticia publicada',
+          mensaje: `Se ha publicado: ${news.titulo}. ¡Entérate de las novedades!`
+        });
+      }
+    }
+
     return { data, error: null };
   } catch (error: any) {
     console.error('Error al crear noticia:', error);
@@ -270,7 +286,6 @@ export async function uploadNewsImage(file: File, newsId: string) {
       console.error('Error al asociar la imagen a la noticia:', updateError);
     }
 
-    console.log('✅ Imagen de noticia subida:', data.publicUrl);
     return { url: data.publicUrl, error: null };
   } catch (error: any) {
     console.error('Error al subir imagen de noticia:', error);
@@ -287,10 +302,43 @@ export async function assignReportEntity(reportId: string, id_entidad: string) {
       .from('reportes')
       .update({ id_entidad })
       .eq('id', reportId)
-      .select()
+      .select('*, perfiles:id_usuario(id), entidades:id_entidad(nombre)')
       .single();
 
     if (error) throw error;
+
+    if (data) {
+      // 1. Notificar al ciudadano
+      if (data.id_usuario) {
+        await createNotification({
+          id_usuario: data.id_usuario,
+          id_reporte: reportId,
+          tipo: 'reporte_actualizado',
+          titulo: 'Reporte asignado',
+          mensaje: `Tu reporte "${data.titulo}" ha sido asignado a: ${data.entidades?.nombre || 'una entidad institucional'}.`
+        });
+      }
+
+      // 2. Notificar a los usuarios de la entidad via Email
+      const { data: entityData } = await supabase.from('entidades').select('email').eq('id', id_entidad).single();
+
+      if (entityData?.email) {
+        const { data: usersByEmail } = await supabase.from('perfiles').select('id').ilike('email', entityData.email);
+
+        if (usersByEmail && usersByEmail.length > 0) {
+          for (const u of usersByEmail) {
+            await createNotification({
+              id_usuario: u.id,
+              id_reporte: reportId,
+              tipo: 'reporte_actualizado',
+              titulo: 'Nuevo reporte asignado',
+              mensaje: `Se ha asignado un nuevo reporte a tu entidad: ${data.titulo}`
+            });
+          }
+        }
+      }
+    }
+
     return { data, error: null };
   } catch (error: any) {
     console.error('Error al asignar entidad:', error);
@@ -320,26 +368,7 @@ export async function deleteReportAdmin(reportId: string) {
  * Agregar comentario de seguimiento (Admin)
  */
 export async function addAdminComment(reportId: string, mensaje: string) {
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    const { data, error } = await supabase
-      .from('mensajes')
-      .insert([{
-        id_reporte: reportId,
-        id_remitente: user?.id,
-        tipo_remitente: 'moderador',
-        mensaje
-      }])
-      .select()
-      .single();
-
-    if (error) throw error;
-    return { data, error: null };
-  } catch (error: any) {
-    console.error('Error al agregar comentario:', error);
-    return { data: null, error: error.message };
-  }
+  return createReportMessage(reportId, mensaje, 'moderador');
 }
 
 /**
@@ -349,10 +378,10 @@ export async function getAdminStats() {
   try {
     // Reportes por estado
     const { data: reports } = await supabase.from('reportes').select('estado, categoria');
-    
+
     // Usuarios por estado
     const { data: users } = await supabase.from('perfiles').select('estado');
-    
+
     // Conteo de entidades
     const { count: entitiesCount } = await supabase.from('entidades').select('*', { count: 'exact', head: true });
 
@@ -419,6 +448,20 @@ export async function createService(service: any) {
       .single();
 
     if (error) throw error;
+
+    // NOTIFICACIÓN DE SERVICIO (a todos los ciudadanos)
+    const { data: citizens } = await supabase.from('perfiles').select('id').eq('rol', 'ciudadano');
+    if (citizens) {
+      for (const citizen of citizens) {
+        await createNotification({
+          id_usuario: citizen.id,
+          tipo: 'alerta_sistema',
+          titulo: 'Nuevo servicio disponible',
+          mensaje: `Se ha registrado un punto de servicio: ${service.nombre}. ¡Ya puedes consultarlo en el mapa de servicios!`
+        });
+      }
+    }
+
     return { data, error: null };
   } catch (error: any) {
     console.error('Error al crear servicio:', error);

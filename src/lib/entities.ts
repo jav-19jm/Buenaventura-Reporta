@@ -1,6 +1,7 @@
 import { supabase } from "../app/supabase/supabase";
 import type { Entidad, Reporte } from "../app/supabase/supabase";
 import { checkAndGrantBadges } from "./badges";
+import { createNotification } from "./notifications";
 
 /**
  * Obtiene información de una entidad por ID
@@ -133,7 +134,18 @@ export async function updateReportStatus(reportId: string, estado: string) {
 
     if (error) throw error;
 
-    // 3. Si se resolvió, incrementar contador en el perfil del usuario
+    // NOTIFICACIÓN AL CIUDADANO
+    if (data && reportBefore?.id_usuario) {
+      await createNotification({
+        id_usuario: reportBefore.id_usuario,
+        id_reporte: reportId,
+        tipo: estado === 'resuelto' ? 'reporte_resuelto' : 'reporte_actualizado',
+        titulo: 'Estado de reporte actualizado',
+        mensaje: `La entidad ha actualizado tu reporte a: ${estado.replace('_', ' ')}`
+      });
+    }
+
+    // 3. Si se resolvió...
     if (estado === "resuelto" && reportBefore?.id_usuario) {
       const { data: profile } = await supabase
         .from("perfiles")

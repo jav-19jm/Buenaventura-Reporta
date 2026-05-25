@@ -20,7 +20,7 @@ import {
   XCircle
 } from "lucide-react";
 import { toast } from "sonner";
-import { getReportById, getReportMessages, updateReportMessage, deleteReportMessage } from "../../../lib/reports";
+import { getReportById, getReportMessages, updateReportMessage, deleteReportMessage, createReportMessage } from "../../../lib/reports";
 import { updateReportStatus } from "../../../lib/entities";
 import { useAuth } from "../../../hooks/useAuth";
 import type { Reporte } from "../../supabase/supabase";
@@ -42,6 +42,27 @@ export function EntityReportDetail() {
   useEffect(() => {
     if (id) {
       loadData();
+
+      // Suscribirse a mensajes en tiempo real
+      const channel = supabase
+        .channel(`entity_report_messages_${id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'mensajes',
+            filter: `id_reporte=eq.${id}`,
+          },
+          () => {
+            refreshMessages();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [id]);
 
@@ -105,12 +126,7 @@ export function EntityReportDetail() {
     e.preventDefault();
     if (!newMessage.trim() || !id) return;
 
-    const { error } = await supabase.from('mensajes').insert({
-      id_reporte: id,
-      id_remitente: user?.id,
-      tipo_remitente: 'entidad',
-      mensaje: newMessage
-    });
+    const { error } = await createReportMessage(id, newMessage, 'entidad');
 
     if (error) {
       toast.error("Error al enviar mensaje");
@@ -293,7 +309,11 @@ export function EntityReportDetail() {
                       }`}>
                         <div className="flex items-center justify-between gap-4 mb-1">
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold">{msg.userName} {msg.sender === "admin" && "(Admin)"}</span>
+                            <span className="text-xs font-bold">
+                              {msg.sender === "admin" ? "Administración" : 
+                               msg.sender === "entity" ? "Entidad Responsable" : 
+                               msg.userName}
+                            </span>
                             <span className={`text-[10px] ${msg.senderId === user?.id ? "text-blue-100" : "text-gray-500"}`}>{msg.timestamp}</span>
                           </div>
                           {canEdit(msg) && (

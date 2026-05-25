@@ -27,6 +27,8 @@ import { useAuth } from "../../../hooks/useAuth";
 import { getEntityReports, getEntityStats, getEntityById, updateReportStatus, updateEntityDetails, uploadEntityLogo, getAllEntities, getEntityActivity, logEntityActivity } from "../../../lib/entities";
 import { toast } from "sonner";
 import { signOut } from "../../../lib/auth";
+import { NotificationBell } from "../../components/NotificationBell";
+import { createNotification } from "../../../lib/notifications";
 
 export function EntityDashboard() {
   const navigate = useNavigate();
@@ -62,8 +64,6 @@ export function EntityDashboard() {
       let currentEntity = null;
       const userEmail = profile?.email || user?.email;
 
-      console.log('🔍 Buscando entidad para:', userEmail, 'ID vinculado:', currentEntityId);
-
       // 1. Intentar obtener por ID de entidad en el perfil
       if (currentEntityId) {
         const { data: entity } = await getEntityById(currentEntityId);
@@ -79,7 +79,6 @@ export function EntityDashboard() {
         ) || null;
 
         if (currentEntity) {
-          console.log('✅ Entidad encontrada por email fallback:', currentEntity.nombre);
           currentEntityId = currentEntity.id;
         }
       }
@@ -101,13 +100,13 @@ export function EntityDashboard() {
         if (statsData) {
           setStats(statsData);
         }
-        
+
         // 5. Registrar login (solo una vez por sesión) y cargar actividad
         if (!sessionStorage.getItem('entity_logged_in_recorded')) {
           await logEntityActivity(currentEntityId, 'auth', 'Inicio de sesión exitoso', 'Se accedió al panel institucional');
           sessionStorage.setItem('entity_logged_in_recorded', 'true');
         }
-        
+
         const { data: activityData } = await getEntityActivity(currentEntityId);
         if (activityData) {
           setActivityLogs(activityData);
@@ -318,6 +317,7 @@ export function EntityDashboard() {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              <NotificationBell />
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -338,8 +338,8 @@ export function EntityDashboard() {
           <div className="flex gap-2 border-t border-gray-200 pt-4">
             <button
               className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium border transition-all ${activeTab === 'dashboard'
-                  ? 'bg-entity-light text-entity-primary border-entity-light'
-                  : 'text-gray-600 hover:bg-gray-100 border-transparent'
+                ? 'bg-entity-light text-entity-primary border-entity-light'
+                : 'text-gray-600 hover:bg-gray-100 border-transparent'
                 }`}
               onClick={() => setActiveTab('dashboard')}
             >
@@ -348,8 +348,8 @@ export function EntityDashboard() {
             </button>
             <button
               className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium border transition-all ${activeTab === 'activity'
-                  ? 'bg-entity-light text-entity-primary border-entity-light'
-                  : 'text-gray-600 hover:bg-gray-100 border-transparent'
+                ? 'bg-entity-light text-entity-primary border-entity-light'
+                : 'text-gray-600 hover:bg-gray-100 border-transparent'
                 }`}
               onClick={() => setActiveTab('activity')}
             >
@@ -358,8 +358,8 @@ export function EntityDashboard() {
             </button>
             <button
               className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium border transition-all ${activeTab === 'config'
-                  ? 'bg-entity-light text-entity-primary border-entity-light'
-                  : 'text-gray-600 hover:bg-gray-100 border-transparent'
+                ? 'bg-entity-light text-entity-primary border-entity-light'
+                : 'text-gray-600 hover:bg-gray-100 border-transparent'
                 }`}
               onClick={() => setActiveTab('config')}
             >

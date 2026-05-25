@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
-import { MapPin, Plus, Filter, AlertCircle, User, Menu, X, RefreshCw, Layers, Shield } from "lucide-react";
+import { MapPin, Plus, Filter, AlertCircle, User, Menu, X, RefreshCw, Layers, Shield, ChevronDown } from "lucide-react";
 
 import { WeatherWidget } from "../../components/WeatherWidget";
 import { NotificationBell } from "../../components/NotificationBell";
@@ -57,6 +57,7 @@ export function UserDashboard() {
   const [showMenu, setShowMenu] = useState(false);
   const [showNews, setShowNews] = useState(false);
   const [showServices, setShowServices] = useState(false);
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const filteredReports = selectedFilter
@@ -96,30 +97,8 @@ export function UserDashboard() {
           </Link>
 
           <div className="flex items-center gap-2">
-            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-              <button
-                onClick={handleRefresh}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <motion.div
-                  animate={{ rotate: isRefreshing ? 360 : 0 }}
-                  transition={{ duration: 1, repeat: isRefreshing ? Infinity : 0, ease: "linear" }}
-                >
-                  <RefreshCw className="w-5 h-5 text-gray-700" />
-                </motion.div>
-              </button>
-            </motion.div>
-
             <NotificationBell />
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              <Filter className="w-4 h-4 mr-2" />
-              Filtros
-            </Button>
 
             <Button
               variant={showServices ? "primary" : "ghost"}
@@ -172,42 +151,6 @@ export function UserDashboard() {
           )}
         </AnimatePresence>
 
-        {/* Filters */}
-        <AnimatePresence>
-          {showFilters && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="border-t border-gray-200 overflow-hidden"
-            >
-              <div className="p-4">
-                <p className="text-sm font-medium text-gray-700 mb-3">Filtrar por tipo de incidencia:</p>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    variant={selectedFilter === null ? "primary" : "outline"}
-                    size="sm"
-                    onClick={() => setSelectedFilter(null)}
-                  >
-                    Todas
-                  </Button>
-                  {categories.length > 0 ? categories.map((cat) => (
-                    <Button
-                      key={cat.id}
-                      variant={selectedFilter === cat.id ? "primary" : "outline"}
-                      size="sm"
-                      onClick={() => setSelectedFilter(cat.id)}
-                    >
-                      {cat.nombre}
-                    </Button>
-                  )) : (
-                    <span className="text-xs text-gray-400">Cargando categorías...</span>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </header>
 
       {/* News Section Toggle */}
@@ -279,6 +222,72 @@ export function UserDashboard() {
                 Mis Reportes
               </button>
             </motion.div>
+          </div>
+
+          {/* Category Filter Dropdown */}
+          <div className="absolute top-20 right-4 z-[5]">
+            <div className="relative">
+              <button
+                onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
+                className="bg-white/90 backdrop-blur-md px-4 py-2.5 rounded-xl shadow-xl border border-gray-200 flex items-center gap-3 text-sm font-bold text-gray-700 hover:bg-white transition-all group"
+              >
+                <div className="p-1.5 bg-gradient-to-r from-yellow-500 to-green-600 rounded-lg group-hover:bg-green-200 transition-colors">
+                  <Filter className="w-4 h-4 text-white" />
+                </div>
+                <span className="max-w-[150px] truncate">
+                  {selectedFilter ? selectedFilter : 'Todas las Incidencias'}
+                </span>
+                <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${showCategoryDropdown ? 'rotate-180' : ''}`} />
+              </button>
+
+              <AnimatePresence>
+                {showCategoryDropdown && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 5, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden"
+                  >
+                    <div className="p-2 max-h-[60vh] overflow-y-auto no-scrollbar">
+                      <button
+                        onClick={() => {
+                          setSelectedFilter(null);
+                          setShowCategoryDropdown(false);
+                        }}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all ${selectedFilter === null
+                          ? 'bg-gradient-to-r from-yellow-500 to-green-600 text-white font-bold'
+                          : 'text-gray-600 hover:bg-gray-50'
+                          }`}
+                      >
+                        <div className={`w-2 h-2 rounded-full ${selectedFilter === null ? 'bg-green-600 animate-pulse' : 'bg-gray-300'}`} />
+                        Todas las Incidencias
+                      </button>
+
+                      <div className="px-4 py-2">
+                        <div className="h-px bg-gray-100 w-full" />
+                      </div>
+
+                      {categories.map((cat) => (
+                        <button
+                          key={cat.id}
+                          onClick={() => {
+                            setSelectedFilter(cat.nombre);
+                            setShowCategoryDropdown(false);
+                          }}
+                          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all ${selectedFilter === cat.nombre
+                            ? 'bg-gradient-to-r from-yellow-500 to-green-600 text-white font-bold'
+                            : 'text-gray-600 hover:bg-gray-50'
+                            }`}
+                        >
+                          <div className={`w-2 h-2 rounded-full ${selectedFilter === cat.nombre ? 'bg-green-600' : 'bg-gray-300'}`} />
+                          {cat.nombre}
+                        </button>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
 
           <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[5]">

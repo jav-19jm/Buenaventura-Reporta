@@ -1,6 +1,7 @@
 import { supabase } from '../app/supabase/supabase';
 import type { Reporte, EstadoReporte, PrioridadReporte } from '../app/supabase/supabase';
 import { checkAndGrantBadges } from './badges';
+import { createNotification } from './notifications';
 
 // ==========================================
 // CRUD DE REPORTES CON SUPABASE (ESPAÑOL)
@@ -57,19 +58,18 @@ export async function createReport(reportData: {
         .select('reportes_creados')
         .eq('id', user.id)
         .single();
-      
+
       if (profile) {
         await supabase
           .from('perfiles')
           .update({ reportes_creados: (profile.reportes_creados || 0) + 1 })
           .eq('id', user.id);
       }
-      
+
       // Verificar insignias automáticamente
       await checkAndGrantBadges(user.id);
     }
 
-    console.log('✅ Reporte creado:', data);
     return { data, error: null };
   } catch (error: any) {
     console.error('Error al crear reporte:', error);
@@ -103,7 +103,6 @@ export async function getPublicReports() {
 
     if (error) throw error;
 
-    console.log('✅ Reportes cargados:', data?.length);
     return { data, error: null };
   } catch (error: any) {
     console.error('Error al obtener reportes:', error);
@@ -170,7 +169,6 @@ export async function getUserReports() {
 
     if (error) throw error;
 
-    console.log('✅ Mis reportes:', data?.length);
     return { data, error: null };
   } catch (error: any) {
     console.error('Error al obtener reportes del usuario:', error);
@@ -201,7 +199,9 @@ export async function getReportById(reportId: string) {
           slug,
           color,
           email,
-          telefono
+          telefono,
+          descripcion,
+          sitio_web
         )
       `)
       .eq('id', reportId)
@@ -234,7 +234,17 @@ export async function updateReportStatus(reportId: string, estado: EstadoReporte
 
     if (error) throw error;
 
-    console.log('✅ Estado actualizado:', estado);
+    // NOTIFICACIÓN AL USUARIO
+    if (data?.id_usuario) {
+      await createNotification({
+        id_usuario: data.id_usuario,
+        id_reporte: reportId,
+        tipo: estado === 'resuelto' ? 'reporte_resuelto' : 'reporte_actualizado',
+        titulo: `Tu reporte ha sido actualizado`,
+        mensaje: `El estado de tu reporte "${data.titulo}" ha cambiado a: ${estado.replace('_', ' ')}.`
+      });
+    }
+
     return { data, error: null };
   } catch (error: any) {
     console.error('Error al actualizar estado:', error);
@@ -261,7 +271,6 @@ export async function deleteReport(reportId: string) {
 
     if (error) throw error;
 
-    console.log('✅ Reporte eliminado');
     return { error: null };
   } catch (error: any) {
     console.error('Error al eliminar reporte:', error);
@@ -298,12 +307,12 @@ export async function voteReport(reportId: string, tipoVoto: 'voto_positivo' | '
       .single();
 
     let reputationChange = 0;
-    
+
     if (existingVote) {
       if (existingVote.tipo_voto === tipoVoto) {
         return { error: 'Ya has votado lo mismo en este reporte' };
       }
-      
+
       // Cambió de opinión (ej: de positivo a negativo)
       reputationChange = tipoVoto === 'voto_positivo' ? 2 : -2;
 
@@ -357,11 +366,11 @@ export async function voteReport(reportId: string, tipoVoto: 'voto_positivo' | '
         .from('reportes')
         .select('votos_positivos, votos_negativos')
         .eq('id_usuario', reportData.id_usuario);
-      
+
       if (allUserReports) {
         const totalPos = allUserReports.reduce((sum, r) => sum + (r.votos_positivos || 0), 0);
         const totalNeg = allUserReports.reduce((sum, r) => sum + (r.votos_negativos || 0), 0);
-        
+
         await supabase
           .from('perfiles')
           .update({
@@ -376,7 +385,17 @@ export async function voteReport(reportId: string, tipoVoto: 'voto_positivo' | '
       await checkAndGrantBadges(reportData.id_usuario);
     }
 
-    console.log('✅ Voto y reputación actualizados:', tipoVoto);
+    // NOTIFICACIÓN DE VOTO
+    if (reportData.id_usuario && reportData.id_usuario !== user.id) {
+      await createNotification({
+        id_usuario: reportData.id_usuario,
+        id_reporte: reportId,
+        tipo: 'mencion',
+        titulo: 'Nuevo voto en tu reporte',
+        mensaje: `Alguien ha dado un ${tipoVoto === 'voto_positivo' ? 'voto positivo' : 'voto negativo'} a tu reporte.`
+      });
+    }
+
     return { error: null };
   } catch (error: any) {
     console.error('Error al votar:', error);
@@ -435,7 +454,6 @@ export async function uploadReportImage(file: File, reportId: string) {
       console.error('Error al asociar la imagen al reporte:', updateError);
     }
 
-    console.log('✅ Imagen subida y enlazada:', data.publicUrl);
     return { url: data.publicUrl, error: null };
   } catch (error: any) {
     console.error('Error al subir imagen:', error);
@@ -553,12 +571,21 @@ export async function getReportMessages(reporteId: string) {
 /**
  * Crear mensaje en reporte
  */
-export async function createReportMessage(reporteId: string, mensaje: string) {
+export async function createReportMessage(reporteId: string, mensaje: string, tipoRemitente?: 'usuario' | 'entidad' | 'moderador') {
   try {
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
       return { data: null, error: 'Usuario no autenticado' };
+    }
+
+    // Determinar tipo de remitente si no se proporciona
+    let finalTipo = tipoRemitente;
+    if (!finalTipo) {
+      const { data: profile } = await supabase.from('perfiles').select('rol').eq('id', user.id).single();
+      if (profile?.rol === 'administrador' || profile?.rol === 'moderador') finalTipo = 'moderador';
+      else if (profile?.rol === 'entidad') finalTipo = 'entidad';
+      else finalTipo = 'usuario';
     }
 
     const { data, error } = await supabase
@@ -567,7 +594,7 @@ export async function createReportMessage(reporteId: string, mensaje: string) {
         {
           id_reporte: reporteId,
           id_remitente: user.id,
-          tipo_remitente: 'usuario',
+          tipo_remitente: finalTipo,
           mensaje
         }
       ])
@@ -575,6 +602,63 @@ export async function createReportMessage(reporteId: string, mensaje: string) {
       .single();
 
     if (error) throw error;
+
+    // NOTIFICACIÓN DE MENSAJE
+    const { data: report } = await getReportById(reporteId);
+    if (report) {
+      // 1. Notificar a los Admins
+      const { data: adminUsers } = await supabase.from('perfiles').select('id').eq('rol', 'administrador');
+      if (adminUsers) {
+        for (const admin of adminUsers) {
+          if (admin.id !== user.id) {
+            await createNotification({
+              id_usuario: admin.id,
+              id_reporte: reporteId,
+              tipo: 'nuevo_mensaje',
+              titulo: 'Actividad en reporte',
+              mensaje: `Nuevo mensaje de ${finalTipo === 'usuario' ? 'ciudadano' : finalTipo === 'entidad' ? 'entidad' : 'administración'} en: ${report.titulo}`
+            });
+          }
+        }
+      }
+
+      // 2. Notificar al ciudadano
+      if (report.id_usuario && report.id_usuario !== user.id) {
+        const remitenteLabel = finalTipo === 'moderador' ? 'La Administración' : 'La Entidad Responsable';
+        await createNotification({
+          id_usuario: report.id_usuario,
+          id_reporte: reporteId,
+          tipo: 'nuevo_mensaje',
+          titulo: 'Nueva respuesta institucional',
+          mensaje: `${remitenteLabel} ha respondido a tu reporte: ${report.titulo}`
+        });
+      }
+
+      // 3. Notificar a la entidad responsable
+      if (report.id_entidad && finalTipo !== 'entidad') {
+        // 1. Obtener el email de la entidad
+        const { data: entityData } = await supabase.from('entidades').select('email').eq('id', report.id_entidad).single();
+
+        if (entityData?.email) {
+          // 2. Buscar usuarios cuyo email coincida con el de la entidad (insensible a mayúsculas)
+          const { data: usersByEmail } = await supabase.from('perfiles').select('id').ilike('email', entityData.email);
+
+          if (usersByEmail && usersByEmail.length > 0) {
+            for (const u of usersByEmail) {
+              if (u.id !== user.id) {
+                await createNotification({
+                  id_usuario: u.id,
+                  id_reporte: reporteId,
+                  tipo: 'nuevo_mensaje',
+                  titulo: 'Nuevo mensaje en reporte asignado',
+                  mensaje: `Hay nueva actividad en el reporte: ${report.titulo}`
+                });
+              }
+            }
+          }
+        }
+      }
+    }
 
     return { data, error: null };
   } catch (error: any) {

@@ -18,6 +18,7 @@ export function UsersManagement() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<UserStatus | "all">("all");
+  const [roleFilter, setRoleFilter] = useState<string>("all");
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showBlockModal, setShowBlockModal] = useState(false);
@@ -42,15 +43,15 @@ export function UsersManagement() {
       user.email.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesStatus = statusFilter === "all" || user.estado === statusFilter;
-    const isCitizen = user.rol === 'ciudadano' || !user.rol; // Asumir ciudadano por defecto
+    const matchesRole = roleFilter === "all" || user.rol === roleFilter || (roleFilter === "ciudadano" && !user.rol);
 
-    return matchesSearch && matchesStatus && isCitizen;
+    return matchesSearch && matchesStatus && matchesRole;
   });
 
   const statusCounts = {
-    activo: users.filter(u => u.estado === "activo" && (u.rol === 'ciudadano' || !u.rol)).length,
-    inactivo: users.filter(u => u.estado === "inactivo" && (u.rol === 'ciudadano' || !u.rol)).length,
-    suspendido: users.filter(u => u.estado === "suspendido" && (u.rol === 'ciudadano' || !u.rol)).length,
+    activo: users.filter(u => u.estado === "activo").length,
+    inactivo: users.filter(u => u.estado === "inactivo").length,
+    suspendido: users.filter(u => u.estado === "suspendido").length,
   };
 
   const handleBlockUser = async () => {
@@ -212,7 +213,7 @@ export function UsersManagement() {
 
       {/* Filters */}
       <Card>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
@@ -234,6 +235,18 @@ export function UsersManagement() {
             <option value="suspendido">Suspendidos</option>
             <option value="inactivo">Inactivos / Bloqueados</option>
           </select>
+
+          <select
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+          >
+            <option value="all">Todos los roles</option>
+            <option value="ciudadano">Ciudadanos</option>
+            <option value="entidad">Entidades</option>
+            <option value="moderador">Moderadores</option>
+            <option value="administrador">Administradores</option>
+          </select>
         </div>
       </Card>
 
@@ -251,6 +264,7 @@ export function UsersManagement() {
                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Email</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Reportes</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Reputación</th>
+                <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Rol</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Estado</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Última Actividad</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Acciones</th>
@@ -266,9 +280,17 @@ export function UsersManagement() {
                 >
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-green-600 rounded-full flex items-center justify-center text-white">
-                        <User className="w-5 h-5" />
-                      </div>
+                      {user.url_avatar ? (
+                        <img
+                          src={user.url_avatar}
+                          alt={user.nombre_completo || 'Usuario'}
+                          className="w-10 h-10 object-cover rounded-full shadow-md border border-gray-100"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm border border-gray-100">
+                          {user.nombre_completo ? user.nombre_completo.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() : 'U'}
+                        </div>
+                      )}
                       <span className="font-medium text-gray-900">{user.nombre_completo || 'Usuario'}</span>
                     </div>
                   </td>
@@ -287,6 +309,20 @@ export function UsersManagement() {
                       </div>
                       <span className="text-sm font-medium text-gray-700">{user.puntuacion_reputacion || 0}</span>
                     </div>
+                  </td>
+                  <td className="py-3 px-4">
+                    <Badge
+                      variant={
+                        user.rol === "administrador" || user.rol === "moderador" ? "danger" :
+                          user.rol === "entidad" ? "info" :
+                            "success"
+                      }
+                    >
+                      {user.rol === "administrador" ? "Admin" :
+                        user.rol === "moderador" ? "Mod" :
+                          user.rol === "entidad" ? "Entidad" :
+                            "Ciudadano"}
+                    </Badge>
                   </td>
                   <td className="py-3 px-4">
                     <Badge
@@ -394,11 +430,33 @@ export function UsersManagement() {
               <div className="p-6 space-y-6">
                 {/* User Info */}
                 <div className="flex items-center gap-4">
-                  <div className="w-20 h-20 bg-gradient-to-br from-yellow-500 to-green-600 rounded-full flex items-center justify-center">
-                    <User className="w-10 h-10 text-white" />
-                  </div>
+                  {selectedUser.url_avatar ? (
+                    <img
+                      src={selectedUser.url_avatar}
+                      alt={selectedUser.nombre_completo || 'Usuario'}
+                      className="w-20 h-20 object-cover rounded-full shadow-md border-2 border-white"
+                    />
+                  ) : (
+                    <div className="w-20 h-20 bg-gradient-to-br from-yellow-500 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-2xl shadow-md border-2 border-white">
+                      {selectedUser.nombre_completo ? selectedUser.nombre_completo.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() : 'U'}
+                    </div>
+                  )}
                   <div className="flex-1">
-                    <h3 className="text-2xl font-bold text-gray-900">{selectedUser.nombre_completo || 'Usuario'}</h3>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-2xl font-bold text-gray-900">{selectedUser.nombre_completo || 'Usuario'}</h3>
+                      <Badge
+                        variant={
+                          selectedUser.rol === "administrador" || selectedUser.rol === "moderador" ? "danger" :
+                            selectedUser.rol === "entidad" ? "info" :
+                              "success"
+                        }
+                      >
+                        {selectedUser.rol === "administrador" ? "Administrador" :
+                          selectedUser.rol === "moderador" ? "Moderador" :
+                            selectedUser.rol === "entidad" ? "Entidad" :
+                              "Ciudadano"}
+                      </Badge>
+                    </div>
                     <p className="text-gray-600 flex items-center gap-2 mt-1">
                       <Mail className="w-4 h-4" />
                       {selectedUser.email}

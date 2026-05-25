@@ -16,6 +16,7 @@ import { getPublicReports } from "../../../lib/reports";
 import { signOut } from "../../../lib/auth";
 import { useAuth } from "../../../hooks/useAuth";
 import { toast } from "sonner";
+import { NotificationBell } from "../../components/NotificationBell";
 
 type Tab = "dashboard" | "reports" | "users" | "entities" | "news" | "services";
 
@@ -144,15 +145,18 @@ export function AdminDashboard() {
           <div className="flex items-center gap-4">
             <h1 className="text-xl font-bold text-white">Panel Administrativo</h1>
           </div>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={handleLogout}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium bg-white/10 text-white hover:bg-white/20 transition-all border border-white/20 shadow-sm"
-          >
-            <LogOut className="w-4 h-4" />
-            <span className="hidden sm:inline">Cerrar sesión</span>
-          </motion.button>
+          <div className="flex items-center gap-3">
+            <NotificationBell />
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium bg-white/10 text-white hover:bg-white/20 transition-all border border-white/20 shadow-sm"
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="hidden sm:inline">Cerrar sesión</span>
+            </motion.button>
+          </div>
         </div>
 
 

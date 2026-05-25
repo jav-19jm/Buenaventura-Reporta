@@ -17,6 +17,7 @@ function figmaAssetResolver() {
 }
 
 export default defineConfig({
+  logLevel: 'silent', // Oculta los logs informativos de Vite
   plugins: [
     figmaAssetResolver(),
     // The React and Tailwind plugins are both required for Make, even if

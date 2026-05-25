@@ -6,6 +6,7 @@ import { Badge } from "./ui/Badge";
 import { getUserNotifications, markNotificationAsRead as markAsReadDB, deleteNotification as deleteNotificationDB } from "../../lib/notifications";
 import { useAuth } from "../../hooks/useAuth";
 import { useEffect } from "react";
+import { supabase } from "../supabase/supabase";
 
 interface Notification {
   id: string;
@@ -21,17 +22,58 @@ export function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
 
+  const playNotificationSound = () => {
+    try {
+      const audio = new Audio('/notification.mp3');
+      audio.volume = 0.6;
+      audio.play().catch(() => {
+        // Silencioso si el navegador bloquea
+      });
+    } catch (error) {
+      // Error silencioso en producción
+    }
+  };
+
   useEffect(() => {
     if (isAuthenticated && user?.id) {
       loadNotifications();
+
+      // Suscribirse a cambios en tiempo real
+      const channel = supabase
+        .channel(`notificaciones_usuario_${user.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'notificaciones',
+            filter: `id_usuario=eq.${user.id}`,
+          },
+          (payload) => {
+            setNotifications((prev) => [payload.new, ...prev]);
+            
+            // Reproducir sonido de notificación
+            playNotificationSound();
+
+            // Mostrar toast informativo
+            toast.info(payload.new.titulo, {
+              description: payload.new.mensaje,
+              duration: 5000,
+            });
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [isAuthenticated, user?.id]);
 
   const loadNotifications = async () => {
-    const { data } = await getUserNotifications(user!.id);
-    if (data) {
-      setNotifications(data);
-    }
+    if (!user?.id) return;
+    const { data } = await getUserNotifications(user.id);
+    if (data) setNotifications(data);
   };
 
   const unreadCount = notifications.filter(n => !n.esta_leida).length;
@@ -112,7 +154,7 @@ export function NotificationBell() {
                     onClick={() => setIsOpen(false)}
                     className="p-1 hover:bg-gray-100 rounded"
                   >
-                    <X className="w-4 h-4" />
+                    <X className="w-4 h-4 text-gray-400" />
                   </button>
                 </div>
 

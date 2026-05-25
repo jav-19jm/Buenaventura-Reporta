@@ -83,7 +83,6 @@ export async function grantBadgeToUser(userId: string, badgeId: string) {
 
     if (error) throw error;
 
-    console.log('✅ Insignia otorgada:', badgeId);
     return { data, error: null };
   } catch (error: any) {
     console.error('Error al otorgar insignia:', error);
@@ -117,7 +116,7 @@ export async function checkAndGrantBadges(userId: string) {
     const badgesToGrant = [];
 
     // Lógica de asignación por méritos
-    
+
     // 1. Primer Reporte
     if (user.reportes_creados >= 1 && !userBadgeNames.includes('Primer Reporte')) {
       const badge = allBadges.find(b => b.nombre === 'Primer Reporte');
@@ -154,9 +153,8 @@ export async function checkAndGrantBadges(userId: string) {
     }
 
     if (badgesToGrant.length > 0) {
-      console.log(`✅ Se otorgaron ${badgesToGrant.length} nuevas insignias a ${user.nombre_completo}`);
     }
-    
+
     return { data: badgesToGrant, error: null };
   } catch (error: any) {
     console.error('Error al verificar y otorgar insignias:', error);

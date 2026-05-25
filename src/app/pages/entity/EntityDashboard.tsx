@@ -28,6 +28,7 @@ import { getEntityReports, getEntityStats, getEntityById, updateReportStatus, up
 import { toast } from "sonner";
 import { signOut } from "../../../lib/auth";
 import { NotificationBell } from "../../components/NotificationBell";
+import { createNotification } from "../../../lib/notifications";
 
 export function EntityDashboard() {
   const navigate = useNavigate();

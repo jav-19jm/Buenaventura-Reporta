@@ -1,5 +1,6 @@
 import { supabase } from '../app/supabase/supabase';
 import { createNotification } from './notifications';
+import { createReportMessage } from './reports';
 
 // ==========================================
 // SERVICIOS DE ADMINISTRACIÓN
@@ -30,9 +31,9 @@ export async function updateUserStatus(userId: string, estado: 'activo' | 'inact
   try {
     const { data, error } = await supabase
       .from('perfiles')
-      .update({ 
-        estado, 
-        motivo_bloqueo: motivo || null 
+      .update({
+        estado,
+        motivo_bloqueo: motivo || null
       })
       .eq('id', userId)
       .select()
@@ -179,8 +180,8 @@ export async function createNews(news: any) {
         await createNotification({
           id_usuario: citizen.id,
           tipo: 'alerta_sistema',
-          titulo: 'Nueva noticia en la ciudad',
-          mensaje: news.titulo
+          titulo: 'Nueva noticia publicada',
+          mensaje: `Se ha publicado: ${news.titulo}. ¡Entérate de las novedades!`
         });
       }
     }
@@ -319,21 +320,22 @@ export async function assignReportEntity(reportId: string, id_entidad: string) {
         });
       }
 
-      // 2. Notificar a los usuarios de la entidad
-      const { data: entityUsers } = await supabase
-        .from('perfiles')
-        .select('id')
-        .eq('id_entidad', id_entidad);
+      // 2. Notificar a los usuarios de la entidad via Email
+      const { data: entityData } = await supabase.from('entidades').select('email').eq('id', id_entidad).single();
       
-      if (entityUsers) {
-        for (const eu of entityUsers) {
-          await createNotification({
-            id_usuario: eu.id,
-            id_reporte: reportId,
-            tipo: 'reporte_actualizado',
-            titulo: 'Nuevo reporte asignado',
-            mensaje: `Se ha asignado un nuevo reporte a tu entidad: ${data.titulo}`
-          });
+      if (entityData?.email) {
+        const { data: usersByEmail } = await supabase.from('perfiles').select('id').ilike('email', entityData.email);
+        
+        if (usersByEmail && usersByEmail.length > 0) {
+          for (const u of usersByEmail) {
+            await createNotification({
+              id_usuario: u.id,
+              id_reporte: reportId,
+              tipo: 'reporte_actualizado',
+              titulo: 'Nuevo reporte asignado',
+              mensaje: `Se ha asignado un nuevo reporte a tu entidad: ${data.titulo}`
+            });
+          }
         }
       }
     }
@@ -367,60 +369,7 @@ export async function deleteReportAdmin(reportId: string) {
  * Agregar comentario de seguimiento (Admin)
  */
 export async function addAdminComment(reportId: string, mensaje: string) {
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    const { data, error } = await supabase
-      .from('mensajes')
-      .insert([{
-        id_reporte: reportId,
-        id_remitente: user?.id,
-        tipo_remitente: 'moderador',
-        mensaje
-      }])
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    // NOTIFICACIÓN (Reutilizando la lógica de reports.ts)
-    const { data: report } = await supabase.from('reportes').select('id, titulo, id_usuario, id_entidad').eq('id', reportId).single();
-    if (report) {
-      // 1. Notificar al ciudadano
-      if (report.id_usuario && report.id_usuario !== user?.id) {
-        await createNotification({
-          id_usuario: report.id_usuario,
-          id_reporte: reportId,
-          tipo: 'nuevo_mensaje',
-          titulo: 'Mensaje de administración',
-          mensaje: `Un administrador ha comentado en tu reporte: ${report.titulo}`
-        });
-      }
-
-      // 2. Notificar a la entidad (si está asignada)
-      if (report.id_entidad) {
-        const { data: entityUsers } = await supabase.from('perfiles').select('id').eq('id_entidad', report.id_entidad);
-        if (entityUsers) {
-          for (const eu of entityUsers) {
-            if (eu.id !== user?.id) {
-              await createNotification({
-                id_usuario: eu.id,
-                id_reporte: reportId,
-                tipo: 'nuevo_mensaje',
-                titulo: 'Instrucción de administración',
-                mensaje: `El administrador ha dejado un comentario en el reporte: ${report.titulo}`
-              });
-            }
-          }
-        }
-      }
-    }
-
-    return { data, error: null };
-  } catch (error: any) {
-    console.error('Error al agregar comentario:', error);
-    return { data: null, error: error.message };
-  }
+  return createReportMessage(reportId, mensaje, 'moderador');
 }
 
 /**
@@ -430,10 +379,10 @@ export async function getAdminStats() {
   try {
     // Reportes por estado
     const { data: reports } = await supabase.from('reportes').select('estado, categoria');
-    
+
     // Usuarios por estado
     const { data: users } = await supabase.from('perfiles').select('estado');
-    
+
     // Conteo de entidades
     const { count: entitiesCount } = await supabase.from('entidades').select('*', { count: 'exact', head: true });
 
@@ -509,7 +458,7 @@ export async function createService(service: any) {
           id_usuario: citizen.id,
           tipo: 'alerta_sistema',
           titulo: 'Nuevo servicio disponible',
-          mensaje: `Se ha registrado un nuevo punto de servicio: ${service.nombre}`
+          mensaje: `Se ha registrado un punto de servicio: ${service.nombre}. ¡Ya puedes consultarlo en el mapa de servicios!`
         });
       }
     }

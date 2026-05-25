@@ -38,14 +38,13 @@ export function NotificationBell() {
             filter: `id_usuario=eq.${user.id}`,
           },
           (payload) => {
-            console.log('🔔 Nueva notificación recibida:', payload.new);
             setNotifications((prev) => [payload.new, ...prev]);
             
-            // Sonido opcional
-            try {
-              const audio = new Audio('/notification.mp3');
-              audio.play().catch(e => console.log('Audio play failed', e));
-            } catch (e) {}
+            // Mostrar toast informativo
+            toast.info(payload.new.titulo, {
+              description: payload.new.mensaje,
+              duration: 5000,
+            });
           }
         )
         .subscribe();
@@ -57,10 +56,9 @@ export function NotificationBell() {
   }, [isAuthenticated, user?.id]);
 
   const loadNotifications = async () => {
-    const { data } = await getUserNotifications(user!.id);
-    if (data) {
-      setNotifications(data);
-    }
+    if (!user?.id) return;
+    const { data } = await getUserNotifications(user.id);
+    if (data) setNotifications(data);
   };
 
   const unreadCount = notifications.filter(n => !n.esta_leida).length;

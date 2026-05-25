@@ -578,12 +578,21 @@ export async function getReportMessages(reporteId: string) {
 /**
  * Crear mensaje en reporte
  */
-export async function createReportMessage(reporteId: string, mensaje: string) {
+export async function createReportMessage(reporteId: string, mensaje: string, tipoRemitente?: 'usuario' | 'entidad' | 'moderador') {
   try {
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
       return { data: null, error: 'Usuario no autenticado' };
+    }
+
+    // Determinar tipo de remitente si no se proporciona
+    let finalTipo = tipoRemitente;
+    if (!finalTipo) {
+      const { data: profile } = await supabase.from('perfiles').select('rol').eq('id', user.id).single();
+      if (profile?.rol === 'administrador' || profile?.rol === 'moderador') finalTipo = 'moderador';
+      else if (profile?.rol === 'entidad') finalTipo = 'entidad';
+      else finalTipo = 'usuario';
     }
 
     const { data, error } = await supabase
@@ -592,7 +601,7 @@ export async function createReportMessage(reporteId: string, mensaje: string) {
         {
           id_reporte: reporteId,
           id_remitente: user.id,
-          tipo_remitente: 'usuario',
+          tipo_remitente: finalTipo,
           mensaje
         }
       ])
@@ -604,68 +613,53 @@ export async function createReportMessage(reporteId: string, mensaje: string) {
     // NOTIFICACIÓN DE MENSAJE
     const { data: report } = await getReportById(reporteId);
     if (report) {
-      const isCreator = user.id === report.id_usuario;
-      
-      // 1. Notificar a los Admins (siempre deben saber)
+      // 1. Notificar a los Admins
       const { data: adminUsers } = await supabase.from('perfiles').select('id').eq('rol', 'administrador');
       if (adminUsers) {
         for (const admin of adminUsers) {
-          if (admin.id !== user.id) { // No notificarse a sí mismo
+          if (admin.id !== user.id) {
             await createNotification({
               id_usuario: admin.id,
               id_reporte: reporteId,
               tipo: 'nuevo_mensaje',
               titulo: 'Actividad en reporte',
-              mensaje: `Nuevo mensaje de ${isCreator ? 'ciudadano' : 'entidad/admin'} en: ${report.titulo}`
+              mensaje: `Nuevo mensaje de ${finalTipo === 'usuario' ? 'ciudadano' : finalTipo === 'entidad' ? 'entidad' : 'administración'} en: ${report.titulo}`
             });
           }
         }
       }
 
-      if (isCreator) {
-        // El ciudadano escribió: Notificar a la entidad responsable
-        if (report.id_entidad) {
-          const { data: entityUsers } = await supabase.from('perfiles').select('id').eq('id_entidad', report.id_entidad);
-          if (entityUsers) {
-            for (const eu of entityUsers) {
-              await createNotification({
-                id_usuario: eu.id,
-                id_reporte: reporteId,
-                tipo: 'nuevo_mensaje',
-                titulo: 'Mensaje del ciudadano',
-                mensaje: `El ciudadano ha respondido en el reporte: ${report.titulo}`
-              });
-            }
-          }
-        }
-      } else {
-        // Entidad o Admin escribió: Notificar al ciudadano
-        if (report.id_usuario && report.id_usuario !== user.id) {
-          await createNotification({
-            id_usuario: report.id_usuario,
-            id_reporte: reporteId,
-            tipo: 'nuevo_mensaje',
-            titulo: 'Respuesta institucional',
-            mensaje: `Has recibido una respuesta oficial en tu reporte: ${report.titulo}`
-          });
-        }
+      // 2. Notificar al ciudadano
+      if (report.id_usuario && report.id_usuario !== user.id) {
+        const remitenteLabel = finalTipo === 'moderador' ? 'La Administración' : 'La Entidad Responsable';
+        await createNotification({
+          id_usuario: report.id_usuario,
+          id_reporte: reporteId,
+          tipo: 'nuevo_mensaje',
+          titulo: 'Nueva respuesta institucional',
+          mensaje: `${remitenteLabel} ha respondido a tu reporte: ${report.titulo}`
+        });
+      }
+
+      // 3. Notificar a la entidad responsable
+      if (report.id_entidad && finalTipo !== 'entidad') {
+        // 1. Obtener el email de la entidad
+        const { data: entityData } = await supabase.from('entidades').select('email').eq('id', report.id_entidad).single();
         
-        // Si fue un Admin quien escribió, notificar también a la Entidad (si está asignada)
-        if (report.id_entidad) {
-          const { data: profile } = await supabase.from('perfiles').select('rol').eq('id', user.id).single();
-          if (profile?.rol === 'administrador') {
-            const { data: entityUsers } = await supabase.from('perfiles').select('id').eq('id_entidad', report.id_entidad);
-            if (entityUsers) {
-              for (const eu of entityUsers) {
-                if (eu.id !== user.id) {
-                  await createNotification({
-                    id_usuario: eu.id,
-                    id_reporte: reporteId,
-                    tipo: 'nuevo_mensaje',
-                    titulo: 'Mensaje de administración',
-                    mensaje: `El administrador ha dejado un comentario en un reporte asignado: ${report.titulo}`
-                  });
-                }
+        if (entityData?.email) {
+          // 2. Buscar usuarios cuyo email coincida con el de la entidad (insensible a mayúsculas)
+          const { data: usersByEmail } = await supabase.from('perfiles').select('id').ilike('email', entityData.email);
+          
+          if (usersByEmail && usersByEmail.length > 0) {
+            for (const u of usersByEmail) {
+              if (u.id !== user.id) {
+                await createNotification({
+                  id_usuario: u.id,
+                  id_reporte: reporteId,
+                  tipo: 'nuevo_mensaje',
+                  titulo: 'Nuevo mensaje en reporte asignado',
+                  mensaje: `Hay nueva actividad en el reporte: ${report.titulo}`
+                });
               }
             }
           }

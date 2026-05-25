@@ -11,6 +11,7 @@ import { useAuth } from "../../../hooks/useAuth";
 import { Edit2, Trash2 } from "lucide-react";
 import { ReportsMap } from "../../components/ReportsMap";
 import { toast } from "sonner";
+import { supabase } from "../../supabase/supabase";
 import type { Reporte } from "../../supabase/supabase";
 
 export function ReportDetailPage() {
@@ -28,6 +29,27 @@ export function ReportDetailPage() {
   useEffect(() => {
     if (id) {
       loadReport();
+
+      // Suscribirse a nuevos mensajes en tiempo real
+      const channel = supabase
+        .channel(`reporte_mensajes_${id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'mensajes',
+            filter: `id_reporte=eq.${id}`,
+          },
+          () => {
+            refreshMessages();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [id]);
 
@@ -39,35 +61,7 @@ export function ReportDetailPage() {
         toast.error("Error al cargar el reporte");
       } else if (data) {
         setReport(data as unknown as Reporte);
-        
-        // Cargar mensajes reales
-        const { data: dbMessages } = await getReportMessages(id as string);
-        if (dbMessages) {
-          const formattedMessages = dbMessages.map((m: any) => {
-            let senderType = 'user';
-            let senderName = m.perfiles?.nombre_completo || 'Usuario';
-            
-            if (m.tipo_remitente === 'moderador') {
-              senderType = 'admin';
-              senderName = 'Administrador';
-            } else if (m.tipo_remitente === 'entidad') {
-              senderType = 'entity';
-              senderName = 'Entidad Responsable';
-            }
-
-            return {
-              id: m.id,
-              sender: senderType,
-              senderId: m.id_remitente,
-              userName: senderName,
-              message: m.mensaje,
-              timestamp: new Date(m.fecha_creacion).toLocaleString(),
-              createdAt: m.fecha_creacion,
-            };
-          });
-          
-          setMessages(formattedMessages);
-        }
+        refreshMessages();
       }
     } catch (error) {
       console.error("Error loading report details:", error);
@@ -294,9 +288,9 @@ export function ReportDetailPage() {
                             msg.sender === "entity" ? "text-orange-800" :
                             "text-gray-900"
                           }`}>
-                            {msg.userName}
-                            {msg.sender === "admin" && " (Admin)"}
-                            {msg.sender === "entity" && " (Entidad)"}
+                            {msg.sender === "admin" ? "Administración" : 
+                             msg.sender === "entity" ? "Entidad Responsable" : 
+                             msg.userName}
                           </span>
                           <span className={`text-[10px] opacity-70`}>{msg.timestamp}</span>
                           

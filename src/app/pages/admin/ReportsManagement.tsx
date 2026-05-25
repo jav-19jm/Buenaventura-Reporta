@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { getAdminReports, updateReportStatus, getReportMessages, updateReportMessage, deleteReportMessage } from "../../../lib/reports";
 import { assignReportEntity, deleteReportAdmin, addAdminComment, getAllEntities } from "../../../lib/admin";
 import { useAuth } from "../../../hooks/useAuth";
+import { supabase } from "../../supabase/supabase";
 
 
 type ReportStatus = "pendiente" | "en_revision" | "en_proceso" | "resuelto" | "cancelado";
@@ -141,6 +142,28 @@ export function ReportsManagement() {
     // Cargar mensajes/historial
     const { data: messages } = await getReportMessages(report.id);
     if (messages) setReportMessages(messages);
+
+    // Suscribirse a cambios en tiempo real para este reporte específico
+    const channel = supabase
+      .channel(`admin_report_chat_${report.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'mensajes',
+          filter: `id_reporte=eq.${report.id}`,
+        },
+        async () => {
+          const { data } = await getReportMessages(report.id);
+          if (data) setReportMessages(data);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   };
 
   return (
@@ -459,15 +482,16 @@ export function ReportsManagement() {
                     <div className="space-y-4 mb-4">
                       {reportMessages.map((msg, idx) => (
                         <div key={idx} className={`p-3 rounded-lg group relative ${
-                          msg.tipo_remitente === 'usuario' ? 'bg-blue-50 ml-4' : 
-                          msg.tipo_remitente === 'moderador' ? 'bg-green-50 mr-4' : 'bg-gray-50 mr-4'
+                          msg.tipo_remitente === 'usuario' ? 'bg-blue-50 ml-4 border-l-4 border-blue-400' : 
+                          msg.tipo_remitente === 'entidad' ? 'bg-orange-50 mr-4 border-r-4 border-orange-400' :
+                          'bg-green-50 mr-4 border-r-4 border-green-400'
                         }`}>
                           <div className="flex justify-between items-center mb-1">
                             <div className="flex items-center gap-2">
                               <span className="text-xs font-bold text-gray-700">
-                                {msg.perfiles?.nombre_completo || 'Usuario'}
-                                {msg.tipo_remitente === 'moderador' && " (Admin)"}
-                                {msg.tipo_remitente === 'entidad' && " (Entidad)"}
+                                {msg.tipo_remitente === 'moderador' ? 'Administración' : 
+                                 msg.tipo_remitente === 'entidad' ? 'Entidad Responsable' : 
+                                 (msg.perfiles?.nombre_completo || 'Usuario')}
                               </span>
                               <span className="text-[10px] text-gray-500">
                                 {new Date(msg.fecha_creacion).toLocaleString()}

@@ -4,7 +4,7 @@ import { motion } from "motion/react";
 import { Button } from "../../components/ui/Button";
 import { Badge } from "../../components/ui/Badge";
 import { Card } from "../../components/ui/Card";
-import { MapPin, ArrowLeft, Calendar, CheckCircle2, Clock, Star, MessageCircle, Send, History, Building2, Phone, Globe } from "lucide-react";
+import { MapPin, ArrowLeft, Calendar, Clock, Star, MessageCircle, Send, History, Building2, Phone, Globe } from "lucide-react";
 import { ImageWithFallback } from "../../components/figma/ImageWithFallback";
 import { getReportById, getReportMessages, createReportMessage, updateReportMessage, deleteReportMessage } from "../../../lib/reports";
 import { useAuth } from "../../../hooks/useAuth";

@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
-import { MapPin, Building2 } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { WelcomeAnimation } from "../components/animations/WelcomeAnimation";
 import { signIn } from "../../lib/auth";
 import { useAuth } from "../../hooks/useAuth";
@@ -181,13 +181,6 @@ export function LoginPage() {
                   <span className="px-2 bg-white text-gray-500">O</span>
                 </div>
               </div>
-
-              <Link to="/entity/select" className="block mt-4">
-                <Button variant="outline" className="w-full border-blue-600 text-blue-600 hover:bg-blue-50" size="lg">
-                  <Building2 className="w-5 h-5 mr-2" />
-                  Acceso para Entidades
-                </Button>
-              </Link>
             </div>
 
             <div className="mt-6 text-center">

@@ -12,7 +12,6 @@ import { useAuth } from "../../../hooks/useAuth";
 import { toast } from "sonner";
 import { LocationPickerMap } from "../../components/LocationPickerMap";
 import { useEffect } from "react";
-import { Building2 } from "lucide-react";
 
 export function CreateReportPage() {
   const navigate = useNavigate();

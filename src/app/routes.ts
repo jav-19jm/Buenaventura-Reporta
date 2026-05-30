@@ -9,7 +9,6 @@ import { ProfilePage } from "./pages/user/ProfilePage";
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
 import { EntityDashboard } from "./pages/entity/EntityDashboard";
 import { EntityReportDetail } from "./pages/entity/EntityReportDetail";
-import { EntitySelection } from "./pages/entity/EntitySelection";
 import { EntityLogin } from "./pages/entity/EntityLogin";
 import { EntityDashboardCustom } from "./pages/entity/EntityDashboardCustom";
 import { PublicMapPage } from "./pages/PublicMapPage";
@@ -67,10 +66,6 @@ export const router = createBrowserRouter([
   {
     path: "/admin",
     Component: AdminDashboard,
-  },
-   {
-    path: "/entity/select",
-    Component: EntitySelection,
   },
   {
     path: "/entity/login/:entityId",

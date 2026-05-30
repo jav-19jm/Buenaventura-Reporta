@@ -3,9 +3,8 @@ import { motion, AnimatePresence } from "motion/react";
 import { Card } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
 import { Badge } from "../../components/ui/Badge";
-import { Input } from "../../components/ui/Input";
 import { Textarea } from "../../components/ui/Textarea";
-import { Search, Filter, Eye, Edit, Trash2, X, MapPin, User, Calendar, MessageSquare, History, Building2 } from "lucide-react";
+import { Search, Filter, Eye, Edit, Trash2, X, MapPin, User, Calendar, MessageSquare, History, Building2, Lightbulb, TrafficCone, Droplet, Flame, Shield, Activity, AlertTriangle, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 
 import { getAdminReports, updateReportStatus, getReportMessages, updateReportMessage, deleteReportMessage } from "../../../lib/reports";
@@ -13,13 +12,91 @@ import { assignReportEntity, deleteReportAdmin, addAdminComment, getAllEntities 
 import { useAuth } from "../../../hooks/useAuth";
 import { supabase } from "../../supabase/supabase";
 
+const normalizeCategoryKey = (value?: string) => {
+  if (!value) return "";
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/_+/g, "-")
+    .replace(/[^a-z0-9-]/g, "");
+};
+
+const categoryIconMap: Record<string, { icon: any; color: string; label: string }> = {
+  luminaria: { icon: Lightbulb, color: "text-yellow-500", label: "Luminaria" },
+  alumbrado: { icon: Lightbulb, color: "text-yellow-500", label: "Alumbrado" },
+  basura: { icon: Trash2, color: "text-green-500", label: "Basura" },
+  "basura-en-via-publica": { icon: Trash2, color: "text-green-500", label: "Basura en vía pública" },
+  semaforo: { icon: TrafficCone, color: "text-orange-500", label: "Semáforo" },
+  transporte: { icon: TrafficCone, color: "text-orange-500", label: "Transporte" },
+  vias: { icon: TrafficCone, color: "text-orange-500", label: "Vías" },
+  "bache-o-dano-en-via": { icon: TrafficCone, color: "text-orange-500", label: "Bache o daño en vía" },
+  "fuga-agua": { icon: Droplet, color: "text-blue-500", label: "Fuga de agua" },
+  agua: { icon: Droplet, color: "text-blue-500", label: "Agua" },
+  incendio: { icon: Flame, color: "text-red-500", label: "Incendio" },
+  seguridad: { icon: Shield, color: "text-purple-500", label: "Seguridad" },
+  salud: { icon: Activity, color: "text-red-500", label: "Salud" },
+  "alteracion-del-orden-publico": { icon: AlertTriangle, color: "text-purple-500", label: "Alteración del orden público" },
+  "orden-publico": { icon: AlertTriangle, color: "text-purple-500", label: "Orden público" },
+  otros: { icon: HelpCircle, color: "text-gray-500", label: "Otros" },
+  otro: { icon: HelpCircle, color: "text-gray-500", label: "Otros" },
+};
+
+const getCategoryMeta = (category?: string) => {
+  const normalized = normalizeCategoryKey(category);
+
+  if (categoryIconMap[normalized]) {
+    return categoryIconMap[normalized];
+  }
+
+  if (!normalized) {
+    return { icon: HelpCircle, color: "text-gray-500", label: "Otro" };
+  }
+
+  if (normalized.includes("luminaria") || normalized.includes("alumbrado") || normalized.includes("luz")) {
+    return { icon: Lightbulb, color: "text-yellow-500", label: category! };
+  }
+
+  if (normalized.includes("basura") || normalized.includes("bache") || normalized.includes("mantenimiento") || normalized.includes("residuos")) {
+    return { icon: Trash2, color: "text-green-500", label: category! };
+  }
+
+  if (normalized.includes("semaforo") || normalized.includes("via") || normalized.includes("vial") || normalized.includes("transporte")) {
+    return { icon: TrafficCone, color: "text-orange-500", label: category! };
+  }
+
+  if (normalized.includes("agua") || normalized.includes("fuga")) {
+    return { icon: Droplet, color: "text-blue-500", label: category! };
+  }
+
+  if (normalized.includes("incendio") || normalized.includes("fuego")) {
+    return { icon: Flame, color: "text-red-500", label: category! };
+  }
+
+  if (normalized.includes("seguridad")) {
+    return { icon: Shield, color: "text-purple-500", label: category! };
+  }
+
+  if (normalized.includes("salud")) {
+    return { icon: Activity, color: "text-red-500", label: category! };
+  }
+
+  if (normalized.includes("orden") || normalized.includes("alteracion") || normalized.includes("publico")) {
+    return { icon: AlertTriangle, color: "text-purple-500", label: category! };
+  }
+
+  return { icon: HelpCircle, color: "text-gray-500", label: category! };
+};
+
 
 type ReportStatus = "pendiente" | "en_revision" | "en_proceso" | "resuelto" | "cancelado";
 
 export function ReportsManagement() {
   const [reports, setReports] = useState<any[]>([]);
   const [entities, setEntities] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<ReportStatus | "all">("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -300,10 +377,19 @@ export function ReportsManagement() {
                   <td className="py-3 px-4 text-sm text-gray-900 font-medium max-w-xs truncate">
                     {report.titulo}
                   </td>
-                  <td className="py-3 px-4">
-                    <Badge variant="outline">
-                      {report.categoria?.charAt(0).toUpperCase() + report.categoria?.slice(1)}
-                    </Badge>
+                  <td className="py-3 px-4 text-sm text-gray-700">
+                    {(() => {
+                      const categoryMeta = getCategoryMeta(report.categoria);
+                      const CategoryIcon = categoryMeta.icon;
+                      return (
+                        <div className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-sm">
+                          <span className="inline-flex h-8 w-8 min-w-[2rem] items-center justify-center rounded-full bg-white shadow-sm">
+                            <CategoryIcon className={`w-4 h-4 ${categoryMeta.color}`} />
+                          </span>
+                          <span className="font-medium text-gray-700">{categoryMeta.label}</span>
+                        </div>
+                      );
+                    })()}
                   </td>
                   <td className="py-3 px-4 text-sm text-gray-600 max-w-xs truncate">
                     {report.direccion_ubicacion}
@@ -407,6 +493,26 @@ export function ReportsManagement() {
                         <p className="text-sm text-gray-600 mb-1">Usuario</p>
                         <p className="font-medium text-gray-900">{selectedReport.perfiles?.nombre_completo || 'Usuario'}</p>
                       </div>
+                    </div>
+                  </Card>
+
+                  <Card>
+                    <div className="flex items-center gap-3">
+                      {(() => {
+                        const categoryMeta = getCategoryMeta(selectedReport.categoria);
+                        const CategoryIcon = categoryMeta.icon;
+                        return (
+                          <>
+                            <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-gray-100">
+                              <CategoryIcon className={`w-5 h-5 ${categoryMeta.color}`} />
+                            </span>
+                            <div>
+                              <p className="text-sm text-gray-600 mb-1">Categoría</p>
+                              <p className="font-medium text-gray-900">{categoryMeta.label}</p>
+                            </div>
+                          </>
+                        );
+                      })()}
                     </div>
                   </Card>
 

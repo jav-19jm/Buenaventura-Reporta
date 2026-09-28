@@ -1,13 +1,16 @@
 import { createContext, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
-import { getToken, setToken } from '../api/client';
+import { AUTH_EXPIRED_EVENT, getToken, setToken } from '../api/client';
 import { getMe, signIn, signOut } from '../api/auth';
 import type { Perfil } from '../types';
 
 // ==========================================
 // CONTEXTO DE AUTENTICACIÓN
 // Guarda el perfil del usuario autenticado y expone los permisos por rol.
+// Las reglas (correo verificado, cuenta activa) las valida el backend.
 // ==========================================
+
+export type LoginResult = { profile: Perfil | null; error: string | null; code?: string };
 
 export type AuthContextValue = {
   /** Perfil autenticado (id, email, rol...). null si no hay sesión */
@@ -18,21 +21,12 @@ export type AuthContextValue = {
   isAdmin: boolean;
   isEntity: boolean;
   isCitizen: boolean;
-  login: (email: string, password: string) => Promise<{ profile: Perfil | null; error: string | null }>;
+  login: (email: string, password: string) => Promise<LoginResult>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 };
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
-
-function notifyBlockedAccount(profile: Perfil) {
-  const motive = profile.motivo_bloqueo || 'No se especificó un motivo.';
-  const statusLabel = profile.estado === 'suspendido' ? 'suspendida' : 'bloqueada';
-  toast.error(`Cuenta ${statusLabel}`, {
-    description: `${motive}. Si crees que es un error, contacta a los administradores.`,
-    duration: 6000,
-  });
-}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Perfil | null>(null);
@@ -50,24 +44,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // Si el token expiró, el interceptor lo renueva; si la cuenta está bloqueada, cierra la sesión
     const { data } = await getMe();
-    if (data && data.estado !== 'activo') {
-      notifyBlockedAccount(data);
-      await logout();
-    } else {
-      setProfile(data);
-    }
+    setProfile(data);
     setLoading(false);
-  }, [logout]);
+  }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
-    const { data, error } = await signIn(email, password);
-    if (error || !data) return { profile: null, error: error ?? 'No se pudo iniciar sesión' };
-
-    if (data.user.estado !== 'activo') {
-      notifyBlockedAccount(data.user);
-      return { profile: null, error: 'Cuenta no activa' };
-    }
+  const login = useCallback(async (email: string, password: string): Promise<LoginResult> => {
+    const { data, error, code } = await signIn(email, password);
+    if (error || !data) return { profile: null, error: error ?? 'No se pudo iniciar sesión', code };
 
     setToken(data.token);
     setProfile(data.user);
@@ -77,10 +62,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     refreshProfile();
 
-    // El interceptor de Axios emite este evento cuando el backend responde 401
-    const onExpired = () => setProfile(null);
-    window.addEventListener('auth:expired', onExpired);
-    return () => window.removeEventListener('auth:expired', onExpired);
+    // El interceptor de Axios emite este evento cuando la sesión deja de ser válida
+    const onExpired = (event: Event) => {
+      setProfile(null);
+      const message = (event as CustomEvent<string | undefined>).detail;
+      if (message) toast.error('Sesión finalizada', { description: message, duration: 6000 });
+    };
+    window.addEventListener(AUTH_EXPIRED_EVENT, onExpired);
+    return () => window.removeEventListener(AUTH_EXPIRED_EVENT, onExpired);
   }, [refreshProfile]);
 
   const value = useMemo<AuthContextValue>(

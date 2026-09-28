@@ -17,13 +17,14 @@ export function UpdatePasswordPage() {
   // El enlace del correo debe traer el token de recuperación (?token=...)
   const [searchParams] = useSearchParams();
   const resetToken = searchParams.get("token");
+  const resetEmail = searchParams.get("email");
 
   useEffect(() => {
-    if (!resetToken) {
+    if (!resetToken || !resetEmail) {
       toast.error("El enlace ha expirado o es inválido.");
       navigate("/login");
     }
-  }, [resetToken, navigate]);
+  }, [resetToken, resetEmail, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,15 +34,15 @@ export function UpdatePasswordPage() {
       return;
     }
 
-    if (password.length < 6) {
-      toast.error("La contraseña debe tener al menos 6 caracteres.");
+    if (password.length < 8) {
+      toast.error("La contraseña debe tener al menos 8 caracteres.");
       return;
     }
 
     setLoading(true);
 
     try {
-      const { error } = await updatePassword(password);
+      const { error } = await updatePassword(resetToken ?? "", resetEmail ?? "", password);
 
       if (error) {
         toast.error(error);

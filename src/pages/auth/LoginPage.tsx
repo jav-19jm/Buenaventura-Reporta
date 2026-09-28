@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
@@ -8,6 +8,7 @@ import { WelcomeAnimation } from "../../components/common/animations/WelcomeAnim
 import { useAuth } from "../../hooks/useAuth";
 import { homePathForRole } from "../../components/common/ProtectedRoute";
 import { toast } from "sonner";
+import { resendVerificationEmail } from "../../api/auth";
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -18,6 +19,26 @@ export function LoginPage() {
     password: "",
   });
   const { isAuthenticated, profile, loading: authLoading, login } = useAuth();
+
+  // Resultado del enlace de confirmación del correo (/login?verificado=ok|invalido)
+  const [searchParams, setSearchParams] = useSearchParams();
+  useEffect(() => {
+    const verificado = searchParams.get("verificado");
+    if (!verificado) return;
+
+    if (verificado === "ok") {
+      toast.success("¡Correo verificado! Ya puedes iniciar sesión.");
+    } else {
+      toast.error("El enlace de verificación no es válido o expiró. Inicia sesión para recibir uno nuevo.");
+    }
+    setSearchParams({}, { replace: true });
+  }, [searchParams, setSearchParams]);
+
+  const handleResendVerification = async () => {
+    const { error } = await resendVerificationEmail(formData.email);
+    if (error) toast.error(error);
+    else toast.success("Te enviamos un nuevo correo de confirmación.");
+  };
 
   // Evita redirigir antes de mostrar la animación de bienvenida tras un login desde este formulario
   const loggingIn = useRef(false);
@@ -35,13 +56,14 @@ export function LoginPage() {
 
     try {
       loggingIn.current = true;
-      const { profile: loggedProfile, error } = await login(formData.email, formData.password);
+      const { profile: loggedProfile, error, code } = await login(formData.email, formData.password);
 
       if (error) {
-        if (error.includes("Email not confirmed")) {
-          toast.error("Tu correo electrónico aún no ha sido verificado. Por favor, revisa tu bandeja de entrada.");
-        } else if (error.includes("Invalid login credentials")) {
-          toast.error("Credenciales incorrectas. Por favor, verifica tu correo y contraseña.");
+        if (code === "correo_no_verificado") {
+          toast.error(error, {
+            duration: 10000,
+            action: { label: "Reenviar correo", onClick: handleResendVerification },
+          });
         } else {
           toast.error(error);
         }

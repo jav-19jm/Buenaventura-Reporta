@@ -97,7 +97,7 @@ export function EntityReportDetail() {
     e.preventDefault();
     if (!newMessage.trim() || !id) return;
 
-    const { error } = await createReportMessage(id, newMessage, 'entidad');
+    const { error } = await createReportMessage(id, newMessage);
 
     if (error) {
       toast.error("Error al enviar mensaje");

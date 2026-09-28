@@ -85,6 +85,7 @@ export interface Mensaje {
   tipo_remitente: 'usuario' | 'entidad' | 'moderador';
   mensaje: string;
   fecha_creacion: string;
+  perfiles?: Pick<Perfil, 'nombre_completo' | 'url_avatar' | 'rol'> | null;
 }
 
 export interface Notificacion {
@@ -104,11 +105,12 @@ export interface Noticia {
   titulo: string;
   contenido: string;
   url_imagen: string | null;
+  categoria: string | null;
   esta_publicada: boolean;
   fecha_publicacion: string | null;
   fecha_creacion: string;
   fecha_actualizacion: string;
-  entidades?: Entidad;
+  entidades?: Pick<Entidad, 'id' | 'nombre' | 'slug' | 'color' | 'logo_url'> | null;
 }
 
 export interface HistorialReporte {

@@ -1,4 +1,4 @@
-import { pendingRead, pendingWrite, NOT_MIGRATED, type ApiResult } from './client';
+import { api, pendingRead, pendingWrite, toResult, NOT_MIGRATED, type ApiResult } from './client';
 import type { Entidad, EstadoUsuario, Noticia, Perfil, Reporte, RolUsuario, Servicio, TipoEntidad } from '../types';
 
 // ==========================================
@@ -27,9 +27,9 @@ export async function updateUserRole(_userId: string, _rol: RolUsuario | string)
 
 export type EntidadForm = Omit<Partial<Entidad>, "tipo"> & { tipo?: TipoEntidad | string; password?: string };
 
-/** GET /entities — ordenadas por nombre */
+/** GET /entities — entidades activas ordenadas por nombre (pendiente: listado admin con inactivas) */
 export async function getAllEntities(): Promise<ApiResult<Entidad[]>> {
-  return pendingRead<Entidad[]>([]);
+  return toResult(api.get('/entities'));
 }
 
 /**
@@ -117,7 +117,7 @@ export async function getAdminStats(): Promise<ApiResult<AdminStats>> {
 
 /** GET /services — servicios activos */
 export async function getAllServices(): Promise<ApiResult<Servicio[]>> {
-  return pendingRead<Servicio[]>([]);
+  return toResult(api.get('/services'));
 }
 
 /** POST /admin/services — notifica a los ciudadanos del nuevo servicio */

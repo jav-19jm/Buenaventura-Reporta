@@ -1,4 +1,4 @@
-import { api, NOT_MIGRATED, pendingRead, setToken, toResult, type ApiResult } from './client';
+import { api, setToken, toResult, type ApiResult } from './client';
 import type { Perfil } from '../types';
 
 // ==========================================
@@ -51,15 +51,22 @@ export async function updatePassword(token: string, email: string, newPassword: 
 }
 
 // ==========================================
-// PERFIL (pendiente de migrar al módulo de usuarios)
+// PERFIL
 // ==========================================
 
-/** Perfil público de un usuario. GET /users/{id} */
-export async function getUserProfile(_userId: string): Promise<ApiResult<Perfil>> {
-  return pendingRead<Perfil>();
+/**
+ * GET /users/{id} — el propio usuario recibe su perfil completo; para los demás
+ * solo llegan los datos públicos (sin correo ni teléfono).
+ */
+export async function getUserProfile(userId: string): Promise<ApiResult<Perfil>> {
+  return toResult(api.get(`/users/${userId}`));
 }
 
-/** Subir avatar. POST /users/me/avatar (multipart) -> { url } y actualiza users.url_avatar */
-export async function uploadAvatar(_file: File, _userId: string): Promise<{ url: string | null; error: string | null }> {
-  return { url: null, error: NOT_MIGRATED };
+/** POST /users/me/avatar (multipart) -> { url, user } */
+export async function uploadAvatar(file: File, _userId: string): Promise<{ url: string | null; error: string | null }> {
+  const form = new FormData();
+  form.append('avatar', file);
+
+  const { data, error } = await toResult<{ url: string }>(api.post('/users/me/avatar', form));
+  return { url: data?.url ?? null, error };
 }

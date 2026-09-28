@@ -21,7 +21,9 @@ export function ReportDetailPage() {
   const [newMessage, setNewMessage] = useState("");
   
   const [messages, setMessages] = useState<any[]>([]);
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  // Motivo por el que el chat no está disponible (sin sesión o sin permiso)
+  const [chatError, setChatError] = useState<string | null>(null);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
 
@@ -32,6 +34,11 @@ export function ReportDetailPage() {
     }
   }, [id]);
 
+  // El chat depende de la sesión: se carga cuando el reporte y la sesión están listos
+  useEffect(() => {
+    if (report && !authLoading) refreshMessages();
+  }, [report?.id, user?.id, authLoading]);
+
   const loadReport = async () => {
     setLoading(true);
     try {
@@ -40,7 +47,6 @@ export function ReportDetailPage() {
         toast.error("Error al cargar el reporte");
       } else if (data) {
         setReport(data as unknown as Reporte);
-        refreshMessages();
       }
     } catch (error) {
       console.error("Error loading report details:", error);
@@ -69,7 +75,14 @@ export function ReportDetailPage() {
 
   const refreshMessages = async () => {
     if (!id) return;
-    const { data: dbMessages } = await getReportMessages(id);
+    if (!user) {
+      setMessages([]);
+      setChatError("Inicia sesión para ver la comunicación de este reporte.");
+      return;
+    }
+
+    const { data: dbMessages, error } = await getReportMessages(id);
+    setChatError(error ? "El chat de seguimiento solo está disponible para quien creó el reporte, la entidad asignada y la administración." : null);
     if (dbMessages) {
       const formattedMessages = dbMessages.map((m: any) => {
         let senderType = 'user';
@@ -246,6 +259,10 @@ export function ReportDetailPage() {
                   Comunicación con la Entidad
                 </h3>
 
+                {chatError ? (
+                  <p className="text-sm text-gray-500 bg-gray-50 rounded-lg p-4">{chatError}</p>
+                ) : (
+                <>
                 <div className="space-y-4 mb-6 max-h-96 overflow-y-auto pr-2">
                   {messages.map((msg) => (
                     <motion.div
@@ -343,6 +360,8 @@ export function ReportDetailPage() {
                     </Button>
                   </div>
                 </form>
+                </>
+                )}
               </Card>
             </motion.div>
           </div>

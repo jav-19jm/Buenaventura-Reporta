@@ -1,9 +1,10 @@
-import { pendingRead, pendingWrite, NOT_MIGRATED, type ApiResult } from './client';
-import type { Entidad, Perfil, Reporte } from '../types';
+import { api, toResult, type ApiResult } from './client';
+import type { Entidad, Reporte } from '../types';
 
 // ==========================================
 // PANEL DE ENTIDADES INSTITUCIONALES (rol 'entidad')
-// Cada función indica el comportamiento que debe cubrir el backend.
+// Todas las rutas /entity actúan sobre la entidad vinculada a la cuenta
+// autenticada (users.id_entidad); el backend no acepta otro id.
 // ==========================================
 
 export type EntityStats = {
@@ -18,59 +19,53 @@ export type EntityStats = {
 export type ActividadEntidad = {
   id: string;
   id_entidad: string;
-  tipo_accion: string;
+  tipo_accion: 'auth' | 'update' | 'reporte' | string;
   titulo: string;
   descripcion: string;
   fecha_creacion: string;
 };
 
-/** GET /entities/{id} */
-export async function getEntityById(_entityId: string): Promise<ApiResult<Entidad>> {
-  return pendingRead<Entidad>();
+/** GET /entity — entidad de la cuenta autenticada */
+export async function getMyEntity(): Promise<ApiResult<Entidad>> {
+  return toResult(api.get('/entity'));
+}
+
+/** GET /entity/reports — reportes asignados a la entidad, con su autor (perfiles) */
+export async function getEntityReports(): Promise<ApiResult<Reporte[]>> {
+  return toResult(api.get('/entity/reports'));
+}
+
+/** GET /entity/stats — conteo de reportes asignados por estado */
+export async function getEntityStats(): Promise<ApiResult<EntityStats>> {
+  return toResult(api.get('/entity/stats'));
 }
 
 /**
- * GET /entities/{id}/reports?category= — reportes asignados a la entidad
- * (o de su categoría, si se envía) con perfiles(nombre_completo, email).
+ * PATCH /reports/{id}/status — la entidad asignada cambia el estado; al pasar a
+ * "resuelto" el backend suma reportes_resueltos al autor y le notifica.
  */
-export async function getEntityReports(_entityId: string, _category?: string): Promise<ApiResult<(Reporte & { perfil?: Perfil })[]>> {
-  return pendingRead<(Reporte & { perfil?: Perfil })[]>([]);
+export async function updateReportStatus(reportId: string, estado: string): Promise<ApiResult<Reporte>> {
+  return toResult(api.patch(`/reports/${reportId}/status`, { estado }));
 }
 
-/** GET /entities/{id}/stats — conteo de reportes asignados por estado */
-export async function getEntityStats(_entityId: string): Promise<ApiResult<EntityStats>> {
-  return pendingRead<EntityStats>();
+/** PUT /entity — datos de contacto y presentación (descripción, teléfono, sitio web, color) */
+export async function updateEntityDetails(updates: Partial<Pick<Entidad, 'descripcion' | 'telefono' | 'sitio_web' | 'color'>>): Promise<ApiResult<Entidad>> {
+  return toResult(api.put('/entity', updates));
 }
 
-/** GET /entities — todas las entidades */
-export async function getAllEntities(): Promise<ApiResult<Entidad[]>> {
-  return pendingRead<Entidad[]>([]);
+/** POST /entity/logo (multipart) -> { url } */
+export async function uploadEntityLogo(file: File): Promise<{ url: string | null; error: string | null }> {
+  const form = new FormData();
+  form.append('logo', file);
+
+  const { data, error } = await toResult<{ url: string }>(api.post('/entity/logo', form));
+  return { url: data?.url ?? null, error };
 }
 
 /**
- * PATCH /entity/reports/{id}/status { estado } — al pasar a 'resuelto' incrementa
- * perfiles.reportes_resueltos del creador y le envía una notificación.
+ * GET /entity/activity — últimas 50 acciones de auditoría. El backend las registra
+ * solo (inicios de sesión, cambios de estado, asignaciones y cambios de perfil).
  */
-export async function updateReportStatus(_reportId: string, _estado: string): Promise<ApiResult<Reporte>> {
-  return pendingWrite();
-}
-
-/** PUT /entities/{id} — datos de perfil de la entidad (descripción, sitio web, color, logo...) */
-export async function updateEntityDetails(_entityId: string, _updates: Partial<Entidad>): Promise<ApiResult<Entidad>> {
-  return pendingWrite();
-}
-
-/** POST /entities/{id}/logo (multipart) -> { url } y actualiza entidades.logo_url */
-export async function uploadEntityLogo(_entityId: string, _file: File): Promise<{ url: string | null; error: string | null }> {
-  return { url: null, error: NOT_MIGRATED };
-}
-
-/** GET /entities/{id}/activity — últimas 50 acciones de auditoría */
-export async function getEntityActivity(_entityId: string): Promise<ApiResult<ActividadEntidad[]>> {
-  return pendingRead<ActividadEntidad[]>([]);
-}
-
-/** POST /entities/{id}/activity { tipo_accion, titulo, descripcion } */
-export async function logEntityActivity(_entityId: string, _tipoAccion: string, _titulo: string, _descripcion: string): Promise<{ error: string | null }> {
-  return { error: NOT_MIGRATED };
+export async function getEntityActivity(): Promise<ApiResult<ActividadEntidad[]>> {
+  return toResult(api.get('/entity/activity'));
 }

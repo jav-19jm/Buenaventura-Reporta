@@ -7,7 +7,7 @@ import { Textarea } from "../../components/ui/Textarea";
 import { IncidentTypeSelector } from "../../components/user/IncidentTypeSelector";
 import { MapPin, Camera, ArrowLeft, Upload, Plus } from "lucide-react";
 import { createReport, uploadReportImage, getReportCategories } from "../../api/reports";
-import { getAllEntities } from "../../api/admin";
+import { getActiveEntities } from "../../api/catalog";
 import { useAuth } from "../../hooks/useAuth";
 import { toast } from "sonner";
 import { LocationPickerMap } from "../../components/common/LocationPickerMap";
@@ -37,7 +37,7 @@ export function CreateReportPage() {
       try {
         const [catsRes, entsRes] = await Promise.all([
           getReportCategories(),
-          getAllEntities()
+          getActiveEntities()
         ]);
 
         if (catsRes.data) setCategories(catsRes.data);

@@ -116,8 +116,8 @@ export function EntitiesManagement() {
       }
       toast.success("Entidad actualizada correctamente");
     } else {
-      if (!formData.password || formData.password.length < 6) {
-        toast.error("La contraseña debe tener al menos 6 caracteres");
+      if (!formData.password || formData.password.length < 8) {
+        toast.error("La contraseña debe tener al menos 8 caracteres");
         return;
       }
 

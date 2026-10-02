@@ -131,19 +131,3 @@ export async function toResult<T>(request: Promise<{ data: T }>): Promise<ApiRes
     return { data: null, error: getErrorMessage(error), code };
   }
 }
-
-// ==========================================
-// STUBS TEMPORALES MIENTRAS SE CONSTRUYE EL BACKEND
-// ==========================================
-
-export const NOT_MIGRATED = 'Funcionalidad pendiente de migrar al backend';
-
-/** Lectura aún sin endpoint: devuelve un valor vacío para que la UI muestre su estado vacío */
-export function pendingRead<T>(emptyValue: T | null = null): Promise<ApiResult<T>> {
-  return Promise.resolve({ data: emptyValue, error: null });
-}
-
-/** Escritura aún sin endpoint: devuelve un error explícito para que la UI lo notifique */
-export function pendingWrite<T = never>(): Promise<ApiResult<T>> {
-  return Promise.resolve({ data: null, error: NOT_MIGRATED });
-}

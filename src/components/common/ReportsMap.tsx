@@ -5,7 +5,7 @@ import type { Reporte } from "../../types";
 import { Badge } from "../ui/Badge";
 import { ThumbsUp, ThumbsDown, ExternalLink, Image as ImageIcon } from "lucide-react";
 import { voteReport } from "../../api/reports";
-import { getAllServices } from "../../api/admin";
+import { getActiveServices } from "../../api/catalog";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Phone, Clock, MapPin as MapPinIcon } from "lucide-react";
@@ -141,7 +141,7 @@ export function ReportsMap({ reports, onVote, showServices = true }: ReportsMapP
   }, [showServices]);
 
   const fetchServices = async () => {
-    const { data } = await getAllServices();
+    const { data } = await getActiveServices();
     if (data) {
       setServices(data.filter((s: any) => s.esta_activo));
     }

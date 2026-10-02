@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { useAuth } from "../../hooks/useAuth";
-import { getEntityReports, getEntityStats, getEntityById, updateEntityDetails, uploadEntityLogo, getAllEntities, getEntityActivity, logEntityActivity } from "../../api/entities";
+import { getEntityReports, getEntityStats, getMyEntity, updateEntityDetails, uploadEntityLogo, getEntityActivity } from "../../api/entities";
 import { toast } from "sonner";
 import { NotificationBell } from "../../components/common/NotificationBell";
 
@@ -45,66 +45,26 @@ export function EntityDashboard() {
     }
   }, [profile, user, authLoading, isEntity]);
 
+  // La entidad se resuelve en el backend a partir de la cuenta autenticada (users.id_entidad)
   const loadEntityData = async () => {
     setLoading(true);
     try {
-      let currentEntityId = profile?.id_entidad;
-      let currentEntity = null;
-      const userEmail = profile?.email || user?.email;
-
-      // 1. Intentar obtener por ID de entidad en el perfil
-      if (currentEntityId) {
-        const { data: entity } = await getEntityById(currentEntityId);
-        currentEntity = entity;
+      const { data: entity, error } = await getMyEntity();
+      if (error || !entity) {
+        toast.error(error ?? "Tu cuenta no está vinculada a ninguna entidad.");
+        return;
       }
+      setEntityData(entity);
 
-      // 2. Fallback: Intentar obtener por Email si no hay ID vinculado o falló la carga
-      if (!currentEntity && userEmail) {
-        const { data: entities } = await getAllEntities();
-        // Búsqueda por email insensible a mayúsculas
-        currentEntity = entities?.find(e =>
-          e.email?.toLowerCase() === userEmail.toLowerCase()
-        ) || null;
+      const [reportsRes, statsRes, activityRes] = await Promise.all([
+        getEntityReports(),
+        getEntityStats(),
+        getEntityActivity(),
+      ]);
 
-        if (currentEntity) {
-          currentEntityId = currentEntity.id;
-        }
-      }
-
-      setEntityData(currentEntity);
-
-      // 3. Obtener reportes vinculados (por ID o por Categoría de la entidad)
-      // Usamos el ID encontrado o un ID inexistente para que al menos filtre por categoría
-      const queryId = currentEntityId || '00000000-0000-0000-0000-000000000000';
-      const { data: reportsData } = await getEntityReports(queryId, currentEntity?.tipo);
-
-      if (reportsData) {
-        setReports(reportsData);
-      }
-
-      // 4. Obtener estadísticas y actividad
-      if (currentEntityId) {
-        const { data: statsData } = await getEntityStats(currentEntityId);
-        if (statsData) {
-          setStats(statsData);
-        }
-
-        // 5. Registrar login (solo una vez por sesión) y cargar actividad
-        if (!sessionStorage.getItem('entity_logged_in_recorded')) {
-          await logEntityActivity(currentEntityId, 'auth', 'Inicio de sesión exitoso', 'Se accedió al panel institucional');
-          sessionStorage.setItem('entity_logged_in_recorded', 'true');
-        }
-
-        const { data: activityData } = await getEntityActivity(currentEntityId);
-        if (activityData) {
-          setActivityLogs(activityData);
-        }
-      }
-
-      if (!currentEntity) {
-        console.warn('⚠️ No se pudo vincular el perfil con ninguna entidad del sistema.');
-      }
-
+      if (reportsRes.data) setReports(reportsRes.data);
+      if (statsRes.data) setStats(statsRes.data);
+      if (activityRes.data) setActivityLogs(activityRes.data);
     } catch (error) {
       console.error('Error cargando datos de entidad:', error);
       toast.error('Error al cargar datos de la entidad');
@@ -112,6 +72,7 @@ export function EntityDashboard() {
       setLoading(false);
     }
   };
+
 
 
   const activityData = [
@@ -152,7 +113,7 @@ export function EntityDashboard() {
 
     const toastId = toast.loading("Subiendo logo...");
     try {
-      const { url, error } = await uploadEntityLogo(entityData.id, file);
+      const { url, error } = await uploadEntityLogo(file);
       if (error) throw new Error(error);
 
       setEntityData({ ...entityData, logo_url: url });
@@ -169,12 +130,12 @@ export function EntityDashboard() {
 
     if (!entityData?.id) return;
     try {
-      const { error } = await updateEntityDetails(entityData.id, { sitio_web: website });
-      if (error) throw error;
+      const { error } = await updateEntityDetails({ sitio_web: website || null });
+      if (error) throw new Error(error);
       setEntityData({ ...entityData, sitio_web: website });
       toast.success("Sitio web actualizado");
     } catch (error: any) {
-      toast.error("Error al actualizar el sitio web");
+      toast.error(error.message || "Error al actualizar el sitio web");
     }
   };
 

@@ -1,5 +1,4 @@
 import { Building2, Hospital, School, Bus, Shield, Info, TreePalm } from "lucide-react";
-import React from "react";
 
 export const SERVICE_TYPES = [
   { id: "salud", label: "Salud", icon: Hospital, color: "red" },

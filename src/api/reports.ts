@@ -1,4 +1,4 @@
-import { api, pendingRead, pendingWrite, toResult, type ApiResult } from './client';
+import { api, toResult, type ApiResult } from './client';
 import type { CategoriaReporte, EstadoReporte, Mensaje, Noticia, PrioridadReporte, Reporte } from '../types';
 
 // ==========================================
@@ -29,9 +29,9 @@ export async function getPublicReports(): Promise<ApiResult<Reporte[]>> {
   return toResult(api.get('/reports'));
 }
 
-/** GET /admin/reports — todos los reportes (incluidos los ocultos) con perfil y entidad */
+/** GET /admin/reports — todos los reportes (incluidos los ocultos) con autor y entidad */
 export async function getAdminReports(): Promise<ApiResult<Reporte[]>> {
-  return pendingRead<Reporte[]>([]);
+  return toResult(api.get('/admin/reports'));
 }
 
 /** GET /users/me/reports — reportes visibles del usuario autenticado */
@@ -45,8 +45,8 @@ export async function getReportById(reportId: string): Promise<ApiResult<Reporte
 }
 
 /** PATCH /reports/{id}/status { estado } — registra el cambio en historial_reportes */
-export async function updateReportStatus(_reportId: string, _estado: EstadoReporte): Promise<ApiResult<Reporte>> {
-  return pendingWrite();
+export async function updateReportStatus(reportId: string, estado: EstadoReporte): Promise<ApiResult<Reporte>> {
+  return toResult(api.patch(`/reports/${reportId}/status`, { estado }));
 }
 
 /** DELETE /reports/{id} — solo el autor; borrado lógico (visible = false) */

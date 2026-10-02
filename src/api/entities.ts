@@ -1,4 +1,4 @@
-import { pendingRead, pendingWrite, NOT_MIGRATED, type ApiResult } from './client';
+import { api, pendingRead, pendingWrite, toResult, NOT_MIGRATED, type ApiResult } from './client';
 import type { Entidad, Perfil, Reporte } from '../types';
 
 // ==========================================
@@ -48,11 +48,11 @@ export async function getAllEntities(): Promise<ApiResult<Entidad[]>> {
 }
 
 /**
- * PATCH /entity/reports/{id}/status { estado } — al pasar a 'resuelto' incrementa
+ * PATCH /reports/{id}/status { estado } — la entidad asignada cambia el estado; al pasar a "resuelto" incrementa
  * perfiles.reportes_resueltos del creador y le envía una notificación.
  */
-export async function updateReportStatus(_reportId: string, _estado: string): Promise<ApiResult<Reporte>> {
-  return pendingWrite();
+export async function updateReportStatus(reportId: string, estado: string): Promise<ApiResult<Reporte>> {
+  return toResult(api.patch(`/reports/${reportId}/status`, { estado }));
 }
 
 /** PUT /entities/{id} — datos de perfil de la entidad (descripción, sitio web, color, logo...) */

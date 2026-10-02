@@ -4,7 +4,7 @@ import { Building2, Search, Info, Phone, Clock } from "lucide-react";
 import { Card } from "../ui/Card";
 import { Input } from "../ui/Input";
 import { Badge } from "../ui/Badge";
-import { getAllServices } from "../../api/admin";
+import { getActiveServices } from "../../api/catalog";
 import type { Servicio } from "../../types";
 
 import { SERVICE_TYPES } from "../../lib/service-types";
@@ -28,7 +28,7 @@ export function CityServicesFilter() {
     async function loadServices() {
       setLoading(true);
       try {
-        const { data, error } = await getAllServices();
+        const { data, error } = await getActiveServices();
         if (error) throw new Error(error);
         if (data) setServices(data.filter((s: Servicio) => s.esta_activo));
       } catch (error) {

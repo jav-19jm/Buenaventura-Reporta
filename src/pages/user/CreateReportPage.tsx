@@ -5,7 +5,7 @@ import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { Textarea } from "../../components/ui/Textarea";
 import { IncidentTypeSelector } from "../../components/user/IncidentTypeSelector";
-import { MapPin, Camera, ArrowLeft, Upload, Plus } from "lucide-react";
+import { MapPin, Camera, Upload } from "lucide-react";
 import { createReport, uploadReportImage, getReportCategories } from "../../api/reports";
 import { getActiveEntities } from "../../api/catalog";
 import { useAuth } from "../../hooks/useAuth";
@@ -132,28 +132,7 @@ export function CreateReportPage() {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="min-h-screen bg-gray-50"
     >
-      {/* Header */}
-      <header className="bg-brand-gradient-deep shadow-md sticky top-0 z-10">
-        <div className="px-4 py-3 flex items-center gap-4">
-          <Link to="/user">
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              className="p-2 hover:bg-white/20 rounded-lg text-white"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </motion.button>
-          </Link>
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center border border-white/30">
-              <Plus className="w-5 h-5 text-white" />
-            </div>
-            <h1 className="font-bold text-white">Nuevo Reporte</h1>
-          </div>
-        </div>
-      </header>
 
       {/* Form */}
       <div className="max-w-3xl mx-auto px-4 py-8">

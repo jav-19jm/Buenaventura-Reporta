@@ -3,6 +3,7 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import type { Reporte } from "../../types";
 import { Badge } from "../ui/Badge";
+import { getReportStatus } from "../../lib/report-status";
 import { ThumbsUp, ThumbsDown, ExternalLink, Image as ImageIcon } from "lucide-react";
 import { voteReport } from "../../api/reports";
 import { getActiveServices } from "../../api/catalog";
@@ -168,19 +169,7 @@ export function ReportsMap({ reports, onVote, showServices = true }: ReportsMapP
 
           if (!lat || !lng) return null;
 
-          const statusVariant = {
-            pendiente: "warning" as const,
-            en_revision: "info" as const,
-            resuelto: "success" as const,
-          };
-
-          const statusLabel = {
-            pendiente: "Pendiente",
-            en_revision: "En Revisión",
-            en_proceso: "En Proceso",
-            resuelto: "Solucionado",
-            cancelado: "Cancelado"
-          };
+          const status = getReportStatus(report.estado);
 
           return (
             <Marker
@@ -205,9 +194,7 @@ export function ReportsMap({ reports, onVote, showServices = true }: ReportsMapP
                       </div>
                     )}
                     <div className="absolute top-2 right-2">
-                      <Badge variant={statusVariant[report.estado as keyof typeof statusVariant] || "warning"}>
-                        {statusLabel[report.estado as keyof typeof statusLabel] || "Desconocido"}
-                      </Badge>
+                      <Badge variant={status.variant}>{status.label}</Badge>
                     </div>
                   </div>
 

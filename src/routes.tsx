@@ -16,6 +16,10 @@ import { CreateReportPage } from "./pages/user/CreateReportPage";
 import { ReportDetailPage } from "./pages/user/ReportDetailPage";
 import { ProfilePage } from "./pages/user/ProfilePage";
 import { NewsPage } from "./pages/user/NewsPage";
+import { UserMapPage } from "./pages/user/UserMapPage";
+import { MyReportsPage } from "./pages/user/MyReportsPage";
+import { ServicesPage } from "./pages/user/ServicesPage";
+import { UserLayout } from "./components/user/layout/UserLayout";
 
 // Administrador
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
@@ -40,10 +44,19 @@ export const router = createBrowserRouter([
   {
     Component: ProtectedRoute,
     children: [
-      { path: "/user", Component: UserDashboard },
-      { path: "/user/news", Component: NewsPage },
-      { path: "/report/new", Component: CreateReportPage },
-      { path: "/profile", Component: ProfilePage },
+      {
+        // Menú lateral en escritorio y pestañas inferiores en celular
+        Component: UserLayout,
+        children: [
+          { path: "/user", Component: UserDashboard },
+          { path: "/user/map", Component: UserMapPage },
+          { path: "/user/reports", Component: MyReportsPage },
+          { path: "/user/news", Component: NewsPage },
+          { path: "/user/services", Component: ServicesPage },
+          { path: "/report/new", Component: CreateReportPage },
+          { path: "/profile", Component: ProfilePage },
+        ],
+      },
     ],
   },
 

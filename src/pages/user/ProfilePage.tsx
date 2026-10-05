@@ -5,7 +5,7 @@ import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import { ReportCard } from "../../components/user/ReportCard";
-import { ArrowLeft, User, Award, TrendingUp, MapPin, LogOut, Bell, FileText, ThumbsUp, ThumbsDown, Trash2, Camera } from "lucide-react";
+import { Award, TrendingUp, MapPin, LogOut, Bell, FileText, ThumbsUp, ThumbsDown, Trash2, Camera } from "lucide-react";
 import { LogoutAnimation } from "../../components/common/animations/LogoutAnimation";
 import { useAuth } from "../../hooks/useAuth";
 import { getUserReports, deleteReport } from "../../api/reports";
@@ -101,13 +101,14 @@ export function ProfilePage() {
 
   const [notifications, setNotifications] = useState<any[]>([]);
 
-  const handleLogout = async () => {
-    await logout();
+  // Primero la animación; al terminar se cierra la sesión y se vuelve al inicio
+  const handleLogout = () => {
     setShowLogout(true);
   };
 
-  const handleLogoutComplete = () => {
-    navigate("/");
+  const handleLogoutComplete = async () => {
+    await logout();
+    navigate("/", { replace: true });
   };
 
   const handleDeleteReport = async (reportId: string) => {
@@ -174,22 +175,7 @@ export function ProfilePage() {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="min-h-screen bg-gray-50"
       >
-        {/* Header */}
-        <header className="bg-white shadow-sm sticky top-0 z-10">
-          <div className="px-4 py-3 flex items-center gap-4">
-            <Link to="/user">
-              <button className="p-2 hover:bg-gray-100 rounded-lg">
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-            </Link>
-            <div className="flex items-center gap-2">
-              <User className="w-5 h-5 text-gray-600" />
-              <h1 className="font-bold text-gray-900">Mi Perfil</h1>
-            </div>
-          </div>
-        </header>
 
         {/* Content */}
         <div className="max-w-6xl mx-auto px-4 py-8">

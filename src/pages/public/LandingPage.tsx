@@ -13,7 +13,6 @@ import {
   Trash2,
   TrafficCone,
   Droplet,
-  Phone,
   Menu,
   X,
   ArrowRight,

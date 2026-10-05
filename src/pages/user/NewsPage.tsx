@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
-import { Newspaper, Clock, ArrowLeft, X, Search, Filter } from "lucide-react";
+import { Newspaper, Clock, X, Search, Filter } from "lucide-react";
 import { Card } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
@@ -37,27 +36,7 @@ export function NewsPage() {
   }, [searchTerm, news]);
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-12">
-      {/* Header */}
-      <header className="bg-brand-gradient-deep shadow-md sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link to="/user">
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                className="p-2 hover:bg-white/20 rounded-lg text-white transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </motion.button>
-            </Link>
-            <div className="flex items-center gap-2 text-white">
-              <Newspaper className="w-6 h-6" />
-              <h1 className="text-xl font-bold">Todas las Noticias</h1>
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className="pb-12">
 
       <main className="max-w-7xl mx-auto px-4 mt-8">
         {/* Search and Filters */}

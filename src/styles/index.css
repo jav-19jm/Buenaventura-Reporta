@@ -21,6 +21,11 @@ html {
   }
 }
 
+/* Vista previa del mapa (no interactiva): sin controles de zoom */
+.map-preview .leaflet-control-zoom {
+  display: none;
+}
+
 /* Custom styles for Leaflet popups */
 .report-popup .leaflet-popup-content-wrapper {
   padding: 0;

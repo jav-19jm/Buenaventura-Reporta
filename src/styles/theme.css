@@ -118,6 +118,17 @@
   --color-sun-700: #935a0a;
   --color-sun-800: #794810;
   --color-sun-900: #673c12;
+
+  --animate-marquee: marquee 60s linear infinite;
+
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
 }
 
 /* Degradados de marca */

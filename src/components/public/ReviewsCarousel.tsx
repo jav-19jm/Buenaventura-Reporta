@@ -1,6 +1,4 @@
-import { motion } from "motion/react";
-import { Star, Quote } from "lucide-react";
-import { Card } from "../ui/Card";
+import { Star } from "lucide-react";
 
 const reviews = [
   {
@@ -53,65 +51,49 @@ const reviews = [
   },
 ];
 
-// Duplicamos las reseñas para crear un loop infinito
+// Los nombres vienen en mayúsculas; se muestran en formato de nombre propio
+const toTitleCase = (name: string) =>
+  name.toLowerCase().replace(/(^|\s)\S/g, (c) => c.toUpperCase());
+
+// Se duplican las reseñas para que el desplazamiento continuo no tenga cortes
 const duplicatedReviews = [...reviews, ...reviews];
 
 export function ReviewsCarousel() {
   return (
-    <div className="relative overflow-hidden py-8">
-      <motion.div
-        animate={{
-          x: [0, -50 * reviews.length + "%"],
-        }}
-        transition={{
-          x: {
-            repeat: Infinity,
-            repeatType: "loop",
-            duration: 40,
-            ease: "linear",
-          },
-        }}
-        className="flex gap-6"
-      >
+    <div className="group relative overflow-hidden py-4 [mask-image:linear-gradient(to_right,transparent,black_6%,black_94%,transparent)] motion-reduce:overflow-x-auto motion-reduce:[mask-image:none]">
+      <ul className="flex w-max gap-5 animate-marquee group-hover:[animation-play-state:paused] group-focus-within:[animation-play-state:paused] motion-reduce:animate-none">
         {duplicatedReviews.map((review, index) => (
-          <motion.div
+          <li
             key={`${review.id}-${index}`}
-            className="flex-shrink-0 w-96"
-            whileHover={{ scale: 1.05 }}
+            aria-hidden={index >= reviews.length ? true : undefined}
+            className="flex w-80 shrink-0 flex-col rounded-2xl border border-brand-900/10 bg-white p-6 sm:w-96"
           >
-            <Card className="p-6 h-full">
-              <Quote className="w-8 h-8 text-sun-300 mb-4" />
-              
-              <div className="flex gap-1 mb-3">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`w-4 h-4 ${
-                      i < review.rating
-                        ? "fill-yellow-400 text-yellow-400"
-                        : "text-gray-300"
-                    }`}
-                  />
-                ))}
-              </div>
+            <div className="flex gap-0.5" role="img" aria-label={`${review.rating} de 5 estrellas`}>
+              {[...Array(5)].map((_, i) => (
+                <Star
+                  key={i}
+                  aria-hidden="true"
+                  className={`w-4 h-4 ${i < review.rating ? "fill-sun-400 text-sun-400" : "text-gray-300"}`}
+                />
+              ))}
+            </div>
 
-              <p className="text-gray-700 mb-4 leading-relaxed">
-                "{review.comment}"
-              </p>
+            <blockquote className="mt-4 flex-1 text-base leading-relaxed text-gray-800 text-pretty">
+              “{review.comment}”
+            </blockquote>
 
-              <div className="flex items-center gap-3 mt-auto">
-                <div className="w-12 h-12 bg-gradient-to-br from-brand-400 to-leaf-400 rounded-full flex items-center justify-center text-2xl">
-                  {review.avatar}
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-900">{review.name}</p>
-                  <p className="text-sm text-gray-500">{review.date}</p>
-                </div>
+            <div className="mt-6 flex items-center gap-3">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brand-600 text-sm font-bold text-white" aria-hidden="true">
+                {review.avatar}
+              </span>
+              <div className="min-w-0">
+                <p className="truncate font-bold text-brand-900">{toTitleCase(review.name)}</p>
+                <p className="text-sm text-gray-600">{review.date}</p>
               </div>
-            </Card>
-          </motion.div>
+            </div>
+          </li>
         ))}
-      </motion.div>
+      </ul>
     </div>
   );
 }

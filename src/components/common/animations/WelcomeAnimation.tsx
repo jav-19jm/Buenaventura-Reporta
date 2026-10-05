@@ -50,7 +50,7 @@ export function WelcomeAnimation({ userName, onComplete }: WelcomeAnimationProps
           transition={{ duration: 0.6, delay: 0.5 }}
           className="text-5xl font-bold text-white mb-4"
         >
-          ¡Bienvenido{userName && `, ${userName}`}!
+          ¡Hola{userName && `, ${userName}`}!
         </motion.h1>
         
         <motion.div
@@ -60,7 +60,7 @@ export function WelcomeAnimation({ userName, onComplete }: WelcomeAnimationProps
           className="flex items-center justify-center gap-2 text-white text-xl"
         >
           <Sparkles className="w-6 h-6" />
-          <span>Tu ciudad te necesita</span>
+          <span>Qué bueno verte de nuevo</span>
           <Sparkles className="w-6 h-6" />
         </motion.div>
 

@@ -220,14 +220,14 @@ export function UsersManagement() {
               placeholder="Buscar por nombre o email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
             />
           </div>
 
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as UserStatus | "all")}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
           >
             <option value="all">Todos los estados</option>
             <option value="activo">Activos</option>
@@ -238,7 +238,7 @@ export function UsersManagement() {
           <select
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
           >
             <option value="all">Todos los roles</option>
             <option value="ciudadano">Ciudadanos</option>
@@ -286,7 +286,7 @@ export function UsersManagement() {
                           className="w-10 h-10 object-cover rounded-full shadow-md border border-gray-100"
                         />
                       ) : (
-                        <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm border border-gray-100">
+                        <div className="w-10 h-10 bg-brand-gradient rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm border border-gray-100">
                           {user.nombre_completo ? user.nombre_completo.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() : 'U'}
                         </div>
                       )}
@@ -436,7 +436,7 @@ export function UsersManagement() {
                       className="w-20 h-20 object-cover rounded-full shadow-md border-2 border-white"
                     />
                   ) : (
-                    <div className="w-20 h-20 bg-gradient-to-br from-yellow-500 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-2xl shadow-md border-2 border-white">
+                    <div className="w-20 h-20 bg-brand-gradient rounded-full flex items-center justify-center text-white font-bold text-2xl shadow-md border-2 border-white">
                       {selectedUser.nombre_completo ? selectedUser.nombre_completo.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() : 'U'}
                     </div>
                   )}

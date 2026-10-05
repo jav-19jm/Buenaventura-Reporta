@@ -27,7 +27,7 @@ L.Icon.Default.mergeOptions({
 });
 
 const reportIcon = L.divIcon({
-  html: `<div class="w-10 h-10 bg-gradient-to-br from-yellow-500 to-green-600 rounded-full shadow-lg flex items-center justify-center border-4 border-white hover:scale-110 transition-transform">
+  html: `<div class="w-10 h-10 bg-brand-gradient rounded-full shadow-lg flex items-center justify-center border-4 border-white hover:scale-110 transition-transform">
            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
          </div>`,
   className: "bg-transparent border-0",
@@ -213,7 +213,7 @@ export function ReportsMap({ reports, onVote, showServices = true }: ReportsMapP
 
                   <div className="p-4">
                     <div className="mb-2">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-green-600 mb-1 block">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-brand-600 mb-1 block">
                         {report.categoria}
                       </span>
                       <h3 className="font-bold text-gray-900 text-lg leading-tight mb-1">{report.titulo}</h3>
@@ -235,9 +235,9 @@ export function ReportsMap({ reports, onVote, showServices = true }: ReportsMapP
                               if (onVote) onVote();
                             }
                           }}
-                          className="group flex items-center gap-1.5 text-gray-500 hover:text-green-600 transition-all active:scale-90"
+                          className="group flex items-center gap-1.5 text-gray-500 hover:text-brand-600 transition-all active:scale-90"
                         >
-                          <div className="p-2 rounded-full group-hover:bg-green-50 transition-colors">
+                          <div className="p-2 rounded-full group-hover:bg-brand-50 transition-colors">
                             <ThumbsUp className="w-4 h-4" />
                           </div>
                           <span className="text-xs font-bold">{report.votos_positivos || 0}</span>
@@ -278,17 +278,17 @@ export function ReportsMap({ reports, onVote, showServices = true }: ReportsMapP
                             className="w-8 h-8 rounded-full object-cover border border-gray-200"
                           />
                         ) : (
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-yellow-500 to-green-600 flex items-center justify-center text-white text-xs font-bold">
+                          <div className="w-8 h-8 rounded-full bg-brand-gradient flex items-center justify-center text-white text-xs font-bold">
                             {(report.perfiles as any).nombre_completo ? (report.perfiles as any).nombre_completo.split(' ').map((n: string) => n[0]).join('') : 'U'}
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
                           <p className="text-[10px] text-gray-400 font-medium">Reportado por:</p>
-                          <p className="text-xs font-semibold text-gray-800 truncate group-hover:text-green-600 transition-colors">
+                          <p className="text-xs font-semibold text-gray-800 truncate group-hover:text-brand-600 transition-colors">
                             {(report.perfiles as any).nombre_completo || 'Ciudadano Anónimo'}
                           </p>
                         </div>
-                        <ExternalLink className="w-3.5 h-3.5 text-gray-400 group-hover:text-green-600 transition-colors" />
+                        <ExternalLink className="w-3.5 h-3.5 text-gray-400 group-hover:text-brand-600 transition-colors" />
                       </div>
                     )}
                   </div>
@@ -367,13 +367,13 @@ export function ReportsMap({ reports, onVote, showServices = true }: ReportsMapP
             >
               {loadingProfile ? (
                 <div className="p-12 flex flex-col items-center justify-center">
-                  <div className="w-10 h-10 border-4 border-green-600 border-t-transparent rounded-full animate-spin"></div>
+                  <div className="w-10 h-10 border-4 border-brand-600 border-t-transparent rounded-full animate-spin"></div>
                   <p className="mt-4 text-gray-500 text-sm font-medium">Cargando perfil del ciudadano...</p>
                 </div>
               ) : selectedProfile ? (
                 <div>
                   {/* Banner / Cabecera */}
-                  <div className="bg-gradient-to-br from-yellow-400/20 to-green-600/20 p-6 flex flex-col items-center relative border-b border-gray-100">
+                  <div className="bg-gradient-to-br from-sun-400/20 to-brand-600/20 p-6 flex flex-col items-center relative border-b border-gray-100">
                     <button
                       onClick={() => setShowProfileModal(false)}
                       className="absolute top-4 right-4 p-1.5 bg-white hover:bg-gray-100 rounded-full transition-colors shadow-sm"
@@ -390,7 +390,7 @@ export function ReportsMap({ reports, onVote, showServices = true }: ReportsMapP
                           className="w-full h-full object-cover rounded-full shadow-md border-4 border-white"
                         />
                       ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-yellow-500 to-green-600 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-md border-4 border-white">
+                        <div className="w-full h-full bg-brand-gradient rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-md border-4 border-white">
                           {selectedProfile.nombre_completo ? selectedProfile.nombre_completo.split(' ').map((n: string) => n[0]).join('').substring(0,2).toUpperCase() : 'U'}
                         </div>
                       )}

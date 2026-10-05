@@ -3,13 +3,13 @@ import { Link, useNavigate, useSearchParams } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
-import { MapPin } from "lucide-react";
 import { WelcomeAnimation } from "../../components/common/animations/WelcomeAnimation";
 import { useAuth } from "../../hooks/useAuth";
 import { homePathForRole } from "../../components/common/ProtectedRoute";
 import { toast } from "sonner";
 import { resendVerificationEmail } from "../../api/auth";
 
+import { BrandLogo } from "../../components/common/BrandLogo";
 export function LoginPage() {
   const navigate = useNavigate();
   const [showWelcome, setShowWelcome] = useState(false);
@@ -103,7 +103,7 @@ export function LoginPage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="min-h-screen bg-gradient-to-br from-yellow-50 to-green-50 flex items-center justify-center p-4"
+        className="min-h-screen bg-brand-soft flex items-center justify-center p-4"
       >
         <div className="w-full max-w-md">
           {/* Logo */}
@@ -113,11 +113,8 @@ export function LoginPage() {
             transition={{ duration: 0.6 }}
             className="text-center mb-8"
           >
-            <Link to="/" className="inline-flex items-center gap-2 mb-4">
-              <div className="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center">
-                <MapPin className="w-7 h-7 text-white" />
-              </div>
-              <span className="text-2xl font-bold text-gray-900">Buenaventura Reporta</span>
+            <Link to="/" className="inline-flex mb-6" aria-label="Ir al inicio">
+              <BrandLogo className="h-14 sm:h-16" />
             </Link>
             <p className="text-gray-600">Inicia sesión para continuar</p>
           </motion.div>
@@ -151,7 +148,7 @@ export function LoginPage() {
               <div className="flex items-center justify-end">
                 <Link
                   to="/forgot-password"
-                  className="text-sm text-green-600 hover:text-green-700 font-medium"
+                  className="text-sm text-brand-600 hover:text-brand-800 font-medium"
                 >
                   ¿Olvidaste tu contraseña?
                 </Link>
@@ -176,7 +173,7 @@ export function LoginPage() {
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
                 ¿No tienes una cuenta?{" "}
-                <Link to="/register" className="text-green-600 hover:text-green-700 font-medium">
+                <Link to="/register" className="text-brand-600 hover:text-brand-800 font-medium">
                   Regístrate aquí
                 </Link>
               </p>

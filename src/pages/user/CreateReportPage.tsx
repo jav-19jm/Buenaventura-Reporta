@@ -135,7 +135,7 @@ export function CreateReportPage() {
       className="min-h-screen bg-gray-50"
     >
       {/* Header */}
-      <header className="bg-gradient-to-r from-yellow-500 to-green-600 shadow-md sticky top-0 z-10">
+      <header className="bg-brand-gradient-deep shadow-md sticky top-0 z-10">
         <div className="px-4 py-3 flex items-center gap-4">
           <Link to="/user">
             <motion.button
@@ -310,7 +310,7 @@ export function CreateReportPage() {
               onLocationSelect={handleLocationSelect}
             />
             <div className="mt-4 flex items-center gap-2 text-sm text-gray-700 bg-gray-50 p-3 rounded-md">
-              <MapPin className="w-4 h-4 text-green-600" />
+              <MapPin className="w-4 h-4 text-brand-600" />
               <span>Coordenadas seleccionadas: {location.lat.toFixed(4)}, {location.lng.toFixed(4)}</span>
             </div>
           </motion.div>
@@ -329,7 +329,7 @@ export function CreateReportPage() {
             </Link>
             <Button
               type="submit"
-              className="flex-1 bg-gradient-to-r from-yellow-500 to-green-600 border-none hover:opacity-90 shadow-md"
+              className="flex-1 bg-brand-gradient border-none hover:opacity-90 shadow-md"
               size="lg"
               disabled={!selectedType || !title || !description || loading}
             >

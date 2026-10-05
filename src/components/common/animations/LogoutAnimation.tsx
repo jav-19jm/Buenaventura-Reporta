@@ -11,7 +11,7 @@ export function LogoutAnimation({ onComplete }: LogoutAnimationProps) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-yellow-600 via-green-700 to-yellow-700"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-brand-gradient-deep"
     >
       <motion.div
         initial={{ scale: 1 }}
@@ -46,7 +46,7 @@ export function LogoutAnimation({ onComplete }: LogoutAnimationProps) {
           }}
           className="w-24 h-24 bg-white rounded-full mx-auto mb-6 flex items-center justify-center shadow-2xl"
         >
-          <LogOut className="w-12 h-12 text-yellow-600" />
+          <LogOut className="w-12 h-12 text-brand-600" />
         </motion.div>
         
         <motion.h2

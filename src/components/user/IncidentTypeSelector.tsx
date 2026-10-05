@@ -168,17 +168,17 @@ export function IncidentTypeSelector({ selectedType, onSelect, types }: Incident
             className={cn(
               "flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all",
               isSelected
-                ? "border-green-600 bg-green-50 shadow-md"
+                ? "border-brand-600 bg-brand-50 shadow-md"
                 : "border-gray-200 hover:border-gray-300 bg-white"
             )}
           >
             <Icon
-              className={cn("w-8 h-8 mb-2", isSelected ? "text-green-600" : iconColor.className)}
+              className={cn("w-8 h-8 mb-2", isSelected ? "text-brand-600" : iconColor.className)}
               style={isSelected ? undefined : iconColor.style}
             />
             <span className={cn(
               "text-sm text-center",
-              isSelected ? "text-green-900 font-bold" : "text-gray-700"
+              isSelected ? "text-brand-900 font-bold" : "text-gray-700"
             )}>
               {type.label}
             </span>

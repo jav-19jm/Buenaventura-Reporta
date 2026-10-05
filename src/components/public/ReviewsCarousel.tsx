@@ -80,7 +80,7 @@ export function ReviewsCarousel() {
             whileHover={{ scale: 1.05 }}
           >
             <Card className="p-6 h-full">
-              <Quote className="w-8 h-8 text-yellow-200 mb-4" />
+              <Quote className="w-8 h-8 text-sun-300 mb-4" />
               
               <div className="flex gap-1 mb-3">
                 {[...Array(5)].map((_, i) => (
@@ -100,7 +100,7 @@ export function ReviewsCarousel() {
               </p>
 
               <div className="flex items-center gap-3 mt-auto">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-green-400 rounded-full flex items-center justify-center text-2xl">
+                <div className="w-12 h-12 bg-gradient-to-br from-brand-400 to-leaf-400 rounded-full flex items-center justify-center text-2xl">
                   {review.avatar}
                 </div>
                 <div>

@@ -16,6 +16,7 @@ import { ReportsMap } from "../../components/common/ReportsMap";
 import type { Reporte } from "../../types";
 import { toast } from "sonner";
 
+import { BrandLogo } from "../../components/common/BrandLogo";
 export function UserDashboard() {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
@@ -73,15 +74,9 @@ export function UserDashboard() {
       {/* Header */}
       <header className="bg-white shadow-sm z-10">
         <div className="px-4 py-3 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            <motion.div
-              whileHover={{ rotate: 360 }}
-              transition={{ duration: 0.5 }}
-              className="w-8 h-8 bg-gradient-to-br from-yellow-500 to-green-600 rounded-lg flex items-center justify-center"
-            >
-              <MapPin className="w-5 h-5 text-white" />
-            </motion.div>
-            <span className="font-bold text-gray-900 hidden sm:inline">Buenaventura Reporta</span>
+          <Link to="/" className="flex items-center" aria-label="Buenaventura Reporta">
+            <BrandLogo variant="mark" className="h-9 sm:hidden" />
+            <BrandLogo className="hidden sm:block h-9" />
           </Link>
 
           <div className="flex items-center gap-2">
@@ -145,7 +140,7 @@ export function UserDashboard() {
       <motion.div
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="bg-gradient-to-r from-yellow-500 to-green-600 text-white px-4 py-2 flex items-center justify-center gap-2 cursor-pointer hover:from-yellow-600 hover:to-green-700 transition-colors"
+        className="bg-brand-gradient text-white px-4 py-2 flex items-center justify-center gap-2 cursor-pointer hover:brightness-110 transition-colors"
         onClick={() => {
           setShowNews(!showNews);
           setShowServices(false);
@@ -176,7 +171,7 @@ export function UserDashboard() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         {/* Map Area */}
-        <div className="flex-1 relative bg-gradient-to-br from-yellow-50 via-green-50 to-yellow-100">
+        <div className="flex-1 relative bg-brand-soft">
           <ReportsMap
             reports={mapReports}
             onVote={() => fetchData(false)}
@@ -192,7 +187,7 @@ export function UserDashboard() {
               <button
                 onClick={() => setMapFilter('todos')}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${mapFilter === 'todos'
-                  ? 'bg-gradient-to-r from-yellow-500 to-green-600 text-white shadow-lg shadow-green-600/20 scale-105'
+                  ? 'bg-brand-gradient text-white shadow-lg shadow-brand-600/20 scale-105'
                   : 'text-gray-600 hover:bg-gray-100/80'
                   }`}
               >
@@ -202,7 +197,7 @@ export function UserDashboard() {
               <button
                 onClick={() => setMapFilter('mios')}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${mapFilter === 'mios'
-                  ? 'bg-gradient-to-r from-yellow-500 to-green-600 text-white shadow-lg shadow-green-600/20 scale-105'
+                  ? 'bg-brand-gradient text-white shadow-lg shadow-brand-600/20 scale-105'
                   : 'text-gray-600 hover:bg-gray-100/80'
                   }`}
               >
@@ -219,7 +214,7 @@ export function UserDashboard() {
                 onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
                 className="bg-white/90 backdrop-blur-md px-4 py-2.5 rounded-xl shadow-xl border border-gray-200 flex items-center gap-3 text-sm font-bold text-gray-700 hover:bg-white transition-all group"
               >
-                <div className="p-1.5 bg-gradient-to-r from-yellow-500 to-green-600 rounded-lg group-hover:bg-green-200 transition-colors">
+                <div className="p-1.5 bg-brand-gradient rounded-lg transition-colors">
                   <Filter className="w-4 h-4 text-white" />
                 </div>
                 <span className="max-w-[150px] truncate">
@@ -243,11 +238,11 @@ export function UserDashboard() {
                           setShowCategoryDropdown(false);
                         }}
                         className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all ${selectedFilter === null
-                          ? 'bg-gradient-to-r from-yellow-500 to-green-600 text-white font-bold'
+                          ? 'bg-brand-gradient text-white font-bold'
                           : 'text-gray-600 hover:bg-gray-50'
                           }`}
                       >
-                        <div className={`w-2 h-2 rounded-full ${selectedFilter === null ? 'bg-green-600 animate-pulse' : 'bg-gray-300'}`} />
+                        <div className={`w-2 h-2 rounded-full ${selectedFilter === null ? 'bg-brand-600 animate-pulse' : 'bg-gray-300'}`} />
                         Todas las Incidencias
                       </button>
 
@@ -263,11 +258,11 @@ export function UserDashboard() {
                             setShowCategoryDropdown(false);
                           }}
                           className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all ${selectedFilter === cat.nombre
-                            ? 'bg-gradient-to-r from-yellow-500 to-green-600 text-white font-bold'
+                            ? 'bg-brand-gradient text-white font-bold'
                             : 'text-gray-600 hover:bg-gray-50'
                             }`}
                         >
-                          <div className={`w-2 h-2 rounded-full ${selectedFilter === cat.nombre ? 'bg-green-600' : 'bg-gray-300'}`} />
+                          <div className={`w-2 h-2 rounded-full ${selectedFilter === cat.nombre ? 'bg-brand-600' : 'bg-gray-300'}`} />
                           {cat.nombre}
                         </button>
                       ))}
@@ -288,7 +283,7 @@ export function UserDashboard() {
             <motion.button
               whileHover={{ scale: 1.1, rotate: 90 }}
               whileTap={{ scale: 0.9 }}
-              className="absolute bottom-6 right-6 w-14 h-14 bg-gradient-to-br from-yellow-500 to-green-600 rounded-full shadow-xl flex items-center justify-center hover:shadow-2xl transition-all"
+              className="absolute bottom-6 right-6 w-14 h-14 bg-brand-gradient rounded-full shadow-xl flex items-center justify-center hover:shadow-2xl transition-all"
             >
               <Plus className="w-7 h-7 text-white" />
             </motion.button>

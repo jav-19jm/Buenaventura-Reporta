@@ -5,10 +5,11 @@ import { ReportsMap } from "../../components/common/ReportsMap";
 import { getPublicReports } from "../../api/reports";
 import type { Reporte } from "../../types";
 import { Button } from "../../components/ui/Button";
-import { MapPin, AlertTriangle, ShieldCheck, ArrowRight, Home } from "lucide-react";
+import { AlertTriangle, ShieldCheck, ArrowRight, Home } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../../hooks/useAuth";
 
+import { BrandLogo } from "../../components/common/BrandLogo";
 export function PublicMapPage() {
   const [reports, setReports] = useState<Reporte[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,13 +36,9 @@ export function PublicMapPage() {
       {/* Header flotante */}
       <header className="absolute top-0 left-0 right-0 z-20 bg-white/90 backdrop-blur-md shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 group">
-            <div className="bg-green-600 p-2 rounded-lg group-hover:bg-green-700 transition-colors">
-              <MapPin className="w-5 h-5 text-white" />
-            </div>
-            <span className="font-bold text-xl text-gray-900 tracking-tight">
-              Buenaventura<span className="text-green-600">Reporta</span>
-            </span>
+          <Link to="/" className="flex items-center" aria-label="Buenaventura Reporta">
+            <BrandLogo variant="mark" className="h-10 sm:hidden" />
+            <BrandLogo className="hidden sm:block h-10" />
           </Link>
           <div className="flex items-center gap-4">
             {isAuthenticated && (
@@ -74,14 +71,14 @@ export function PublicMapPage() {
                   </Button>
                 </Link>
                 <Link to="/register">
-                  <Button size="sm" className="bg-green-600 hover:bg-green-700 shadow-lg shadow-green-600/20">
+                  <Button size="sm" className="bg-brand-600 hover:bg-brand-700 shadow-lg shadow-brand-600/20">
                     Regístrate ahora
                   </Button>
                 </Link>
               </>
             ) : (
               <Link to="/user">
-                <Button size="sm" className="bg-green-600 hover:bg-green-700 shadow-lg shadow-green-600/20">
+                <Button size="sm" className="bg-brand-600 hover:bg-brand-700 shadow-lg shadow-brand-600/20">
                   Mi Panel
                 </Button>
               </Link>
@@ -95,7 +92,7 @@ export function PublicMapPage() {
         {loading ? (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-50/80 backdrop-blur-sm z-10">
             <div className="flex flex-col items-center">
-              <div className="w-12 h-12 border-4 border-green-600 border-t-transparent rounded-full animate-spin"></div>
+              <div className="w-12 h-12 border-4 border-brand-600 border-t-transparent rounded-full animate-spin"></div>
               <p className="mt-4 text-gray-600 font-medium">Cargando mapa interactivo...</p>
             </div>
           </div>
@@ -122,7 +119,7 @@ export function PublicMapPage() {
                   ¿Ves un problema en tu comunidad?
                 </h2>
                 <p className="text-gray-600">
-                  Únete a más de <span className="font-semibold text-green-600">1,200 ciudadanos</span> que ya están mejorando Buenaventura. Reporta daños, basuras o fallas en servicios públicos al instante.
+                  Únete a más de <span className="font-semibold text-brand-600">1,200 ciudadanos</span> que ya están mejorando Buenaventura. Reporta daños, basuras o fallas en servicios públicos al instante.
                 </p>
                 
                 <div className="flex flex-wrap gap-4 mt-4">
@@ -139,7 +136,7 @@ export function PublicMapPage() {
               
               <div className="flex flex-col gap-3 w-full md:w-auto">
                 <Link to="/register" className="w-full">
-                  <Button className="w-full bg-green-600 hover:bg-green-700 h-12 text-base px-8 shadow-lg shadow-green-600/20">
+                  <Button className="w-full bg-brand-600 hover:bg-brand-700 h-12 text-base px-8 shadow-lg shadow-brand-600/20">
                     Crear mi primer reporte
                     <ArrowRight className="w-5 h-5 ml-2" />
                   </Button>

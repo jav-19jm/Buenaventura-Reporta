@@ -3,42 +3,42 @@
 :root {
   --font-size: 16px;
   --background: #ffffff;
-  --foreground: oklch(0.145 0 0);
+  --foreground: #0b1f36;
   --card: #ffffff;
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: #030213;
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.95 0.0058 264.53);
-  --secondary-foreground: #030213;
-  --muted: #ececf0;
-  --muted-foreground: #717182;
-  --accent: #e9ebef;
-  --accent-foreground: #030213;
+  --card-foreground: #0b1f36;
+  --popover: #ffffff;
+  --popover-foreground: #0b1f36;
+  --primary: #0a5caa;
+  --primary-foreground: #ffffff;
+  --secondary: #eef6fd;
+  --secondary-foreground: #072e57;
+  --muted: #f1f5f9;
+  --muted-foreground: #5b6b7f;
+  --accent: #fef8e7;
+  --accent-foreground: #072e57;
   --destructive: #d4183d;
   --destructive-foreground: #ffffff;
-  --border: rgba(0, 0, 0, 0.1);
+  --border: rgba(7, 46, 87, 0.1);
   --input: transparent;
-  --input-background: #f3f3f5;
-  --switch-background: #cbced4;
-  --font-weight-medium: 500;
+  --input-background: #f5f8fc;
+  --switch-background: #cbd5e1;
+  --font-weight-medium: 600;
   --font-weight-normal: 400;
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: #030213;
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --ring: #137cc8;
+  --chart-1: #0a5caa;
+  --chart-2: #398656;
+  --chart-3: #f8b71d;
+  --chart-4: #137cc8;
+  --chart-5: #072e57;
+  --radius: 0.75rem;
+  --sidebar: #f8fafc;
+  --sidebar-foreground: #0b1f36;
+  --sidebar-primary: #0a5caa;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #eef6fd;
+  --sidebar-accent-foreground: #072e57;
+  --sidebar-border: #e2e8f0;
+  --sidebar-ring: #137cc8;
 }
 
 .dark {
@@ -76,6 +76,61 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(0.269 0 0);
   --sidebar-ring: oklch(0.439 0 0);
+}
+
+/* Paleta de marca derivada del logo de Buenaventura Reporta */
+@theme {
+  --font-sans: "Nunito", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* Azul: pin (#0a5caa), ola/"Reporta" (#137cc8) y navy del texto (#072e57) */
+  --color-brand-50: #eef6fd;
+  --color-brand-100: #d8eafa;
+  --color-brand-200: #b4d7f4;
+  --color-brand-300: #7fbbeb;
+  --color-brand-400: #4499dc;
+  --color-brand-500: #137cc8;
+  --color-brand-600: #0a5caa;
+  --color-brand-700: #0a4d8f;
+  --color-brand-800: #0b3f75;
+  --color-brand-900: #072e57;
+  --color-brand-950: #041d38;
+
+  /* Verde: la colina (#398656) */
+  --color-leaf-50: #eef7f1;
+  --color-leaf-100: #d5ecdd;
+  --color-leaf-200: #aed9bd;
+  --color-leaf-300: #7cbf96;
+  --color-leaf-400: #52a272;
+  --color-leaf-500: #398656;
+  --color-leaf-600: #2e6e47;
+  --color-leaf-700: #27583b;
+  --color-leaf-800: #224732;
+  --color-leaf-900: #1d3b2a;
+
+  /* Amarillo: el sol (#f8b71d) */
+  --color-sun-50: #fef8e7;
+  --color-sun-100: #fdeec4;
+  --color-sun-200: #fcdc88;
+  --color-sun-300: #fac94e;
+  --color-sun-400: #f8b71d;
+  --color-sun-500: #e09d0b;
+  --color-sun-600: #b97a07;
+  --color-sun-700: #935a0a;
+  --color-sun-800: #794810;
+  --color-sun-900: #673c12;
+}
+
+/* Degradados de marca */
+@utility bg-brand-gradient {
+  background-image: linear-gradient(135deg, var(--color-brand-600) 0%, var(--color-brand-500) 100%);
+}
+
+@utility bg-brand-gradient-deep {
+  background-image: linear-gradient(135deg, var(--color-brand-900) 0%, var(--color-brand-700) 60%, var(--color-brand-600) 100%);
+}
+
+@utility bg-brand-soft {
+  background-image: linear-gradient(160deg, var(--color-brand-50) 0%, #ffffff 55%, var(--color-sun-50) 100%);
 }
 
 @theme inline {

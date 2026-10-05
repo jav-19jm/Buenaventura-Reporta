@@ -3,10 +3,11 @@ import { Link } from "react-router";
 import { motion } from "motion/react";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
-import { MapPin, Mail, ArrowLeft } from "lucide-react";
+import { Mail, ArrowLeft } from "lucide-react";
 import { resetPassword } from "../../api/auth";
 import { toast } from "sonner";
 
+import { BrandLogo } from "../../components/common/BrandLogo";
 export function ForgotPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
@@ -38,7 +39,7 @@ export function ForgotPasswordPage() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="min-h-screen bg-gradient-to-br from-yellow-50 to-green-50 flex items-center justify-center p-4"
+      className="min-h-screen bg-brand-soft flex items-center justify-center p-4"
     >
       <div className="w-full max-w-md">
         {/* Logo */}
@@ -48,13 +49,10 @@ export function ForgotPasswordPage() {
           transition={{ duration: 0.6 }}
           className="text-center mb-8"
         >
-          <Link to="/" className="inline-flex items-center gap-2 mb-4">
-            <div className="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center">
-              <MapPin className="w-7 h-7 text-white" />
-            </div>
-            <span className="text-2xl font-bold text-gray-900">Buenaventura Reporta</span>
+          <Link to="/" className="inline-flex mb-6" aria-label="Ir al inicio">
+            <BrandLogo className="h-14 sm:h-16" />
           </Link>
-          <h1 className="text-xl font-semibold text-gray-900">Recuperar contraseña</h1>
+          <h1 className="text-xl font-semibold text-brand-900">Recuperar contraseña</h1>
           <p className="text-gray-600 mt-2">
             Te enviaremos un enlace para restablecer tu contraseña.
           </p>
@@ -85,8 +83,8 @@ export function ForgotPasswordPage() {
             </form>
           ) : (
             <div className="text-center py-4">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Mail className="w-8 h-8 text-green-600" />
+              <div className="w-16 h-16 bg-brand-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Mail className="w-8 h-8 text-brand-600" />
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">Revisa tu correo</h3>
               <p className="text-gray-600 mb-6">
@@ -105,7 +103,7 @@ export function ForgotPasswordPage() {
           <div className="mt-6 text-center">
             <Link 
               to="/login" 
-              className="inline-flex items-center text-sm font-medium text-green-600 hover:text-green-700"
+              className="inline-flex items-center text-sm font-medium text-brand-600 hover:text-brand-800"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Volver al inicio de sesión

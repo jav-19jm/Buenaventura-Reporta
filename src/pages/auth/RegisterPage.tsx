@@ -3,11 +3,11 @@ import { Link, useNavigate } from "react-router";
 import { motion } from "motion/react";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
-import { MapPin } from "lucide-react";
 import { signUp } from "../../api/auth";
 import { useAuth } from "../../hooks/useAuth";
 import { toast } from "sonner";
 
+import { BrandLogo } from "../../components/common/BrandLogo";
 export function RegisterPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -72,7 +72,7 @@ export function RegisterPage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="min-h-screen bg-gradient-to-br from-yellow-50 to-green-50 flex items-center justify-center p-4"
+        className="min-h-screen bg-brand-soft flex items-center justify-center p-4"
       >
         <div className="w-full max-w-md">
           {/* Logo */}
@@ -82,11 +82,8 @@ export function RegisterPage() {
             transition={{ duration: 0.6 }}
             className="text-center mb-8"
           >
-            <Link to="/" className="inline-flex items-center gap-2 mb-4">
-              <div className="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center">
-                <MapPin className="w-7 h-7 text-white" />
-              </div>
-              <span className="text-2xl font-bold text-gray-900">Buenaventura Reporta</span>
+            <Link to="/" className="inline-flex mb-6" aria-label="Ir al inicio">
+              <BrandLogo className="h-14 sm:h-16" />
             </Link>
             <p className="text-gray-600">Crea tu cuenta y empieza a reportar</p>
           </motion.div>
@@ -145,7 +142,7 @@ export function RegisterPage() {
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
                 ¿Ya tienes una cuenta?{" "}
-                <Link to="/login" className="text-green-600 hover:text-green-700 font-medium">
+                <Link to="/login" className="text-brand-600 hover:text-brand-800 font-medium">
                   Inicia sesión
                 </Link>
               </p>

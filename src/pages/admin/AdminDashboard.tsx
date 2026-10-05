@@ -16,6 +16,7 @@ import { getPublicReports } from "../../api/reports";
 import { useAuth } from "../../hooks/useAuth";
 import { NotificationBell } from "../../components/common/NotificationBell";
 
+import { BrandLogo } from "../../components/common/BrandLogo";
 type Tab = "dashboard" | "reports" | "users" | "entities" | "news" | "services";
 
 export function AdminDashboard() {
@@ -123,10 +124,14 @@ export function AdminDashboard() {
       className="min-h-screen bg-gray-50"
     >
       {/* Header */}
-      <header className="bg-gradient-to-r from-yellow-500 to-green-600 shadow-lg sticky top-0 z-10">
+      <header className="bg-brand-gradient-deep shadow-lg sticky top-0 z-10">
         <div className="px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <h1 className="text-xl font-bold text-white">Panel Administrativo</h1>
+          <div className="flex items-center gap-3">
+            <BrandLogo variant="mark" tone="white" className="h-10" />
+            <div className="leading-tight">
+              <p className="text-xs font-semibold uppercase tracking-widest text-brand-200">Buenaventura Reporta</p>
+              <h1 className="text-xl font-extrabold text-white">Panel Administrativo</h1>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <NotificationBell />
@@ -154,7 +159,7 @@ export function AdminDashboard() {
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all ${activeTab === tab.id
-                  ? "bg-white text-green-600 shadow-lg"
+                  ? "bg-white text-brand-700 shadow-lg"
                   : "bg-white/10 text-white hover:bg-white/20"
                   }`}
               >

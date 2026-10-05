@@ -11,6 +11,7 @@ import ParqueNaturalImg from "../../assets/ParqueNatural.webp";
 import ParqueDronImg from "../../assets/ParqueDron.webp";
 import ParqueTuraImg from "../../assets/ParqueTura.webp";
 
+import { BrandLogo } from "../../components/common/BrandLogo";
 const buenaventuraImages = [
   {
     url: BuenaventuraImg,
@@ -51,17 +52,14 @@ export function LandingPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-yellow-50 to-white">
+    <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-50">
+      <header className="bg-white/90 backdrop-blur-md border-b border-brand-900/5 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-green-600 rounded-lg flex items-center justify-center shadow-md">
-                <MapPin className="w-6 h-6 text-white" />
-              </div>
-              <h1 className="text-xl font-bold text-gray-900">Buenaventura Reporta</h1>
-            </div>
+            <Link to="/" aria-label="Buenaventura Reporta">
+              <BrandLogo className="h-10 md:h-12" />
+            </Link>
 
             {/* Desktop Menu */}
             <div className="hidden md:flex items-center gap-3">
@@ -69,7 +67,7 @@ export function LandingPage() {
                 <Button variant="ghost" size="sm">Iniciar sesión</Button>
               </Link>
               <Link to="/register">
-                <Button size="sm" className="bg-gradient-to-r from-yellow-500 to-green-600 hover:from-yellow-600 hover:to-green-700">
+                <Button size="sm" className="bg-brand-gradient hover:brightness-110">
                   Registrarse
                 </Button>
               </Link>
@@ -106,7 +104,7 @@ export function LandingPage() {
                     </Button>
                   </Link>
                   <Link to="/register" onClick={() => setShowMenu(false)}>
-                    <Button size="sm" className="w-full bg-gradient-to-r from-yellow-500 to-green-600 hover:from-yellow-600 hover:to-green-700">
+                    <Button size="sm" className="w-full bg-brand-gradient hover:brightness-110">
                       Registrarse
                     </Button>
                   </Link>
@@ -135,7 +133,7 @@ export function LandingPage() {
               className="w-full h-full object-cover"
             />
             {/* Dark overlay for text readability */}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/70" />
+            <div className="absolute inset-0 bg-gradient-to-b from-brand-950/80 via-brand-900/45 to-brand-950/85" />
           </motion.div>
         </AnimatePresence>
 
@@ -148,15 +146,15 @@ export function LandingPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.3 }}
               >
-                <h2 className="text-5xl md:text-7xl font-bold text-white mb-6 drop-shadow-lg">
-                  Juntos construimos una mejor <span className="text-yellow-400">Buenaventura</span>
+                <h2 className="text-5xl md:text-7xl font-black text-white mb-6 drop-shadow-lg">
+                  Juntos construimos una mejor <span className="text-sun-400">Buenaventura</span>
                 </h2>
                 <p className="text-xl md:text-2xl text-white/90 mb-8 drop-shadow-lg">Plataforma ciudadana para reportar incidencias urbanas y mejorar nuestra ciudad. Tu voz importa, tu reporte genera cambio.</p>
                 <div className="flex flex-col sm:flex-row gap-4">
                   <Link to="/login">
                     <Button
                       size="lg"
-                      className="w-full sm:w-auto text-lg px-8 py-4 bg-gradient-to-r from-yellow-500 to-green-600 hover:from-yellow-600 hover:to-green-700 shadow-xl"
+                      className="w-full sm:w-auto text-lg px-8 py-4 bg-brand-gradient hover:brightness-110 shadow-xl"
                     >
                       <Camera className="w-6 h-6 mr-2" />
                       Reportar incidencia
@@ -176,7 +174,7 @@ export function LandingPage() {
                       key={index}
                       onClick={() => setCurrentImageIndex(index)}
                       className={`h-1.5 rounded-full transition-all ${index === currentImageIndex
-                        ? 'w-12 bg-yellow-400'
+                        ? 'w-12 bg-sun-400'
                         : 'w-8 bg-white/50 hover:bg-white/75'
                         }`}
                       aria-label={`Ver imagen ${index + 1}`}
@@ -218,15 +216,15 @@ export function LandingPage() {
             transition={{ duration: 0.6 }}
             className="text-center mb-12"
           >
-            <h3 className="text-3xl font-bold text-gray-900 mb-4">¿Cómo funciona?</h3>
+            <h3 className="text-3xl md:text-4xl font-extrabold text-brand-900 mb-4">¿Cómo funciona?</h3>
             <p className="text-lg text-gray-600">Reportar problemas nunca fue tan fácil</p>
           </motion.div>
           <div className="grid md:grid-cols-4 gap-8">
             {[
-              { icon: Camera, title: "1. Toma una foto", desc: "Captura el problema que encontraste en tu comunidad", color: "bg-yellow-100 text-yellow-600" },
-              { icon: MapPin, title: "2. Marca la ubicación", desc: "El sistema detecta automáticamente la ubicación", color: "bg-green-100 text-green-600" },
-              { icon: Bell, title: "3. Envía el reporte", desc: "Tu reporte llega a las autoridades competentes", color: "bg-yellow-200 text-yellow-700" },
-              { icon: CheckCircle2, title: "4. Haz seguimiento", desc: "Recibe actualizaciones sobre la solución del problema", color: "bg-green-200 text-green-700" },
+              { icon: Camera, title: "1. Toma una foto", desc: "Captura el problema que encontraste en tu comunidad", color: "bg-brand-100 text-brand-600" },
+              { icon: MapPin, title: "2. Marca la ubicación", desc: "El sistema detecta automáticamente la ubicación", color: "bg-leaf-100 text-leaf-600" },
+              { icon: Bell, title: "3. Envía el reporte", desc: "Tu reporte llega a las autoridades competentes", color: "bg-sun-100 text-sun-600" },
+              { icon: CheckCircle2, title: "4. Haz seguimiento", desc: "Recibe actualizaciones sobre la solución del problema", color: "bg-brand-900 text-white" },
             ].map((step, index) => (
               <motion.div
                 key={index}
@@ -240,7 +238,7 @@ export function LandingPage() {
                 <div className={`w-16 h-16 ${step.color} rounded-full flex items-center justify-center mx-auto mb-4`}>
                   <step.icon className="w-8 h-8" />
                 </div>
-                <h4 className="font-semibold text-gray-900 mb-2">{step.title}</h4>
+                <h4 className="font-bold text-brand-900 mb-2">{step.title}</h4>
                 <p className="text-sm text-gray-600">{step.desc}</p>
               </motion.div>
             ))}
@@ -270,14 +268,14 @@ export function LandingPage() {
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
             >
-              <h3 className="text-3xl font-bold text-gray-900 mb-8">
+              <h3 className="text-3xl md:text-4xl font-extrabold text-brand-900 mb-8">
                 Participación ciudadana al alcance de tu mano
               </h3>
               <div className="space-y-6">
                 {[
-                  { icon: Shield, title: "Seguridad y privacidad", desc: "Tus datos están protegidos y tu identidad es confidencial", color: "bg-green-100 text-green-600" },
-                  { icon: Users, title: "Comunidad activa", desc: "Únete a miles de ciudadanos que trabajan por una mejor ciudad", color: "bg-yellow-100 text-yellow-600" },
-                  { icon: CheckCircle2, title: "Resultados verificables", desc: "Seguimiento en tiempo real del estado de tus reportes", color: "bg-green-200 text-green-700" },
+                  { icon: Shield, title: "Seguridad y privacidad", desc: "Tus datos están protegidos y tu identidad es confidencial", color: "bg-brand-100 text-brand-600" },
+                  { icon: Users, title: "Comunidad activa", desc: "Únete a miles de ciudadanos que trabajan por una mejor ciudad", color: "bg-sun-100 text-sun-600" },
+                  { icon: CheckCircle2, title: "Resultados verificables", desc: "Seguimiento en tiempo real del estado de tus reportes", color: "bg-leaf-100 text-leaf-600" },
                 ].map((feature, index) => (
                   <motion.div
                     key={index}
@@ -291,7 +289,7 @@ export function LandingPage() {
                       <feature.icon className="w-6 h-6" />
                     </div>
                     <div>
-                      <h4 className="font-semibold text-gray-900 mb-1">{feature.title}</h4>
+                      <h4 className="font-bold text-brand-900 mb-1">{feature.title}</h4>
                       <p className="text-sm text-gray-600">{feature.desc}</p>
                     </div>
                   </motion.div>
@@ -303,7 +301,7 @@ export function LandingPage() {
       </section>
 
       {/* Reviews Carousel */}
-      <section className="bg-gradient-to-r from-yellow-50 to-green-50 py-16 md:py-24">
+      <section className="bg-brand-soft py-16 md:py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -312,7 +310,7 @@ export function LandingPage() {
             transition={{ duration: 0.6 }}
             className="text-center mb-12"
           >
-            <h3 className="text-3xl font-bold text-gray-900 mb-4">
+            <h3 className="text-3xl md:text-4xl font-extrabold text-brand-900 mb-4">
               Lo que dicen nuestros ciudadanos
             </h3>
             <p className="text-lg text-gray-600">
@@ -324,12 +322,12 @@ export function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="bg-green-600 py-16">
+      <section className="relative overflow-hidden bg-brand-gradient-deep py-16 md:py-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h3 className="text-3xl font-bold text-white mb-4">
+          <h3 className="text-3xl md:text-4xl font-extrabold text-white mb-4">
             ¿Listo para hacer la diferencia?
           </h3>
-          <p className="text-lg text-green-100 mb-8">
+          <p className="text-lg text-brand-100 mb-8">
             Únete a Buenaventura Reporta y ayuda a mejorar tu ciudad
           </p>
           <Link to="/register">
@@ -341,18 +339,13 @@ export function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
+      <footer className="bg-brand-950 text-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-3 gap-8 mb-8">
             {/* About */}
             <div>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-br from-yellow-500 to-green-600 rounded-lg flex items-center justify-center">
-                  <MapPin className="w-5 h-5 text-white" />
-                </div>
-                <h3 className="font-bold text-lg">Buenaventura Reporta</h3>
-              </div>
-              <p className="text-gray-400 text-sm">
+              <BrandLogo tone="white" className="h-12 mb-4" />
+              <p className="text-brand-200/80 text-sm">
                 Plataforma ciudadana para el bienestar de nuestra ciudad. Juntos construimos un mejor futuro.
               </p>
             </div>
@@ -360,7 +353,7 @@ export function LandingPage() {
             {/* Quick Links */}
             <div>
               <h4 className="font-semibold mb-4">Enlaces rápidos</h4>
-              <ul className="space-y-2 text-sm text-gray-400">
+              <ul className="space-y-2 text-sm text-brand-200/80">
                 <li><Link to="/login" className="hover:text-white transition-colors">Iniciar sesión</Link></li>
                 <li><Link to="/register" className="hover:text-white transition-colors">Registrarse</Link></li>
                 <li><Link to="/user" className="hover:text-white transition-colors">Ver reportes</Link></li>
@@ -413,14 +406,14 @@ export function LandingPage() {
                   <Youtube className="w-5 h-5 text-white" />
                 </motion.a>
               </div>
-              <p className="text-gray-400 text-sm mt-4">
+              <p className="text-brand-200/80 text-sm mt-4">
                 Mantente informado sobre las novedades y mejoras de la ciudad.
               </p>
             </div>
           </div>
 
-          <div className="border-t border-gray-800 pt-6 text-center">
-            <p className="text-gray-400 text-sm">
+          <div className="border-t border-white/10 pt-6 text-center">
+            <p className="text-brand-200/80 text-sm">
               © 2026 Buenaventura Reporta. Plataforma ciudadana para el bienestar de nuestra ciudad.
             </p>
           </div>

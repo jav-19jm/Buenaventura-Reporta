@@ -255,7 +255,7 @@ export function ReportDetailPage() {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
               <Card>
                 <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <MessageCircle className="w-6 h-6 text-green-600" />
+                  <MessageCircle className="w-6 h-6 text-brand-600" />
                   Comunicación con la Entidad
                 </h3>
 
@@ -272,14 +272,14 @@ export function ReportDetailPage() {
                       className={`flex ${msg.senderId === user?.id ? "justify-end" : "justify-start"}`}
                     >
                       <div className={`max-w-[80%] rounded-xl p-4 shadow-sm group relative ${
-                        msg.senderId === user?.id ? "bg-green-600 text-white" : 
+                        msg.senderId === user?.id ? "bg-brand-600 text-white" : 
                         msg.sender === "admin" ? "bg-blue-50 border border-blue-100 text-blue-900" :
                         msg.sender === "entity" ? "bg-orange-50 border border-orange-100 text-orange-900" :
                         "bg-gray-100 text-gray-800"
                       }`}>
                         <div className="flex items-center gap-2 mb-1">
                           <span className={`text-sm font-bold ${
-                            msg.senderId === user?.id ? "text-green-50" : 
+                            msg.senderId === user?.id ? "text-brand-100" : 
                             msg.sender === "admin" ? "text-blue-800" :
                             msg.sender === "entity" ? "text-orange-800" :
                             "text-gray-900"
@@ -319,7 +319,7 @@ export function ReportDetailPage() {
                             <textarea
                               value={editContent}
                               onChange={(e) => setEditContent(e.target.value)}
-                              className="w-full p-2 text-sm text-gray-900 rounded border border-gray-300 focus:ring-2 focus:ring-green-500"
+                              className="w-full p-2 text-sm text-gray-900 rounded border border-gray-300 focus:ring-2 focus:ring-brand-500"
                               rows={2}
                             />
                             <div className="flex justify-end gap-2">
@@ -331,7 +331,7 @@ export function ReportDetailPage() {
                               </button>
                               <button 
                                 onClick={() => handleUpdateMessage(msg.id)}
-                                className="text-xs px-2 py-1 bg-green-700 text-white rounded"
+                                className="text-xs px-2 py-1 bg-brand-700 text-white rounded"
                               >
                                 Guardar
                               </button>
@@ -352,7 +352,7 @@ export function ReportDetailPage() {
                       onChange={(e) => setNewMessage(e.target.value)}
                       placeholder="Escribe un mensaje a la entidad..."
                       rows={2}
-                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent resize-none"
                     />
                     <Button type="submit" className="self-end h-[50px]">
                       <Send className="w-4 h-4 mr-2" />
@@ -373,7 +373,7 @@ export function ReportDetailPage() {
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
               <Card>
                 <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <Building2 className="w-5 h-5 text-green-600" />
+                  <Building2 className="w-5 h-5 text-brand-600" />
                   Entidad Responsable
                 </h3>
                 <div className="text-sm space-y-4">
@@ -395,7 +395,7 @@ export function ReportDetailPage() {
                         )}
                         {report.entidades.telefono && (
                           <div className="flex items-center gap-2 text-gray-600">
-                            <Phone className="w-4 h-4 text-green-500" />
+                            <Phone className="w-4 h-4 text-brand-500" />
                             <a href={`tel:${report.entidades.telefono}`} className="hover:underline">{report.entidades.telefono}</a>
                           </div>
                         )}

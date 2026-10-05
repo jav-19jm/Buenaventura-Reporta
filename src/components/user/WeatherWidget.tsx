@@ -98,7 +98,7 @@ export function WeatherWidget() {
             className="absolute top-full right-0 mt-2"
           >
             <Card className="w-72 p-4 shadow-2xl border-0 overflow-hidden relative">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full -mr-16 -mt-16 opacity-50 z-0" />
+              <div className="absolute top-0 right-0 w-32 h-32 bg-brand-50 rounded-full -mr-16 -mt-16 opacity-50 z-0" />
               
               <div className="relative z-10">
                 <div className="flex items-center justify-between mb-4">
@@ -115,20 +115,20 @@ export function WeatherWidget() {
 
                 <div className="grid grid-cols-3 gap-3">
                   <motion.div 
-                    className="bg-blue-50 rounded-xl p-3 text-center border border-blue-100"
+                    className="bg-brand-50 rounded-xl p-3 text-center border border-brand-100"
                     whileHover={{ y: -5 }}
                   >
-                    <Droplets className="w-5 h-5 text-blue-600 mx-auto mb-1" />
-                    <p className="text-[10px] uppercase font-bold text-blue-400">Humedad</p>
+                    <Droplets className="w-5 h-5 text-brand-600 mx-auto mb-1" />
+                    <p className="text-[10px] uppercase font-bold text-brand-400">Humedad</p>
                     <p className="text-sm font-bold text-gray-900">{weatherData.humidity}%</p>
                   </motion.div>
                   
                   <motion.div 
-                    className="bg-green-50 rounded-xl p-3 text-center border border-green-100"
+                    className="bg-leaf-50 rounded-xl p-3 text-center border border-leaf-100"
                     whileHover={{ y: -5 }}
                   >
-                    <Wind className="w-5 h-5 text-green-600 mx-auto mb-1" />
-                    <p className="text-[10px] uppercase font-bold text-green-400">Viento</p>
+                    <Wind className="w-5 h-5 text-leaf-600 mx-auto mb-1" />
+                    <p className="text-[10px] uppercase font-bold text-leaf-400">Viento</p>
                     <p className="text-sm font-bold text-gray-900">{weatherData.windSpeed} km/h</p>
                   </motion.div>
                   

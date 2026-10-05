@@ -292,14 +292,14 @@ export function ReportsManagement() {
               placeholder="Buscar por título, ubicación o usuario..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
             />
           </div>
 
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as ReportStatus | "all")}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
           >
             <option value="all">Todos los estados</option>
             <option value="pendiente">Pendiente</option>
@@ -312,7 +312,7 @@ export function ReportsManagement() {
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
           >
             <option value="all">Todas las categorías</option>
             {categories.map(cat => (
@@ -456,7 +456,7 @@ export function ReportsManagement() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Card>
                     <div className="flex items-start gap-3">
-                      <MapPin className="w-5 h-5 text-green-600 mt-1" />
+                      <MapPin className="w-5 h-5 text-brand-600 mt-1" />
                       <div>
                         <p className="text-sm text-gray-600 mb-1">Ubicación</p>
                         <p className="font-medium text-gray-900">{selectedReport.direccion_ubicacion}</p>
@@ -466,7 +466,7 @@ export function ReportsManagement() {
 
                   <Card>
                     <div className="flex items-start gap-3">
-                      <User className="w-5 h-5 text-green-600 mt-1" />
+                      <User className="w-5 h-5 text-brand-600 mt-1" />
                       <div>
                         <p className="text-sm text-gray-600 mb-1">Usuario</p>
                         <p className="font-medium text-gray-900">{selectedReport.perfiles?.nombre_completo || 'Usuario'}</p>
@@ -496,7 +496,7 @@ export function ReportsManagement() {
 
                   <Card>
                     <div className="flex items-start gap-3">
-                      <Calendar className="w-5 h-5 text-green-600 mt-1" />
+                      <Calendar className="w-5 h-5 text-brand-600 mt-1" />
                       <div>
                         <p className="text-sm text-gray-600 mb-1">Fecha</p>
                         <p className="font-medium text-gray-900">{new Date(selectedReport.fecha_creacion).toLocaleString()}</p>
@@ -506,7 +506,7 @@ export function ReportsManagement() {
 
                   <Card>
                     <div className="flex items-start gap-3">
-                      <Building2 className="w-5 h-5 text-green-600 mt-1" />
+                      <Building2 className="w-5 h-5 text-brand-600 mt-1" />
                       <div>
                         <p className="text-sm text-gray-600 mb-1">Entidad Asignada</p>
                         <p className="font-medium text-gray-900">
@@ -546,7 +546,7 @@ export function ReportsManagement() {
                   <select
                     value={selectedReport.id_entidad || ""}
                     onChange={(e) => handleAssignEntity(selectedReport.id, e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                   >
                     <option value="">Seleccionar entidad...</option>
                     {entities.map(entity => (
@@ -558,7 +558,7 @@ export function ReportsManagement() {
                 {/* Comments */}
                 <Card>
                   <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                    <MessageSquare className="w-5 h-5 text-green-600" />
+                    <MessageSquare className="w-5 h-5 text-brand-600" />
                     Comentarios y Seguimiento
                   </h3>
                   
@@ -627,7 +627,7 @@ export function ReportsManagement() {
                                     const { data } = await getReportMessages(selectedReport.id);
                                     if (data) setReportMessages(data);
                                   }} 
-                                  className="text-[10px] px-2 py-1 bg-green-600 text-white rounded"
+                                  className="text-[10px] px-2 py-1 bg-brand-600 text-white rounded"
                                 >
                                   Guardar
                                 </button>
@@ -659,13 +659,13 @@ export function ReportsManagement() {
                 {/* History (Ahora integrado en comentarios) */}
                 <Card>
                   <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                    <History className="w-5 h-5 text-green-600" />
+                    <History className="w-5 h-5 text-brand-600" />
                     Historial del Reporte
                   </h3>
                   <p className="text-xs text-gray-500 mb-2">Los cambios de estado y comentarios se registran cronológicamente.</p>
                   <div className="space-y-3">
                     <div className="flex gap-3 pb-3 border-b border-gray-100 last:border-0">
-                      <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
+                      <div className="w-2 h-2 bg-brand-500 rounded-full mt-2"></div>
                       <div className="flex-1">
                         <p className="text-sm font-medium text-gray-900">Reporte creado</p>
                         <p className="text-xs text-gray-500">{new Date(selectedReport.fecha_creacion).toLocaleString()}</p>

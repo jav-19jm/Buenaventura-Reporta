@@ -53,7 +53,7 @@ export function NewsSection() {
           animate={{ opacity: 1, x: 0 }}
           className="flex items-center gap-2"
         >
-          <Newspaper className="w-6 h-6 text-green-600" />
+          <Newspaper className="w-6 h-6 text-brand-600" />
           <h2 className="text-2xl font-bold text-gray-900">Noticias de la ciudad</h2>
         </motion.div>
         
@@ -61,7 +61,7 @@ export function NewsSection() {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="text-green-600 hover:text-green-700 font-bold text-sm flex items-center gap-1 bg-green-50 px-4 py-2 rounded-xl transition-colors"
+            className="text-brand-600 hover:text-brand-800 font-bold text-sm flex items-center gap-1 bg-brand-50 hover:bg-brand-100 px-4 py-2 rounded-xl transition-colors"
           >
             Ver todas
             <ArrowRight className="w-4 h-4" />
@@ -116,7 +116,7 @@ export function NewsSection() {
                   {item.entidades?.nombre && (
                     <>
                       <span>•</span>
-                      <span className="font-medium text-green-600">{item.entidades.nombre}</span>
+                      <span className="font-medium text-brand-600">{item.entidades.nombre}</span>
                     </>
                   )}
                 </div>
@@ -180,8 +180,8 @@ export function NewsSection() {
                   {selectedNews.entidades?.nombre && (
                     <div className="mt-8 pt-6 border-t border-gray-100 flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                          <Newspaper className="w-5 h-5 text-green-600" />
+                        <div className="w-10 h-10 bg-brand-100 rounded-full flex items-center justify-center">
+                          <Newspaper className="w-5 h-5 text-brand-600" />
                         </div>
                         <div>
                           <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Publicado por</p>

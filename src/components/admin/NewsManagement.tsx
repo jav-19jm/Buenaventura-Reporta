@@ -249,14 +249,14 @@ export function NewsManagement() {
               placeholder="Buscar noticias..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
             />
           </div>
 
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
           >
             <option value="all">Todas las categorías</option>
             {categories.map(cat => (
@@ -448,7 +448,7 @@ export function NewsManagement() {
                       </button>
                     </div>
                   ) : (
-                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-green-500 transition-colors">
+                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-brand-500 transition-colors">
                       <div className="flex flex-col items-center justify-center pt-5 pb-6">
                         <ImageIcon className="w-8 h-8 text-gray-400 mb-2" />
                         <p className="text-sm text-gray-600">Click para subir imagen o arrastra aquí</p>
@@ -472,7 +472,7 @@ export function NewsManagement() {
                     <select
                       value={formData.categoria}
                       onChange={(e) => setFormData({ ...formData, categoria: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                       required
                     >
                       {categories.map(cat => (
@@ -489,7 +489,7 @@ export function NewsManagement() {
                     <select
                       value={formData.id_entidad}
                       onChange={(e) => setFormData({ ...formData, id_entidad: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                     >
                       <option value="">General / Alcaldía</option>
                       {entities.map(ent => (
@@ -505,7 +505,7 @@ export function NewsManagement() {
                     id="published"
                     checked={formData.esta_publicada}
                     onChange={(e) => setFormData({ ...formData, esta_publicada: e.target.checked })}
-                    className="w-4 h-4 text-green-600 rounded focus:ring-2 focus:ring-green-500"
+                    className="w-4 h-4 text-brand-600 rounded focus:ring-2 focus:ring-brand-500"
                   />
                   <label htmlFor="published" className="text-sm font-medium text-gray-700">
                     Publicar inmediatamente

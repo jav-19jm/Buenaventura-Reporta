@@ -1,343 +1,238 @@
-import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router";
-import { motion, AnimatePresence } from "motion/react";
-import { Button } from "../../components/ui/Button";
-import { Card } from "../../components/ui/Card";
+import { useEffect, useState } from "react";
+import { Link } from "react-router";
+import { ArrowRight, Building2, Camera, ChevronRight, MapPin, Maximize2, Newspaper, UserRound } from "lucide-react";
 import { Badge } from "../../components/ui/Badge";
-import { MapPin, Plus, Filter, User, Menu, X, Layers, Shield, ChevronDown } from "lucide-react";
-
-import { WeatherWidget } from "../../components/user/WeatherWidget";
-import { NotificationBell } from "../../components/common/NotificationBell";
-import { NewsSection } from "../../components/user/NewsSection";
-import { CityServicesFilter } from "../../components/user/CityServicesFilter";
-import { getPublicReports, getReportCategories } from "../../api/reports";
-import { useAuth } from "../../hooks/useAuth";
+import { buttonVariants } from "../../components/ui/button-variants";
 import { ReportsMap } from "../../components/common/ReportsMap";
-import type { Reporte } from "../../types";
-import { toast } from "sonner";
+import { WeatherWidget } from "../../components/user/WeatherWidget";
+import { getPublicNews, getUserReports } from "../../api/reports";
+import { useAuth } from "../../hooks/useAuth";
+import { useReportsData } from "../../hooks/useReportsData";
+import { getReportStatus, summarizeReports } from "../../lib/report-status";
+import type { Noticia, Reporte } from "../../types";
+
+const dateFormatter = new Intl.DateTimeFormat("es-CO", { weekday: "long", day: "numeric", month: "long" });
+const shortDate = new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "short" });
+
+const quickLinks = [
+  { to: "/user/news", label: "Noticias", desc: "Avisos de las entidades", icon: Newspaper },
+  { to: "/user/services", label: "Servicios", desc: "Salud, seguridad, educación y más", icon: Building2 },
+  { to: "/profile", label: "Mi perfil", desc: "Reputación e insignias", icon: UserRound },
+];
 
 export function UserDashboard() {
-  const navigate = useNavigate();
-  const { user, profile } = useAuth();
+  const { profile } = useAuth();
+  const { reports: cityReports, loading: loadingCity } = useReportsData();
 
-  const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
-  const [mapFilter, setMapFilter] = useState<'todos' | 'mios'>('todos');
-  const [reports, setReports] = useState<Reporte[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
-  const [, setLoading] = useState(true);
+  const [myReports, setMyReports] = useState<Reporte[]>([]);
+  const [loadingMine, setLoadingMine] = useState(true);
+  const [news, setNews] = useState<Noticia[]>([]);
 
-  const fetchData = async (showLoading = true) => {
-    if (showLoading) setLoading(true);
-    try {
-      const [reportsRes, catsRes] = await Promise.all([
-        getPublicReports(),
-        getReportCategories()
-      ]);
-
-      if (reportsRes.data) setReports(reportsRes.data);
-      if (catsRes.data) setCategories(catsRes.data);
-    } catch (error) {
-      console.error('Error al cargar datos:', error);
-      toast.error('Error al cargar datos');
-    } finally {
-      if (showLoading) setLoading(false);
-    }
-  };
-
-  // Cargar reportes y categorías
   useEffect(() => {
-    fetchData();
+    let active = true;
+    Promise.all([getUserReports(), getPublicNews()]).then(([mine, latest]) => {
+      if (!active) return;
+      setMyReports(mine.data ?? []);
+      setNews((latest.data ?? []).slice(0, 3));
+      setLoadingMine(false);
+    });
+    return () => {
+      active = false;
+    };
   }, []);
-  const [showMenu, setShowMenu] = useState(false);
-  const [showNews, setShowNews] = useState(false);
-  const [showServices, setShowServices] = useState(false);
-  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
 
-  const filteredReports = selectedFilter
-    ? reports.filter((r) => r.categoria === selectedFilter)
-    : reports;
-
-  const isMyReport = (r: Reporte) => {
-    if (!user && !profile) return false;
-    return r.id_usuario === user?.id || r.id_usuario === profile?.id || (r.perfiles && (r.perfiles as any).id === user?.id);
-  };
-
-  const mapReports = mapFilter === 'mios'
-    ? filteredReports.filter(isMyReport)
-    : filteredReports;
-
-  const myRecentReports = filteredReports.filter(isMyReport);
+  const firstName = profile?.nombre_completo?.split(" ")[0];
+  const formattedDate = dateFormatter.format(new Date());
+  const today = formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
+  const mine = summarizeReports(myReports);
+  const city = summarizeReports(cityReports);
+  const recent = [...myReports]
+    .sort((a, b) => new Date(b.fecha_creacion).getTime() - new Date(a.fecha_creacion).getTime())
+    .slice(0, 4);
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm z-10">
-        <div className="px-4 py-3 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            <motion.div
-              whileHover={{ rotate: 360 }}
-              transition={{ duration: 0.5 }}
-              className="w-8 h-8 bg-gradient-to-br from-yellow-500 to-green-600 rounded-lg flex items-center justify-center"
-            >
-              <MapPin className="w-5 h-5 text-white" />
-            </motion.div>
-            <span className="font-bold text-gray-900 hidden sm:inline">Buenaventura Reporta</span>
+    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+      {/* Saludo */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <p className="text-sm font-semibold text-gray-600">{today}</p>
+          <h2 className="mt-1 text-2xl font-black tracking-tight text-brand-900 sm:text-3xl">
+            Hola{firstName ? `, ${firstName}` : ""}
+          </h2>
+        </div>
+        <WeatherWidget />
+      </div>
+
+      {/* Reportar + resumen de mis reportes */}
+      <section className="mt-6 grid gap-4 md:grid-cols-[1.1fr_1fr]">
+        <div className="flex flex-col justify-between gap-5 rounded-2xl bg-brand-900 p-6 text-white sm:flex-row sm:items-center md:flex-col md:items-start xl:flex-row xl:items-center">
+          <div>
+            <h3 className="text-xl font-extrabold">¿Viste algo en tu calle?</h3>
+            <p className="mt-1 text-brand-100">Una foto y la ubicación son suficientes.</p>
+          </div>
+          <Link to="/report/new" className={buttonVariants({ variant: "secondary", className: "min-h-12 shrink-0 px-5" })}>
+            <Camera className="mr-2 h-5 w-5" aria-hidden="true" />
+            Reportar un problema
           </Link>
+        </div>
 
-          <div className="flex items-center gap-2">
-            <NotificationBell />
+        <div className="rounded-2xl bg-white p-6 ring-1 ring-brand-900/5">
+          <div className="flex items-center justify-between">
+            <h3 className="font-extrabold text-brand-900">Mis reportes</h3>
+            <Link to="/user/reports" className="inline-flex min-h-11 items-center gap-1 text-sm font-bold text-brand-600 hover:text-brand-800">
+              Ver todos
+              <ChevronRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          </div>
+          <dl className="mt-3 grid grid-cols-3 divide-x divide-gray-100">
+            {[
+              { label: "Hechos", value: mine.total, color: "text-brand-900" },
+              { label: "Abiertos", value: mine.open, color: "text-sun-700" },
+              { label: "Resueltos", value: mine.resolved, color: "text-leaf-600" },
+            ].map((stat) => (
+              <div key={stat.label} className="px-3 first:pl-0">
+                <dt className="text-sm text-gray-600">{stat.label}</dt>
+                <dd className={`mt-1 text-3xl font-black tabular-nums ${stat.color}`}>
+                  {loadingMine ? <span className="inline-block h-8 w-8 animate-pulse rounded bg-slate-100" /> : stat.value}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </section>
 
-
-            <Button
-              variant={showServices ? "primary" : "ghost"}
-              size="sm"
-              onClick={() => {
-                setShowServices(!showServices);
-                setShowNews(false);
-              }}
-            >
-              <Layers className="w-4 h-4 mr-2" />
-              Servicios
-            </Button>
-
-            <button
-              onClick={() => setShowMenu(!showMenu)}
-              className="p-2 hover:bg-gray-100 rounded-lg md:hidden"
-            >
-              {showMenu ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
-
-            <div className="hidden md:flex items-center gap-2">
-              <Link to="/profile">
-                <Button variant="ghost" size="sm">
-                  <User className="w-4 h-4 mr-2" />
-                  Mi perfil
-                </Button>
+      <div className="mt-6 grid gap-6 lg:grid-cols-3">
+        <div className="space-y-6 lg:col-span-2">
+          {/* Vista previa del mapa */}
+          <section className="overflow-hidden rounded-2xl bg-white ring-1 ring-brand-900/5">
+            <div className="flex flex-wrap items-center justify-between gap-2 p-5">
+              <div>
+                <h3 className="font-extrabold text-brand-900">Mapa de la ciudad</h3>
+                <p className="text-sm text-gray-600">
+                  {loadingCity ? "Cargando reportes…" : `${city.open} reportes abiertos · ${city.resolved} resueltos`}
+                </p>
+              </div>
+              <Link to="/user/map" className={buttonVariants({ variant: "outline", size: "sm", className: "min-h-11 px-4" })}>
+                <Maximize2 className="mr-2 h-4 w-4" aria-hidden="true" />
+                Abrir mapa
               </Link>
             </div>
-          </div>
-        </div>
+            <div className="map-preview relative h-72 sm:h-80">
+              <ReportsMap reports={cityReports} showServices={false} />
+              {/* La vista previa no es interactiva para no atrapar el scroll en el celular */}
+              <Link
+                to="/user/map"
+                aria-label="Abrir el mapa completo"
+                className="absolute inset-0 z-10 focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-brand-500"
+              />
+            </div>
+          </section>
 
-        {/* Mobile Menu */}
-        <AnimatePresence>
-          {showMenu && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="border-t border-gray-200 overflow-hidden md:hidden"
-            >
-              <div className="p-4">
-                <Link to="/profile" className="block py-2">
-                  <Button variant="ghost" className="w-full justify-start">
-                    <User className="w-4 h-4 mr-2" />
-                    Mi perfil
-                  </Button>
+          {/* Reportes recientes */}
+          <section className="rounded-2xl bg-white p-5 ring-1 ring-brand-900/5">
+            <h3 className="font-extrabold text-brand-900">Tus últimos reportes</h3>
+            {loadingMine ? (
+              <ul className="mt-4 space-y-3" aria-hidden="true">
+                {[1, 2, 3].map((i) => (
+                  <li key={i} className="h-16 animate-pulse rounded-xl bg-slate-100" />
+                ))}
+              </ul>
+            ) : recent.length === 0 ? (
+              <div className="mt-4 rounded-xl bg-slate-50 p-6 text-center">
+                <p className="font-bold text-brand-900">Todavía no has hecho reportes</p>
+                <p className="mt-1 text-sm text-gray-600">Cuando veas algo que haya que arreglar, repórtalo y aquí verás cómo avanza.</p>
+                <Link to="/report/new" className={buttonVariants({ size: "sm", className: "mt-4 min-h-11 px-4" })}>
+                  Hacer mi primer reporte
                 </Link>
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-      </header>
-
-      {/* News Section Toggle */}
-      <motion.div
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        className="bg-gradient-to-r from-yellow-500 to-green-600 text-white px-4 py-2 flex items-center justify-center gap-2 cursor-pointer hover:from-yellow-600 hover:to-green-700 transition-colors"
-        onClick={() => {
-          setShowNews(!showNews);
-          setShowServices(false);
-        }}
-      >
-        <span className="text-sm font-medium">
-          {showNews ? "Ocultar noticias" : "Ver noticias de la ciudad"}
-        </span>
-      </motion.div>
-
-      {/* News/Services Content */}
-      <AnimatePresence>
-        {(showNews || showServices) && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="bg-white border-b border-gray-200 overflow-hidden"
-          >
-            <div className="max-w-7xl mx-auto px-4 py-6">
-              {showNews && <NewsSection />}
-              {showServices && <CityServicesFilter />}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
-        {/* Map Area */}
-        <div className="flex-1 relative bg-gradient-to-br from-yellow-50 via-green-50 to-yellow-100">
-          <ReportsMap
-            reports={mapReports}
-            onVote={() => fetchData(false)}
-          />
-
-          {/* Floating Map Filter */}
-          <div className="absolute top-4 right-4 z-[5] flex items-end">
-            <motion.div
-              initial={{ x: -20, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              className="bg-white/90 backdrop-blur-md p-1.5 rounded-2xl shadow-xl border border-gray-200 flex items-center gap-1.5"
-            >
-              <button
-                onClick={() => setMapFilter('todos')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${mapFilter === 'todos'
-                  ? 'bg-gradient-to-r from-yellow-500 to-green-600 text-white shadow-lg shadow-green-600/20 scale-105'
-                  : 'text-gray-600 hover:bg-gray-100/80'
-                  }`}
-              >
-                <Layers className="w-4 h-4" />
-                Todos
-              </button>
-              <button
-                onClick={() => setMapFilter('mios')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${mapFilter === 'mios'
-                  ? 'bg-gradient-to-r from-yellow-500 to-green-600 text-white shadow-lg shadow-green-600/20 scale-105'
-                  : 'text-gray-600 hover:bg-gray-100/80'
-                  }`}
-              >
-                <Shield className="w-4 h-4" />
-                Mis Reportes
-              </button>
-            </motion.div>
-          </div>
-
-          {/* Category Filter Dropdown */}
-          <div className="absolute top-20 right-4 z-[5]">
-            <div className="relative">
-              <button
-                onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
-                className="bg-white/90 backdrop-blur-md px-4 py-2.5 rounded-xl shadow-xl border border-gray-200 flex items-center gap-3 text-sm font-bold text-gray-700 hover:bg-white transition-all group"
-              >
-                <div className="p-1.5 bg-gradient-to-r from-yellow-500 to-green-600 rounded-lg group-hover:bg-green-200 transition-colors">
-                  <Filter className="w-4 h-4 text-white" />
-                </div>
-                <span className="max-w-[150px] truncate">
-                  {selectedFilter ? selectedFilter : 'Todas las Incidencias'}
-                </span>
-                <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${showCategoryDropdown ? 'rotate-180' : ''}`} />
-              </button>
-
-              <AnimatePresence>
-                {showCategoryDropdown && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 5, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden"
-                  >
-                    <div className="p-2 max-h-[60vh] overflow-y-auto no-scrollbar">
-                      <button
-                        onClick={() => {
-                          setSelectedFilter(null);
-                          setShowCategoryDropdown(false);
-                        }}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all ${selectedFilter === null
-                          ? 'bg-gradient-to-r from-yellow-500 to-green-600 text-white font-bold'
-                          : 'text-gray-600 hover:bg-gray-50'
-                          }`}
+            ) : (
+              <ul className="mt-2 divide-y divide-gray-100">
+                {recent.map((report) => {
+                  const status = getReportStatus(report.estado);
+                  return (
+                    <li key={report.id}>
+                      <Link
+                        to={`/report/${report.id}`}
+                        className="-mx-2 flex items-center gap-3 rounded-xl px-2 py-3 hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
                       >
-                        <div className={`w-2 h-2 rounded-full ${selectedFilter === null ? 'bg-green-600 animate-pulse' : 'bg-gray-300'}`} />
-                        Todas las Incidencias
-                      </button>
-
-                      <div className="px-4 py-2">
-                        <div className="h-px bg-gray-100 w-full" />
-                      </div>
-
-                      {categories.map((cat) => (
-                        <button
-                          key={cat.id}
-                          onClick={() => {
-                            setSelectedFilter(cat.nombre);
-                            setShowCategoryDropdown(false);
-                          }}
-                          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all ${selectedFilter === cat.nombre
-                            ? 'bg-gradient-to-r from-yellow-500 to-green-600 text-white font-bold'
-                            : 'text-gray-600 hover:bg-gray-50'
-                            }`}
-                        >
-                          <div className={`w-2 h-2 rounded-full ${selectedFilter === cat.nombre ? 'bg-green-600' : 'bg-gray-300'}`} />
-                          {cat.nombre}
-                        </button>
-                      ))}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </div>
-
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[5]">
-            {/* Weather Widget */}
-            <WeatherWidget />
-          </div>
-
-          {/* Floating Action Button */}
-          <Link to="/report/new">
-            <motion.button
-              whileHover={{ scale: 1.1, rotate: 90 }}
-              whileTap={{ scale: 0.9 }}
-              className="absolute bottom-6 right-6 w-14 h-14 bg-gradient-to-br from-yellow-500 to-green-600 rounded-full shadow-xl flex items-center justify-center hover:shadow-2xl transition-all"
-            >
-              <Plus className="w-7 h-7 text-white" />
-            </motion.button>
-          </Link>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-bold text-brand-900">{report.titulo || report.categoria}</p>
+                          <p className="mt-0.5 flex items-center gap-1 truncate text-sm text-gray-600">
+                            <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                            <span className="truncate">{report.direccion_ubicacion || "Sin dirección"}</span>
+                            <span aria-hidden="true">·</span>
+                            <span className="shrink-0">{shortDate.format(new Date(report.fecha_creacion))}</span>
+                          </p>
+                        </div>
+                        <Badge variant={status.variant}>{status.label}</Badge>
+                        <ChevronRight className="h-4 w-4 shrink-0 text-gray-400" aria-hidden="true" />
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
         </div>
 
-        {/* Reports List (Desktop Sidebar) */}
-        <div className="w-full md:w-96 bg-white border-t md:border-t-0 md:border-l border-gray-200 overflow-y-auto">
-          <div className="p-4">
-            <h3 className="font-semibold text-gray-900 mb-4">
-              Mis reportes recientes ({myRecentReports.length})
-            </h3>
-            <div className="space-y-3">
-              {myRecentReports.map((report) => {
-                const statusVariant = {
-                  pendiente: "warning" as const,
-                  "en-revision": "info" as const,
-                  solucionado: "success" as const,
-                };
-
-                const statusLabel = {
-                  pendiente: "Pendiente",
-                  "en-revision": "En Revisión",
-                  solucionado: "Solucionado",
-                };
-
-                return (
-                  <Card
-                    key={report.id}
-                    hover
-                    onClick={() => navigate(`/report/${report.id}`)}
+        <aside className="space-y-6">
+          {/* Accesos rápidos */}
+          <section className="rounded-2xl bg-white p-2 ring-1 ring-brand-900/5" aria-label="Accesos rápidos">
+            <ul>
+              {quickLinks.map(({ to, label, desc, icon: Icon }) => (
+                <li key={to}>
+                  <Link
+                    to={to}
+                    className="flex items-center gap-3 rounded-xl p-3 hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
                   >
-                    <div className="flex items-start justify-between mb-2">
-                      <h4 className="font-medium text-gray-900">{report.titulo || report.categoria}</h4>
-                      <Badge variant={statusVariant[report.estado as keyof typeof statusVariant] || "warning"}>
-                        {statusLabel[report.estado as keyof typeof statusLabel] || "Desconocido"}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-gray-600 flex items-center gap-1 mb-1">
-                      <MapPin className="w-3 h-3" />
-                      {report.direccion_ubicacion || "Sin ubicación"}
-                    </p>
-                    <p className="text-xs text-gray-500">{new Date(report.fecha_creacion).toLocaleDateString()}</p>
-                  </Card>
-                );
-              })}
+                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-600">
+                      <Icon className="h-5 w-5" aria-hidden="true" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-bold text-brand-900">{label}</span>
+                      <span className="block truncate text-sm text-gray-600">{desc}</span>
+                    </span>
+                    <ChevronRight className="h-4 w-4 text-gray-400" aria-hidden="true" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          {/* Últimas noticias */}
+          <section className="rounded-2xl bg-white p-5 ring-1 ring-brand-900/5">
+            <div className="flex items-center justify-between">
+              <h3 className="font-extrabold text-brand-900">Noticias</h3>
+              <Link to="/user/news" className="inline-flex min-h-11 items-center gap-1 text-sm font-bold text-brand-600 hover:text-brand-800">
+                Ver todas
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </Link>
             </div>
-          </div>
-        </div>
+            {loadingMine ? (
+              <div className="mt-2 space-y-3" aria-hidden="true">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="h-12 animate-pulse rounded-lg bg-slate-100" />
+                ))}
+              </div>
+            ) : news.length === 0 ? (
+              <p className="mt-2 text-sm text-gray-600">Las entidades no han publicado noticias todavía.</p>
+            ) : (
+              <ul className="mt-1 divide-y divide-gray-100">
+                {news.map((item) => (
+                  <li key={item.id} className="py-3">
+                    <Link to="/user/news" className="group block focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded">
+                      <p className="line-clamp-2 font-bold text-brand-900 group-hover:text-brand-600">{item.titulo}</p>
+                      <p className="mt-1 text-xs text-gray-600">
+                        {item.entidades?.nombre ? `${item.entidades.nombre} · ` : ""}
+                        {shortDate.format(new Date(item.fecha_publicacion ?? item.fecha_creacion))}
+                      </p>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </aside>
       </div>
     </div>
   );

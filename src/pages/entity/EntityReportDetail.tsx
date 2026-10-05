@@ -264,7 +264,7 @@ export function EntityReportDetail() {
                     <div key={msg.id} className={`flex ${msg.senderId === user?.id ? "justify-end" : "justify-start"}`}>
                       <div className={`max-w-[85%] rounded-2xl p-4 group relative shadow-sm ${
                         msg.senderId === user?.id ? "bg-entity-primary text-white" : 
-                        msg.sender === "admin" ? "bg-green-100 text-green-900" :
+                        msg.sender === "admin" ? "bg-brand-100 text-brand-900" :
                         "bg-white border border-gray-200 text-gray-800"
                       }`}>
                         <div className="flex items-center justify-between gap-4 mb-1">

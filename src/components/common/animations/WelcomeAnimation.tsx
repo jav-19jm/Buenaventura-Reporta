@@ -1,6 +1,7 @@
 import { motion } from "motion/react";
-import { MapPin, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 
+import { BrandLogo } from "../BrandLogo";
 interface WelcomeAnimationProps {
   userName: string;
   onComplete: () => void;
@@ -12,7 +13,7 @@ export function WelcomeAnimation({ userName, onComplete }: WelcomeAnimationProps
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-yellow-500 via-green-600 to-yellow-600"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-brand-gradient-deep"
     >
       <motion.div
         initial={{ scale: 0, rotate: -180 }}
@@ -40,7 +41,7 @@ export function WelcomeAnimation({ userName, onComplete }: WelcomeAnimationProps
           transition={{ duration: 0.5, delay: 0.3 }}
           className="w-32 h-32 bg-white rounded-full mx-auto mb-6 flex items-center justify-center shadow-2xl"
         >
-          <MapPin className="w-16 h-16 text-green-600" />
+          <BrandLogo variant="mark" className="w-20 h-20" />
         </motion.div>
         
         <motion.h1
@@ -49,7 +50,7 @@ export function WelcomeAnimation({ userName, onComplete }: WelcomeAnimationProps
           transition={{ duration: 0.6, delay: 0.5 }}
           className="text-5xl font-bold text-white mb-4"
         >
-          ¡Bienvenido{userName && `, ${userName}`}!
+          ¡Hola{userName && `, ${userName}`}!
         </motion.h1>
         
         <motion.div
@@ -59,7 +60,7 @@ export function WelcomeAnimation({ userName, onComplete }: WelcomeAnimationProps
           className="flex items-center justify-center gap-2 text-white text-xl"
         >
           <Sparkles className="w-6 h-6" />
-          <span>Tu ciudad te necesita</span>
+          <span>Qué bueno verte de nuevo</span>
           <Sparkles className="w-6 h-6" />
         </motion.div>
 

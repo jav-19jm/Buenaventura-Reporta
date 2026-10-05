@@ -16,6 +16,8 @@ import { getPublicReports } from "../../api/reports";
 import { useAuth } from "../../hooks/useAuth";
 import { NotificationBell } from "../../components/common/NotificationBell";
 
+import { BrandLogo } from "../../components/common/BrandLogo";
+import { UserAvatar } from "../../components/user/layout/UserAvatar";
 type Tab = "dashboard" | "reports" | "users" | "entities" | "news" | "services";
 
 export function AdminDashboard() {
@@ -26,7 +28,7 @@ export function AdminDashboard() {
   const [totalStats, setTotalStats] = useState<any>(null);
   const [, setLoading] = useState(true);
 
-  const { isAdmin, logout } = useAuth();
+  const { isAdmin, logout, profile } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -120,50 +122,65 @@ export function AdminDashboard() {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="min-h-screen bg-gray-50"
+      className="min-h-screen bg-slate-50"
     >
-      {/* Header */}
-      <header className="bg-gradient-to-r from-yellow-500 to-green-600 shadow-lg sticky top-0 z-10">
-        <div className="px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <h1 className="text-xl font-bold text-white">Panel Administrativo</h1>
+      {/* Encabezado: mismo lenguaje visual que la barra superior del panel de usuario */}
+      <header className="sticky top-0 z-30 border-b border-brand-900/10 bg-white/95 backdrop-blur-md">
+        <div className="flex h-16 items-center gap-3 px-4 sm:px-6">
+          <BrandLogo variant="mark" className="h-9 sm:hidden" />
+          <BrandLogo className="hidden h-9 sm:block" />
+          <span className="hidden h-6 w-px bg-brand-900/10 sm:block" aria-hidden="true" />
+          <h1 className="min-w-0 flex-1 truncate text-lg font-extrabold text-brand-900">
+            Panel administrativo
+          </h1>
+
+          <NotificationBell />
+
+          <div className="hidden items-center gap-3 border-l border-brand-900/10 pl-3 md:flex">
+            <UserAvatar profile={profile} className="h-9 w-9" />
+            <div className="leading-tight">
+              <p className="max-w-40 truncate text-sm font-bold text-brand-900">{profile?.nombre_completo ?? "Administrador"}</p>
+              <p className="text-xs text-gray-600">Administrador</p>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <NotificationBell />
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleLogout}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium bg-white/10 text-white hover:bg-white/20 transition-all border border-white/20 shadow-sm"
-            >
-              <LogOut className="w-4 h-4" />
-              <span className="hidden sm:inline">Cerrar sesión</span>
-            </motion.button>
-          </div>
+
+          <button
+            type="button"
+            onClick={handleLogout}
+            aria-label="Cerrar sesión"
+            className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-semibold text-gray-700 transition-colors hover:bg-red-50 hover:text-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+          >
+            <LogOut className="h-5 w-5" aria-hidden="true" />
+            <span className="hidden lg:inline">Cerrar sesión</span>
+          </button>
         </div>
 
-
-        {/* Tabs Navigation */}
-        <div className="px-4 pb-2 flex gap-2 overflow-x-auto mt-6">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            return (
-              <motion.button
-                key={tab.id}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all ${activeTab === tab.id
-                  ? "bg-white text-green-600 shadow-lg"
-                  : "bg-white/10 text-white hover:bg-white/20"
+        {/* Pestañas de secciones */}
+        <nav aria-label="Secciones del panel" className="px-2 sm:px-4">
+          <div role="tablist" className="-mb-px flex gap-1 overflow-x-auto">
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              const active = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`inline-flex min-h-12 items-center gap-2 whitespace-nowrap border-b-2 px-3 text-sm font-bold transition-colors focus:outline-none focus-visible:bg-brand-50 ${
+                    active
+                      ? "border-brand-600 text-brand-700"
+                      : "border-transparent text-gray-600 hover:border-brand-200 hover:text-brand-900"
                   }`}
-              >
-                <Icon className="w-4 h-4" />
-                {tab.label}
-              </motion.button>
-            );
-          })}
-        </div>
+                >
+                  <Icon className="h-4 w-4" aria-hidden="true" />
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+        </nav>
       </header>
 
       {/* Content */}

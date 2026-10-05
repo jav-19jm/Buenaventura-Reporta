@@ -1,17 +1,20 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router";
-import { motion } from "motion/react";
+import { useNavigate, useSearchParams } from "react-router";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
-import { MapPin, Lock, CheckCircle2 } from "lucide-react";
+import { AuthLayout } from "../../components/auth/AuthLayout";
+import { CheckCircle2 } from "lucide-react";
 import { updatePassword } from "../../api/auth";
 import { toast } from "sonner";
+
+const MIN_PASSWORD = 8;
 
 export function UpdatePasswordPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [submitted, setSubmitted] = useState(false);
   const [success, setSuccess] = useState(false);
 
   // El enlace del correo debe traer el token de recuperación (?token=...)
@@ -21,21 +24,21 @@ export function UpdatePasswordPage() {
 
   useEffect(() => {
     if (!resetToken || !resetEmail) {
-      toast.error("El enlace ha expirado o es inválido.");
-      navigate("/login");
+      toast.error("Este enlace ya venció o no es válido. Pide uno nuevo.");
+      navigate("/forgot-password");
     }
   }, [resetToken, resetEmail, navigate]);
 
+  const passwordError =
+    submitted && password.length < MIN_PASSWORD ? `Usa al menos ${MIN_PASSWORD} caracteres.` : undefined;
+  const confirmError =
+    submitted && confirmPassword !== password ? "Las contraseñas no coinciden. Escríbela de nuevo." : undefined;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (password !== confirmPassword) {
-      toast.error("Las contraseñas no coinciden.");
-      return;
-    }
+    setSubmitted(true);
 
-    if (password.length < 8) {
-      toast.error("La contraseña debe tener al menos 8 caracteres.");
+    if (password.length < MIN_PASSWORD || password !== confirmPassword) {
       return;
     }
 
@@ -51,95 +54,65 @@ export function UpdatePasswordPage() {
       }
 
       setSuccess(true);
-      toast.success("Tu contraseña ha sido actualizada con éxito.");
-      
+
       setTimeout(() => {
         navigate("/login");
       }, 3000);
-    } catch (error: any) {
-      toast.error("Hubo un problema al actualizar la contraseña.");
+    } catch {
+      toast.error("No pudimos guardar tu contraseña. Revisa tu conexión e inténtalo de nuevo.");
       setLoading(false);
     }
   };
 
+  if (success) {
+    return (
+      <AuthLayout
+        title="¡Listo, tu contraseña cambió!"
+        description="Te llevamos a iniciar sesión en unos segundos."
+      >
+        <div className="flex gap-4 rounded-xl bg-leaf-50 p-4 text-sm text-leaf-800">
+          <CheckCircle2 className="w-6 h-6 shrink-0 text-leaf-600" aria-hidden="true" />
+          <p>Ya puedes entrar con tu contraseña nueva.</p>
+        </div>
+        <Button className="mt-6 w-full min-h-12" onClick={() => navigate("/login")}>
+          Iniciar sesión ahora
+        </Button>
+      </AuthLayout>
+    );
+  }
+
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="min-h-screen bg-gradient-to-br from-yellow-50 to-green-50 flex items-center justify-center p-4"
+    <AuthLayout
+      title="Crea una contraseña nueva"
+      description={resetEmail ? <>Para la cuenta <strong className="font-bold text-brand-900">{resetEmail}</strong>.</> : undefined}
+      backTo={{ to: "/login", label: "Iniciar sesión" }}
     >
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-8"
-        >
-          <Link to="/" className="inline-flex items-center gap-2 mb-4">
-            <div className="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center">
-              <MapPin className="w-7 h-7 text-white" />
-            </div>
-            <span className="text-2xl font-bold text-gray-900">Buenaventura Reporta</span>
-          </Link>
-          <h1 className="text-xl font-semibold text-gray-900">Nueva contraseña</h1>
-          <p className="text-gray-600 mt-2">
-            Ingresa tu nueva contraseña para acceder a tu cuenta.
-          </p>
-        </motion.div>
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <Input
+          label="Contraseña nueva"
+          type="password"
+          autoComplete="new-password"
+          hint={`Mínimo ${MIN_PASSWORD} caracteres.`}
+          error={passwordError}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
 
-        {/* Form */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="bg-white rounded-2xl shadow-xl p-8"
-        >
-          {!success ? (
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <Input
-                label="Nueva contraseña"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                icon={<Lock className="w-5 h-5 text-gray-400" />}
-                required
-              />
+        <Input
+          label="Repite la contraseña nueva"
+          type="password"
+          autoComplete="new-password"
+          error={confirmError}
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          required
+        />
 
-              <Input
-                label="Confirmar contraseña"
-                type="password"
-                placeholder="••••••••"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                icon={<Lock className="w-5 h-5 text-gray-400" />}
-                required
-              />
-
-              <Button type="submit" className="w-full" size="lg" disabled={loading}>
-                {loading ? "Actualizando..." : "Restablecer contraseña"}
-              </Button>
-            </form>
-          ) : (
-            <div className="text-center py-4">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle2 className="w-8 h-8 text-green-600" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">¡Todo listo!</h3>
-              <p className="text-gray-600 mb-6">
-                Tu contraseña ha sido actualizada. Serás redirigido al inicio de sesión en unos segundos...
-              </p>
-              <Link to="/login">
-                <Button className="w-full">
-                  Ir al inicio de sesión ahora
-                </Button>
-              </Link>
-            </div>
-          )}
-        </motion.div>
-      </div>
-    </motion.div>
+        <Button type="submit" className="w-full min-h-12" size="lg" disabled={loading}>
+          {loading ? "Guardando…" : "Guardar contraseña"}
+        </Button>
+      </form>
+    </AuthLayout>
   );
 }

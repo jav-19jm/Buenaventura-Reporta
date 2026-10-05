@@ -1,157 +1,128 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link } from "react-router";
-import { motion } from "motion/react";
+import { ArrowRight, X } from "lucide-react";
 import { ReportsMap } from "../../components/common/ReportsMap";
-import { getPublicReports } from "../../api/reports";
-import type { Reporte } from "../../types";
-import { Button } from "../../components/ui/Button";
-import { MapPin, AlertTriangle, ShieldCheck, ArrowRight, Home } from "lucide-react";
-import { toast } from "sonner";
+import { MapFilterPanel } from "../../components/common/MapFilterPanel";
+import { MapFiltersToggle } from "../../components/common/MapFiltersToggle";
+import { BrandLogo } from "../../components/common/BrandLogo";
+import { buttonVariants } from "../../components/ui/button-variants";
+import { useReportsData } from "../../hooks/useReportsData";
+import { useMapFilters } from "../../hooks/useMapFilters";
 import { useAuth } from "../../hooks/useAuth";
+import { homePathForRole } from "../../components/common/ProtectedRoute";
+import { cn } from "../../lib/utils";
 
 export function PublicMapPage() {
-  const [reports, setReports] = useState<Reporte[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { user, isAuthenticated } = useAuth();
-  const [mapFilter, setMapFilter] = useState<'todos' | 'mios'>('todos');
+  const { isAuthenticated, profile } = useAuth();
+  const { reports, categories, loading, error, refresh } = useReportsData();
+  const filters = useMapFilters(reports);
 
-  useEffect(() => {
-    loadReports();
-  }, []);
-
-  const loadReports = async () => {
-    setLoading(true);
-    const { data, error } = await getPublicReports();
-    if (error) {
-      toast.error("Error al cargar los reportes");
-    } else if (data) {
-      setReports(data);
-    }
-    setLoading(false);
-  };
+  const [showFilters, setShowFilters] = useState(false);
+  const [showInvite, setShowInvite] = useState(true);
 
   return (
-    <div className="h-screen w-full flex flex-col bg-gray-50 overflow-hidden relative">
-      {/* Header flotante */}
-      <header className="absolute top-0 left-0 right-0 z-20 bg-white/90 backdrop-blur-md shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 group">
-            <div className="bg-green-600 p-2 rounded-lg group-hover:bg-green-700 transition-colors">
-              <MapPin className="w-5 h-5 text-white" />
-            </div>
-            <span className="font-bold text-xl text-gray-900 tracking-tight">
-              Buenaventura<span className="text-green-600">Reporta</span>
-            </span>
+    <div className="flex h-dvh flex-col bg-slate-50">
+      <header className="z-20 border-b border-brand-900/10 bg-white">
+        <div className="flex h-16 items-center justify-between gap-3 px-4 sm:px-6">
+          <Link to="/" aria-label="Buenaventura Reporta, inicio">
+            <BrandLogo variant="mark" className="h-9 sm:hidden" />
+            <BrandLogo className="hidden h-10 sm:block" />
           </Link>
-          <div className="flex items-center gap-4">
-            {isAuthenticated && (
-              <div className="hidden sm:flex bg-gray-100/80 backdrop-blur-sm rounded-lg p-1 border border-gray-200">
-                <button
-                  onClick={() => setMapFilter('todos')}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${mapFilter === 'todos' ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:text-gray-900'}`}
-                >
-                  Todos
-                </button>
-                <button
-                  onClick={() => setMapFilter('mios')}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${mapFilter === 'mios' ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:text-gray-900'}`}
-                >
-                  Mis Reportes
-                </button>
-              </div>
-            )}
-            <Link to="/">
-              <Button variant="ghost" className="hidden sm:flex" size="sm">
-                <Home className="w-4 h-4 mr-2" />
-                Inicio
-              </Button>
-            </Link>
-            {!isAuthenticated ? (
+
+          <nav aria-label="Cuenta" className="flex items-center gap-2">
+            {isAuthenticated && profile ? (
+              <Link to={homePathForRole(profile.rol)} className={buttonVariants({ size: "sm", className: "min-h-11 px-4" })}>
+                Ir a mi panel
+              </Link>
+            ) : (
               <>
-                <Link to="/login">
-                  <Button variant="outline" size="sm" className="hidden sm:inline-flex">
-                    Iniciar Sesión
-                  </Button>
+                <Link to="/login" className={buttonVariants({ variant: "ghost", size: "sm", className: "min-h-11 px-3 sm:px-4" })}>
+                  Iniciar sesión
                 </Link>
-                <Link to="/register">
-                  <Button size="sm" className="bg-green-600 hover:bg-green-700 shadow-lg shadow-green-600/20">
-                    Regístrate ahora
-                  </Button>
+                <Link to="/register" className={buttonVariants({ size: "sm", className: "min-h-11 px-4" })}>
+                  Crear cuenta
                 </Link>
               </>
-            ) : (
-              <Link to="/user">
-                <Button size="sm" className="bg-green-600 hover:bg-green-700 shadow-lg shadow-green-600/20">
-                  Mi Panel
-                </Button>
-              </Link>
             )}
-          </div>
+          </nav>
         </div>
       </header>
 
-      {/* Main Map Area */}
-      <div className="flex-1 relative mt-16 z-0">
-        {loading ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-50/80 backdrop-blur-sm z-10">
-            <div className="flex flex-col items-center">
-              <div className="w-12 h-12 border-4 border-green-600 border-t-transparent rounded-full animate-spin"></div>
-              <p className="mt-4 text-gray-600 font-medium">Cargando mapa interactivo...</p>
-            </div>
-          </div>
-        ) : null}
-        
-        <ReportsMap 
-          reports={reports.filter(r => mapFilter === 'todos' || r.id_usuario === user?.id)} 
-          onVote={() => loadReports()} 
-        />
-      </div>
+      <main className="relative min-h-0 flex-1">
+        <h1 className="sr-only">Mapa de reportes de Buenaventura</h1>
+        <ReportsMap reports={filters.visible} onVote={refresh} />
 
-      {/* Call to Action Panel Overlaid on Map */}
-      {!isAuthenticated && (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 w-full max-w-4xl px-4 pointer-events-none">
-          <motion.div 
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5, type: "spring" }}
-            className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200/50 p-6 pointer-events-auto"
-          >
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="flex-1">
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                  ¿Ves un problema en tu comunidad?
-                </h2>
-                <p className="text-gray-600">
-                  Únete a más de <span className="font-semibold text-green-600">1,200 ciudadanos</span> que ya están mejorando Buenaventura. Reporta daños, basuras o fallas en servicios públicos al instante.
-                </p>
-                
-                <div className="flex flex-wrap gap-4 mt-4">
-                  <div className="flex items-center text-sm text-gray-700">
-                    <ShieldCheck className="w-4 h-4 text-green-500 mr-1.5" />
-                    Reportes directos a entidades
-                  </div>
-                  <div className="flex items-center text-sm text-gray-700">
-                    <AlertTriangle className="w-4 h-4 text-yellow-500 mr-1.5" />
-                    Atención priorizada
-                  </div>
-                </div>
+        {loading && (
+          <div className="absolute inset-x-0 top-0 z-10 h-1 overflow-hidden bg-brand-100" role="status" aria-label="Cargando reportes">
+            <div className="h-full w-1/3 animate-pulse bg-brand-600" />
+          </div>
+        )}
+
+        <MapFiltersToggle
+          open={showFilters}
+          onToggle={() => setShowFilters((v) => !v)}
+          activeCount={filters.activeCount}
+          controls="filtros-mapa-publico"
+          className="absolute right-3 top-3 z-10"
+        />
+
+        <div
+          id="filtros-mapa-publico"
+          className={cn(
+            "absolute inset-x-3 top-16 z-10 lg:inset-x-auto lg:right-4 lg:top-4 lg:block lg:w-80",
+            showFilters ? "block" : "hidden"
+          )}
+        >
+          <MapFilterPanel
+            categories={categories}
+            category={filters.category}
+            onCategoryChange={filters.setCategory}
+            status={filters.status}
+            onStatusChange={filters.setStatus}
+            counts={filters.counts}
+            header={
+              <div className="mb-4">
+                <p className="text-lg font-black text-brand-900">Reportes en Buenaventura</p>
+                <p className="mt-1 text-sm text-gray-600">Lo que la gente ha reportado y en qué estado está. Toca un punto para ver el detalle.</p>
               </div>
-              
-              <div className="flex flex-col gap-3 w-full md:w-auto">
-                <Link to="/register" className="w-full">
-                  <Button className="w-full bg-green-600 hover:bg-green-700 h-12 text-base px-8 shadow-lg shadow-green-600/20">
-                    Crear mi primer reporte
-                    <ArrowRight className="w-5 h-5 ml-2" />
-                  </Button>
-                </Link>
-                <p className="text-xs text-center text-gray-500">
-                  Toma menos de 1 minuto registrarse
-                </p>
-              </div>
-            </div>
-          </motion.div>
+            }
+          />
         </div>
-      )}
+
+        {error && !loading && (
+          <div className="absolute inset-x-0 top-16 z-10 flex justify-center px-4 lg:top-4">
+            <p role="alert" className="rounded-xl bg-white px-4 py-3 text-sm text-brand-900 shadow-lg ring-1 ring-red-200">
+              No pudimos cargar los reportes.{" "}
+              <button type="button" onClick={refresh} className="font-bold text-brand-600 underline underline-offset-4">
+                Intentar de nuevo
+              </button>
+            </p>
+          </div>
+        )}
+
+        {/* Invitación a reportar: solo para visitantes */}
+        {!isAuthenticated && showInvite && (
+          <aside
+            aria-label="Crea tu cuenta"
+            className="absolute inset-x-3 bottom-6 z-10 rounded-2xl bg-brand-900 p-5 text-white shadow-xl sm:inset-x-auto sm:left-4 sm:max-w-md"
+          >
+            <button
+              type="button"
+              onClick={() => setShowInvite(false)}
+              aria-label="Cerrar invitación"
+              className="absolute right-2 top-2 grid h-10 w-10 place-items-center rounded-lg text-brand-200 hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-sun-400"
+            >
+              <X className="h-5 w-5" aria-hidden="true" />
+            </button>
+            <p className="pr-10 text-lg font-extrabold">¿Viste algo que no está en el mapa?</p>
+            <p className="mt-1 text-sm text-brand-100">Crea tu cuenta gratis y repórtalo desde tu celular. También podrás apoyar los reportes de tus vecinos.</p>
+            <Link to="/register" className={buttonVariants({ variant: "secondary", className: "mt-4 min-h-11 px-5" })}>
+              Crear cuenta y reportar
+              <ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" />
+            </Link>
+          </aside>
+        )}
+      </main>
     </div>
   );
 }

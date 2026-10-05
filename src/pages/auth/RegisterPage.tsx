@@ -1,16 +1,18 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
-import { motion } from "motion/react";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
-import { MapPin } from "lucide-react";
+import { AuthLayout } from "../../components/auth/AuthLayout";
 import { signUp } from "../../api/auth";
 import { useAuth } from "../../hooks/useAuth";
 import { toast } from "sonner";
 
+const MIN_PASSWORD = 8;
+
 export function RegisterPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -25,17 +27,21 @@ export function RegisterPage() {
     }
   }, [isAuthenticated, authLoading, navigate]);
 
+  // Los errores se muestran junto a cada campo después del primer intento de envío
+  const passwordError =
+    submitted && formData.password.length < MIN_PASSWORD
+      ? `Usa al menos ${MIN_PASSWORD} caracteres.`
+      : undefined;
+  const confirmError =
+    submitted && formData.confirmPassword !== formData.password
+      ? "Las contraseñas no coinciden. Escríbela de nuevo."
+      : undefined;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitted(true);
 
-    // Validar contraseñas
-    if (formData.password !== formData.confirmPassword) {
-      toast.error("Las contraseñas no coinciden");
-      return;
-    }
-
-    if (formData.password.length < 8) {
-      toast.error("La contraseña debe tener al menos 8 caracteres");
+    if (formData.password.length < MIN_PASSWORD || formData.password !== formData.confirmPassword) {
       return;
     }
 
@@ -51,115 +57,80 @@ export function RegisterPage() {
       }
 
       if (data?.user) {
-        toast.success("¡Registro exitoso! Por favor, verifica tu correo electrónico para activar tu cuenta.", {
-          duration: 6000,
+        toast.success(`¡Cuenta creada! Te enviamos un correo a ${formData.email} para verificarla. Ábrelo antes de iniciar sesión.`, {
+          duration: 8000,
         });
         navigate("/login");
       }
-    } catch (error: any) {
-      toast.error("Error al crear cuenta");
+    } catch {
+      toast.error("No pudimos crear tu cuenta. Revisa tu conexión e inténtalo de nuevo.");
       setLoading(false);
     }
   };
 
-
-
   return (
-    <>
+    <AuthLayout
+      title="Crea tu cuenta"
+      description="Es gratis. Con tu cuenta puedes reportar, apoyar reportes de tus vecinos y recibir avisos."
+      footer={
+        <>
+          ¿Ya tienes cuenta?{" "}
+          <Link to="/login" className="font-bold text-brand-600 hover:text-brand-800 underline-offset-4 hover:underline">
+            Inicia sesión
+          </Link>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <Input
+          label="Nombre completo"
+          type="text"
+          autoComplete="name"
+          placeholder="Ej. María Angulo"
+          value={formData.fullName}
+          onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+          required
+        />
 
+        <Input
+          label="Correo electrónico"
+          type="email"
+          autoComplete="email"
+          inputMode="email"
+          placeholder="nombre@correo.com"
+          hint="Te enviaremos un enlace para verificarlo."
+          value={formData.email}
+          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+          required
+        />
 
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="min-h-screen bg-gradient-to-br from-yellow-50 to-green-50 flex items-center justify-center p-4"
-      >
-        <div className="w-full max-w-md">
-          {/* Logo */}
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-8"
-          >
-            <Link to="/" className="inline-flex items-center gap-2 mb-4">
-              <div className="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center">
-                <MapPin className="w-7 h-7 text-white" />
-              </div>
-              <span className="text-2xl font-bold text-gray-900">Buenaventura Reporta</span>
-            </Link>
-            <p className="text-gray-600">Crea tu cuenta y empieza a reportar</p>
-          </motion.div>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Input
+            label="Contraseña"
+            type="password"
+            autoComplete="new-password"
+            hint={`Mínimo ${MIN_PASSWORD} caracteres.`}
+            error={passwordError}
+            value={formData.password}
+            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+            required
+          />
 
-          {/* Form */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="bg-white rounded-2xl shadow-xl p-8"
-          >
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <Input
-                label="Nombre completo"
-                type="text"
-                placeholder="Juan Pérez"
-                value={formData.fullName}
-                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                required
-              />
-
-              <Input
-                label="Correo electrónico"
-                type="email"
-                placeholder="tu@email.com"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                required
-              />
-              
-              <Input
-                label="Contraseña"
-                type="password"
-                placeholder="Mínimo 8 caracteres"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                required
-                minLength={8}
-              />
-
-              <Input
-                label="Confirmar contraseña"
-                type="password"
-                placeholder="Repite tu contraseña"
-                value={formData.confirmPassword}
-                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                required
-                minLength={8}
-              />
-
-              <Button type="submit" className="w-full" size="lg" disabled={loading}>
-                {loading ? "Creando cuenta..." : "Crear cuenta"}
-              </Button>
-            </form>
-
-            <div className="mt-6 text-center">
-              <p className="text-sm text-gray-600">
-                ¿Ya tienes una cuenta?{" "}
-                <Link to="/login" className="text-green-600 hover:text-green-700 font-medium">
-                  Inicia sesión
-                </Link>
-              </p>
-            </div>
-          </motion.div>
-
-          {/* Back to home */}
-          <div className="mt-6 text-center">
-            <Link to="/" className="text-sm text-gray-600 hover:text-gray-900">
-              ← Volver al inicio
-            </Link>
-          </div>
+          <Input
+            label="Repite la contraseña"
+            type="password"
+            autoComplete="new-password"
+            error={confirmError}
+            value={formData.confirmPassword}
+            onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+            required
+          />
         </div>
-      </motion.div>
-    </>
+
+        <Button type="submit" className="w-full min-h-12" size="lg" disabled={loading}>
+          {loading ? "Creando tu cuenta…" : "Crear cuenta"}
+        </Button>
+      </form>
+    </AuthLayout>
   );
 }

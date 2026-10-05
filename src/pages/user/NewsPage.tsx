@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
-import { Newspaper, Clock, ArrowLeft, X, Search, Filter } from "lucide-react";
+import { Newspaper, Clock, X, Search, Filter } from "lucide-react";
 import { Card } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
@@ -37,27 +36,7 @@ export function NewsPage() {
   }, [searchTerm, news]);
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-12">
-      {/* Header */}
-      <header className="bg-gradient-to-r from-yellow-500 to-green-600 shadow-md sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link to="/user">
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                className="p-2 hover:bg-white/20 rounded-lg text-white transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </motion.button>
-            </Link>
-            <div className="flex items-center gap-2 text-white">
-              <Newspaper className="w-6 h-6" />
-              <h1 className="text-xl font-bold">Todas las Noticias</h1>
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className="pb-12">
 
       <main className="max-w-7xl mx-auto px-4 mt-8">
         {/* Search and Filters */}
@@ -69,7 +48,7 @@ export function NewsPage() {
               placeholder="Buscar noticias..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all"
+              className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
             />
           </div>
           <Button variant="secondary" className="rounded-2xl gap-2">
@@ -124,10 +103,10 @@ export function NewsPage() {
                   
                   <div className="p-6 flex-1 flex flex-col">
                     <div className="flex items-center gap-2 text-xs text-gray-500 mb-3">
-                      <Clock className="w-3.5 h-3.5 text-green-500" />
+                      <Clock className="w-3.5 h-3.5 text-brand-500" />
                       {new Date(item.fecha_creacion).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })}
                     </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-green-600 transition-colors line-clamp-2">
+                    <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-brand-600 transition-colors line-clamp-2">
                       {item.titulo}
                     </h3>
                     <p className="text-gray-600 mb-6 line-clamp-3 flex-1 leading-relaxed">
@@ -135,8 +114,8 @@ export function NewsPage() {
                     </p>
                     {item.entidades?.nombre && (
                       <div className="pt-4 border-t border-gray-100 flex items-center gap-2">
-                        <div className="w-8 h-8 bg-green-50 rounded-full flex items-center justify-center">
-                          <Newspaper className="w-4 h-4 text-green-600" />
+                        <div className="w-8 h-8 bg-brand-50 rounded-full flex items-center justify-center">
+                          <Newspaper className="w-4 h-4 text-brand-600" />
                         </div>
                         <span className="text-sm font-semibold text-gray-700">{item.entidades.nombre}</span>
                       </div>
@@ -185,7 +164,7 @@ export function NewsPage() {
                       {selectedNews.categoria?.replace('-', ' ') || 'Ciudad'}
                     </Badge>
                     <div className="flex items-center gap-2 text-sm text-gray-500">
-                      <Clock className="w-4 h-4 text-green-500" />
+                      <Clock className="w-4 h-4 text-brand-500" />
                       {new Date(selectedNews.fecha_creacion).toLocaleDateString(undefined, { 
                         weekday: 'long', 
                         day: 'numeric', 
@@ -208,8 +187,8 @@ export function NewsPage() {
                   {selectedNews.entidades?.nombre && (
                     <div className="mt-12 pt-8 border-t border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-6">
                       <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 bg-gradient-to-br from-yellow-100 to-green-100 rounded-2xl flex items-center justify-center shadow-inner">
-                          <Newspaper className="w-7 h-7 text-green-600" />
+                        <div className="w-14 h-14 bg-gradient-to-br from-brand-50 to-sun-100 rounded-2xl flex items-center justify-center shadow-inner">
+                          <Newspaper className="w-7 h-7 text-brand-600" />
                         </div>
                         <div>
                           <p className="text-xs text-gray-400 uppercase font-bold tracking-widest mb-0.5">Fuente Oficial</p>
@@ -218,7 +197,7 @@ export function NewsPage() {
                       </div>
                       <div className="flex gap-3">
                         <Button variant="secondary" onClick={() => setSelectedNews(null)} className="rounded-xl px-6">Cerrar</Button>
-                        <Button className="rounded-xl px-6 bg-green-600 hover:bg-green-700">Compartir</Button>
+                        <Button className="rounded-xl px-6">Compartir</Button>
                       </div>
                     </div>
                   )}

@@ -77,12 +77,12 @@ export function CityServicesFilter() {
               whileTap={{ scale: 0.95 }}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl border-2 whitespace-nowrap transition-all ${
                 isSelected
-                  ? "border-green-600 bg-green-50 shadow-sm"
+                  ? "border-brand-600 bg-brand-50 shadow-sm"
                   : "border-gray-100 bg-white hover:border-gray-200"
               }`}
             >
-              <Icon className={`w-4 h-4 ${isSelected ? "text-green-600" : type.color}`} />
-              <span className={`text-sm ${isSelected ? "text-green-900 font-bold" : "text-gray-600 font-medium"}`}>
+              <Icon className={`w-4 h-4 ${isSelected ? "text-brand-600" : type.color}`} />
+              <span className={`text-sm ${isSelected ? "text-brand-900 font-bold" : "text-gray-600 font-medium"}`}>
                 {type.label}
               </span>
             </motion.button>
@@ -132,7 +132,7 @@ export function CityServicesFilter() {
                         )}
                         <div className="flex flex-wrap items-center gap-3 mt-2">
                           {service.telefono && (
-                            <div className="flex items-center gap-1 text-[11px] font-medium text-green-700 bg-green-50 px-2 py-0.5 rounded-full">
+                            <div className="flex items-center gap-1 text-[11px] font-medium text-brand-700 bg-brand-50 px-2 py-0.5 rounded-full">
                               <Phone className="w-3 h-3" />
                               {service.telefono}
                             </div>
@@ -166,7 +166,7 @@ export function CityServicesFilter() {
           <p className="text-gray-500 font-medium">No se encontraron servicios que coincidan con tu búsqueda</p>
           <button 
             onClick={() => {setSelectedType("all"); setSearchQuery("");}}
-            className="mt-4 text-green-600 text-sm font-bold hover:underline"
+            className="mt-4 text-brand-600 text-sm font-bold hover:underline"
           >
             Limpiar filtros
           </button>

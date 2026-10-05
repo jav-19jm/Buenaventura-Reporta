@@ -5,7 +5,7 @@ import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import { ReportCard } from "../../components/user/ReportCard";
-import { ArrowLeft, User, Award, TrendingUp, MapPin, LogOut, Bell, FileText, ThumbsUp, ThumbsDown, Trash2, Camera } from "lucide-react";
+import { Award, TrendingUp, MapPin, LogOut, Bell, FileText, ThumbsUp, ThumbsDown, Trash2, Camera } from "lucide-react";
 import { LogoutAnimation } from "../../components/common/animations/LogoutAnimation";
 import { useAuth } from "../../hooks/useAuth";
 import { getUserReports, deleteReport } from "../../api/reports";
@@ -83,31 +83,32 @@ export function ProfilePage() {
       label: "Reportes totales",
       value: displayProfile?.reportes_creados || 0,
       icon: MapPin,
-      color: "text-green-600"
+      color: "text-brand-600"
     },
     {
       label: "Solucionados",
       value: displayProfile?.reportes_resueltos || 0,
       icon: Award,
-      color: "text-yellow-600"
+      color: "text-sun-500"
     },
     {
       label: "Reputación",
       value: displayProfile?.puntuacion_reputacion || 0,
       icon: TrendingUp,
-      color: "text-green-600"
+      color: "text-leaf-500"
     },
   ];
 
   const [notifications, setNotifications] = useState<any[]>([]);
 
-  const handleLogout = async () => {
-    await logout();
+  // Primero la animación; al terminar se cierra la sesión y se vuelve al inicio
+  const handleLogout = () => {
     setShowLogout(true);
   };
 
-  const handleLogoutComplete = () => {
-    navigate("/");
+  const handleLogoutComplete = async () => {
+    await logout();
+    navigate("/", { replace: true });
   };
 
   const handleDeleteReport = async (reportId: string) => {
@@ -174,22 +175,7 @@ export function ProfilePage() {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="min-h-screen bg-gray-50"
       >
-        {/* Header */}
-        <header className="bg-white shadow-sm sticky top-0 z-10">
-          <div className="px-4 py-3 flex items-center gap-4">
-            <Link to="/user">
-              <button className="p-2 hover:bg-gray-100 rounded-lg">
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-            </Link>
-            <div className="flex items-center gap-2">
-              <User className="w-5 h-5 text-gray-600" />
-              <h1 className="font-bold text-gray-900">Mi Perfil</h1>
-            </div>
-          </div>
-        </header>
 
         {/* Content */}
         <div className="max-w-6xl mx-auto px-4 py-8">
@@ -215,7 +201,7 @@ export function ProfilePage() {
                       ) : (
                         <motion.div
                           whileHover={{ scale: 1.05 }}
-                          className="w-full h-full bg-gradient-to-br from-yellow-500 to-green-600 rounded-full flex items-center justify-center shadow-md"
+                          className="w-full h-full bg-brand-gradient rounded-full flex items-center justify-center shadow-md"
                         >
                           <span className="text-3xl font-bold text-white">
                             {displayProfile.nombre_completo ? displayProfile.nombre_completo.split(' ').map((n: string) => n[0]).join('') : 'U'}
@@ -283,7 +269,7 @@ export function ProfilePage() {
               >
                 <Card>
                   <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5 text-green-600" />
+                    <TrendingUp className="w-5 h-5 text-brand-600" />
                     Sistema de Reputación
                   </h3>
                   <div className="space-y-3">
@@ -324,7 +310,7 @@ export function ProfilePage() {
                           initial={{ width: 0 }}
                           animate={{ width: `${Math.min(Math.max((displayProfile.puntuacion_reputacion || 0) / 50 * 100, 0), 100)}%` }}
                           transition={{ duration: 1, delay: 0.3 }}
-                          className="h-full bg-gradient-to-r from-yellow-500 to-green-600"
+                          className="h-full bg-brand-gradient"
                         />
                       </div>
                     </div>
@@ -388,7 +374,7 @@ export function ProfilePage() {
                   <button
                     onClick={() => setActiveTab("reports")}
                     className={`flex items-center gap-2 px-4 py-2 font-medium transition-colors ${activeTab === "reports"
-                        ? "text-green-600 border-b-2 border-green-600"
+                        ? "text-brand-600 border-b-2 border-brand-600"
                         : "text-gray-600 hover:text-gray-900"
                       }`}
                   >
@@ -398,7 +384,7 @@ export function ProfilePage() {
                   <button
                     onClick={() => setActiveTab("notifications")}
                     className={`flex items-center gap-2 px-4 py-2 font-medium transition-colors ${activeTab === "notifications"
-                        ? "text-green-600 border-b-2 border-green-600"
+                        ? "text-brand-600 border-b-2 border-brand-600"
                         : "text-gray-600 hover:text-gray-900"
                       }`}
                   >

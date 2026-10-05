@@ -251,15 +251,6 @@ export function LandingPage() {
                 ))}
               </ul>
             </div>
-            <a
-              href="tel:123"
-              className="inline-flex shrink-0 items-center gap-3 rounded-xl bg-white px-5 py-4 text-sm text-brand-900 ring-1 ring-red-200 hover:ring-red-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-            >
-              <Phone className="h-5 w-5 text-red-600" aria-hidden="true" />
-              <span>
-                ¿Es una emergencia? <strong className="font-extrabold">Llama al 123</strong>
-              </span>
-            </a>
           </div>
         </div>
       </section>

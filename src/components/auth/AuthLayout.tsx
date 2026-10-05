@@ -38,7 +38,7 @@ export function AuthLayout({
         <div className="absolute inset-0 bg-gradient-to-t from-brand-950 via-brand-950/80 to-brand-900/60" />
 
         <Link to="/" className="relative self-start" aria-label="Buenaventura Reporta, ir al inicio">
-          <BrandLogo tone="white" className="h-12" />
+          <BrandLogo tone="white" className="h-24" />
         </Link>
 
         <div className="relative max-w-lg">

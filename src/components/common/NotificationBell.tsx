@@ -5,8 +5,10 @@ import { Bell, X, CheckCircle2, AlertCircle, Info, Trash2 } from "lucide-react";
 import { Card } from "../ui/Card";
 import { getUserNotifications, markNotificationAsRead as markAsReadDB, deleteNotification as deleteNotificationDB } from "../../api/notifications";
 import { useAuth } from "../../hooks/useAuth";
+import { tiempoRealActivo, useCanal } from "../../api/realtime";
 
-const POLL_INTERVAL_MS = 30_000;
+// Con WebSockets la consulta periódica es solo un respaldo por si el socket se cae
+const POLL_INTERVAL_MS = tiempoRealActivo ? 120_000 : 30_000;
 
 export function NotificationBell() {
   const { user, isAuthenticated } = useAuth();
@@ -29,7 +31,7 @@ export function NotificationBell() {
     if (isAuthenticated && user?.id) {
       loadNotifications(true);
 
-      // Consulta periódica mientras no exista broadcasting en tiempo real (Laravel Reverb)
+      // Consulta periódica de respaldo (el tiempo real llega por WebSocket)
       const interval = setInterval(() => loadNotifications(), POLL_INTERVAL_MS);
       return () => clearInterval(interval);
     }
@@ -51,6 +53,10 @@ export function NotificationBell() {
       return data;
     });
   };
+
+  // Tiempo real: notificación personal o aviso general (noticias, servicios)
+  useCanal(isAuthenticated && user?.id ? `usuario.${user.id}` : null, "notificacion.creada", () => loadNotifications());
+  useCanal(isAuthenticated ? "avisos" : null, "aviso.general", () => loadNotifications(), "public");
 
   const unreadCount = notifications.filter(n => !n.esta_leida).length;
 

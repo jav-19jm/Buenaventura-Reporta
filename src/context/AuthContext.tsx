@@ -2,6 +2,7 @@ import { createContext, useCallback, useEffect, useMemo, useState, type ReactNod
 import { toast } from 'sonner';
 import { AUTH_EXPIRED_EVENT, getToken, setToken } from '../api/client';
 import { getMe, signIn, signOut } from '../api/auth';
+import { disconnectEcho } from '../api/realtime';
 import type { Perfil } from '../types';
 
 // ==========================================
@@ -34,6 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     await signOut();
+    disconnectEcho();
     setProfile(null);
   }, []);
 

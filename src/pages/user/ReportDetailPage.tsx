@@ -8,6 +8,7 @@ import { MapPin, ArrowLeft, Calendar, Clock, Star, MessageCircle, Send, History,
 import { ImageWithFallback } from "../../components/common/ImageWithFallback";
 import { getReportById, getReportMessages, createReportMessage, updateReportMessage, deleteReportMessage } from "../../api/reports";
 import { useAuth } from "../../hooks/useAuth";
+import { useCanal } from "../../api/realtime";
 import { Edit2, Trash2 } from "lucide-react";
 import { ReportsMap } from "../../components/common/ReportsMap";
 import { toast } from "sonner";
@@ -30,9 +31,11 @@ export function ReportDetailPage() {
   useEffect(() => {
     if (id) {
       loadReport();
-      // TODO: refrescar mensajes en tiempo real cuando el backend exponga broadcasting (Laravel Reverb)
     }
   }, [id]);
+
+  // Tiempo real: recargar el chat cuando otro participante escribe, edita o borra
+  useCanal(user && report && !chatError ? `reporte.${report.id}` : null, "chat.actualizado", () => refreshMessages());
 
   // El chat depende de la sesión: se carga cuando el reporte y la sesión están listos
   useEffect(() => {

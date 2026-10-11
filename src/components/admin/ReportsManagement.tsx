@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { getAdminReports, updateReportStatus, getReportMessages, updateReportMessage, deleteReportMessage } from "../../api/reports";
 import { assignReportEntity, deleteReportAdmin, addAdminComment, getAllEntities } from "../../api/admin";
 import { useAuth } from "../../hooks/useAuth";
+import { useCanal } from "../../api/realtime";
 
 const normalizeCategoryKey = (value?: string) => {
   if (!value) return "";
@@ -218,8 +219,13 @@ export function ReportsManagement() {
     // Cargar mensajes/historial
     const { data: messages } = await getReportMessages(report.id);
     if (messages) setReportMessages(messages);
-    // TODO: actualizar el chat en tiempo real cuando el backend exponga broadcasting (Laravel Reverb)
   };
+
+  // Tiempo real: con el detalle abierto, recargar el chat ante cualquier cambio
+  useCanal(showDetailModal && selectedReport ? `reporte.${selectedReport.id}` : null, "chat.actualizado", async () => {
+    const { data } = await getReportMessages(selectedReport.id);
+    if (data) setReportMessages(data);
+  });
 
   return (
     <div className="space-y-6">

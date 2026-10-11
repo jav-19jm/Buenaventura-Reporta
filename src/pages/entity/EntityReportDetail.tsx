@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { getReportById, getReportMessages, updateReportMessage, deleteReportMessage, createReportMessage } from "../../api/reports";
 import { updateReportStatus } from "../../api/entities";
 import { useAuth } from "../../hooks/useAuth";
+import { useCanal } from "../../api/realtime";
 import type { Reporte } from "../../types";
 
 export function EntityReportDetail() {
@@ -36,9 +37,11 @@ export function EntityReportDetail() {
   useEffect(() => {
     if (id) {
       loadData();
-      // TODO: refrescar mensajes en tiempo real cuando el backend exponga broadcasting (Laravel Reverb)
     }
   }, [id]);
+
+  // Tiempo real: recargar el chat cuando otro participante escribe, edita o borra
+  useCanal(id ? `reporte.${id}` : null, "chat.actualizado", () => refreshMessages());
 
   const loadData = async () => {
     setLoading(true);

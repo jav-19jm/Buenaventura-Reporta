@@ -2,6 +2,30 @@
 @import './tailwind.css';
 @import './theme.css';
 
+html {
+  scroll-behavior: smooth;
+}
+
+/* Respeta la preferencia de movimiento reducido en toda la app */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Vista previa del mapa (no interactiva): sin controles de zoom */
+.map-preview .leaflet-control-zoom {
+  display: none;
+}
+
 /* Custom styles for Leaflet popups */
 .report-popup .leaflet-popup-content-wrapper {
   padding: 0;
